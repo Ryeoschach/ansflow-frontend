@@ -1,6 +1,8 @@
 # AnsFlow Frontend
 
 企业级 DevOps 流水线平台前端，基于 React 18 + TypeScript + Vite 构建。
+demo: https://ansflow.cyfee.com:10443
+admin/ansflow
 
 ## 技术栈
 
