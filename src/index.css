@@ -1,0 +1,132 @@
+/* 定义图层顺序 */
+@layer theme, base, antd, components, utilities;
+
+/* 引入 Tailwind 4 */
+@import "tailwindcss";
+
+/* 主题定制：将 AntD 变量映射到 Tailwind */
+@theme {
+  --color-primary: var(--ant-primary-color);
+  --color-primary-hover: var(--ant-primary-color-hover);
+  --color-primary-active: var(--ant-primary-color-active);
+  --color-text-base: var(--ant-color-text);
+  --color-text-description: var(--ant-color-text-description);
+  --color-fill-hover: var(--ant-color-fill-secondary);
+  /* --color-logo: #292C33; */
+  --color-glass-white: color-mix(in srgb, var(--ant-color-bg-container), transparent 25%);
+  --color-glass-dark: color-mix(in srgb, var(--ant-color-bg-container), transparent 25%);
+}
+
+/* 基础样式 */
+@layer base {
+  :root {
+    font-family: Inter, system-ui, sans-serif;
+    color-scheme: light dark;
+    background-color: #f0f2f5;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  #root {
+    height: 100vh;
+  }
+}
+
+/* 组件与工具样式 */
+@layer utilities {
+
+  /* 玻璃拟态效果 */
+  .glass-effect {
+    /* 强制使用显式的带有透明度的纯正 RGBA 颜色，解决颜色注入导致的失效 */
+    background: rgba(255, 255, 255, 0.65) !important;
+    /* 仅保留标准属性，不要写 -webkit-，交给打包器自动补全，否则打包时会导致标准属性被误删 */
+    backdrop-filter: blur(8px) saturate(180%) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    /* 加深边框线 */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    /* 增加轻微阴影 */
+  }
+
+  /* 暗色模式：html 标签上有 .dark 类 */
+  .dark .glass-effect {
+    /* 暗黑模式下使用透明度 70% 的深灰纯色 */
+    background: rgba(20, 20, 20, 0.65) !important;
+    /* 白色透明线 */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    /* 阴影 */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.ant-layout-sider-children {
+  scrollbar-gutter: stable;
+}
+
+/* 统一自定义滚动条样式 */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 隐藏 AntD Sider 默认可能的溢出 */
+.ant-layout-sider {
+  overflow: hidden !important;
+}
+
+/* 节点运行中背景动画 */
+@keyframes stripe-animation {
+  0% { background-position: 0 0; }
+  100% { background-position: 56px 0; }
+}
+
+.running-node-bg {
+  background-image: linear-gradient(
+    45deg, 
+    rgba(0, 0, 0, 0.05) 25%, 
+    transparent 25%, 
+    transparent 50%, 
+    rgba(0, 0, 0, 0.05) 50%, 
+    rgba(0, 0, 0, 0.05) 75%, 
+    transparent 75%, 
+    transparent
+  );
+  background-size: 56px 56px;
+  animation: stripe-animation 2s linear infinite;
+}
+
+.dark .running-node-bg {
+  background-image: linear-gradient(
+    45deg, 
+    rgba(255, 255, 255, 0.05) 25%, 
+    transparent 25%, 
+    transparent 50%, 
+    rgba(255, 255, 255, 0.05) 50%, 
+    rgba(255, 255, 255, 0.05) 75%, 
+    transparent 75%, 
+    transparent
+  );
+}

@@ -1,0 +1,52 @@
+import request from '../utils/requests';
+
+export interface HealthComponent {
+    name: string;
+    label: string;
+    icon: string;
+    status: 'healthy' | 'warning' | 'unhealthy';
+    latency?: string;
+    message?: string;
+    [key: string]: any;
+}
+
+export interface HealthStatusResponse {
+    status: 'healthy' | 'warning' | 'critical';
+    components: HealthComponent[];
+    timestamp: string;
+}
+
+export const getSystemHealth = (): Promise<HealthStatusResponse> =>
+    request.get<HealthStatusResponse>('/system/health/status/') as any;
+
+
+export interface DashboardSummary {
+    metrics: {
+        totalHosts: number;
+        onlineHosts: number;
+        totalResourcePools: number;
+        dailyTaskRuns: number;
+        dailyFailedTasks: number;
+    };
+    taskTrend: {
+        time: string;
+        success: number;
+        failed: number;
+    }[];
+    recentTasks: {
+        id: string;
+        raw_id: number;
+        type: 'ansible' | 'pipeline';
+        name: string;
+        status: string;
+        time: string;
+        time_label: string;
+        user: string;
+    }[];
+}
+
+export const getDashboardSummary = (): Promise<DashboardSummary> =>
+    request.get<DashboardSummary>('/system/dashboard/summary/') as any;
+
+// 审计足迹日志接口
+export const getAuditLogs = (params?: any): Promise<any> => request.get('/audit-logs/', { params });
