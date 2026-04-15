@@ -12,6 +12,11 @@ const { Content } = Layout;
 /**
  * 主页面布局组件 - 响应式版本
  */
+// 构建时注入的版本信息
+declare const __APP_VERSION__: string;
+declare const __BUILD_TIME__: string;
+declare const __GIT_HASH__: string;
+
 const MainLayout: React.FC<{ isLoading?: boolean }> = ({ isLoading }) => {
     const { token } = theme.useToken();
     const { isMobile } = useBreakpoint();
@@ -51,7 +56,7 @@ const MainLayout: React.FC<{ isLoading?: boolean }> = ({ isLoading }) => {
                     )}
                 </Content>
                 <Footer style={{ textAlign: 'center' }}>
-                    Ansflow ©{new Date().getFullYear()} Created by Creed
+                    Ansflow ©{new Date().getFullYear()} Created by Creed · v{__APP_VERSION__} ({__GIT_HASH__})
                 </Footer>
             </Layout>
         </Layout>
