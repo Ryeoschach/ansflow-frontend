@@ -110,6 +110,7 @@ const MonitorCard: React.FC<{ component: HealthComponent }> = ({ component }) =>
 
 const MonitorCenter: React.FC = () => {
   const { token: authToken, hasPermission } = useAppStore();
+  const { token: antdToken } = theme.useToken();
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['systemHealth'],
     queryFn: getSystemHealth,
@@ -124,7 +125,7 @@ const MonitorCenter: React.FC = () => {
       <div className="flex justify-between items-end mb-8">
         <div>
           <Title level={4} className="m-0 flex items-center gap-2">
-            <HeartOutlined style={{ color: token.colorError }} />
+            <HeartOutlined style={{ color: antdToken.colorError }} />
             系统健康监测
           </Title>
           <Text type="secondary" className="mt-1 block">
