@@ -224,8 +224,9 @@ const ApprovalCenter: React.FC = () => {
                 <Table 
                     columns={columns} 
                     dataSource={tickets} 
-                    rowKey="id" 
+                    rowKey="id"
                     loading={isLoading}
+                    scroll={{ x: 1200 }}
                     pagination={{
                         current: queryParams.page,
                         pageSize: queryParams.page_size,

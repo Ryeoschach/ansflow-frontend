@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { Layout, Menu, Spin } from 'antd';
+import { Layout, Menu, Spin, Drawer } from 'antd';
+import { useBreakpoint } from '@/utils/useBreakpoint';
 import useAppStore from '../../store/useAppStore';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -23,10 +24,13 @@ interface MenuItemData {
 }
 
 /**
- * 侧边栏组件 - 动态配置版
+ * 侧边栏组件 - 响应式版本
+ * - Desktop (>= 768px): Sider 固定侧边栏
+ * - Mobile (< 768px): Drawer 抽屉，通过 Header 触发
  */
 const Sidebar: React.FC = () => {
-    const { collapsed, isDark, token } = useAppStore();
+    const { collapsed, isDark, token, mobileSidebarOpen, setMobileSidebarOpen } = useAppStore();
+    const { isMobile } = useBreakpoint();
     const navigate = useNavigate();
     const location = useLocation();
     const queryClient = useQueryClient();
@@ -93,7 +97,7 @@ const Sidebar: React.FC = () => {
             });
         };
 
-        return { 
+        return {
             items: renderItems(menuData),
             rootSubmenuKeys: rootKeys
         };
@@ -120,6 +124,93 @@ const Sidebar: React.FC = () => {
         }
     };
 
+    // 菜单点击后关闭 Drawer（仅移动端）
+    const handleMenuClick = ({ key }: { key: string }) => {
+        if (!key || key === '#' || key === '') return;
+        if (isMobile) {
+            setMobileSidebarOpen(false);
+        }
+        navigate(key);
+    };
+
+    // 渲染 Logo 区域
+    const logoArea = (
+        <div className={`h-16 flex items-center justify-center m-4 ${isDark ? 'bg-[#262626]' : 'bg-[#f5f5f5]'
+            } rounded-lg shrink-0`}>
+            <Link to="/v1/dashboard">
+                <span className="text-xl font-bold text-amber-500 border-2 rounded-md px-3 py-2 cursor-pointer hover:opacity-80 transition-all duration-300">
+                    {collapsed ? 'A' : 'AnsFlow'}
+                </span>
+            </Link>
+        </div>
+    );
+
+    // 渲染菜单
+    const menuComponent = (
+        <div className="flex flex-col h-full overflow-hidden">
+            {/* Logo 区域 */}
+            {logoArea}
+
+            {/* 菜单区域：独立滚动 */}
+            <div className="flex-1 overflow-y-auto px-2 pb-20 custom-scrollbar">
+                {isLoading ? (
+                    <div className="flex justify-center py-10">
+                        <Spin />
+                    </div>
+                ) : (
+                    <Menu
+                        mode="inline"
+                        theme={isDark ? 'dark' : 'light'}
+                        selectedKeys={[location.pathname]}
+                        openKeys={openKeys}
+                        onOpenChange={onOpenChange}
+                        items={items}
+                        className="border-none"
+                        onClick={handleMenuClick}
+                    />
+                )}
+            </div>
+
+            <div className="h-4 shrink-0" />
+        </div>
+    );
+
+    // ========== 移动端：渲染 Drawer ==========
+    if (isMobile) {
+        return (
+            <>
+                {/* 移动端 Sider 只是一个隐藏的容器，样式不变 */}
+                <Sider
+                    trigger={null}
+                    collapsible
+                    collapsed={collapsed}
+                    className="hidden" // 移动端不渲染 Sider
+                    theme={isDark ? 'dark' : 'light'}
+                    width={240}
+                />
+                {/* Drawer 版本的侧边栏 */}
+                <Drawer
+                    title={null}
+                    placement="left"
+                    closable={false}
+                    open={mobileSidebarOpen}
+                    onClose={() => setMobileSidebarOpen(false)}
+                    width={260}
+                    styles={{
+                        body: { padding: 0, overflow: 'hidden' },
+                        wrapper: { overflow: 'hidden' },
+                    }}
+                    className="responsive-sidebar-drawer"
+                >
+                    <div className="h-full overflow-hidden">
+                        {menuComponent}
+                    </div>
+                </Drawer>
+            </>
+        );
+    }
+
+    // ========== 桌面端：渲染原始 Sider ==========
     return (
         <Sider
             trigger={null}
@@ -130,42 +221,7 @@ const Sidebar: React.FC = () => {
             theme={isDark ? 'dark' : 'light'}
             width={240}
         >
-            <div className="flex flex-col h-full overflow-hidden">
-                {/* Logo 区域 */}
-                <div className={`h-16 flex items-center justify-center m-4 ${isDark ? 'bg-[#262626]' : 'bg-[#f5f5f5]'
-                    } rounded-lg shrink-0`}>
-                    <Link to="/v1/dashboard">
-                        <span className="text-xl font-bold text-amber-500 border-2 rounded-md px-3 py-2 cursor-pointer hover:opacity-80 transition-all duration-300">
-                            {collapsed ? 'A' : 'AnsFlow'}
-                        </span>
-                    </Link>
-                </div>
-
-                {/* 菜单区域：独立滚动 */}
-                <div className="flex-1 overflow-y-auto px-2 pb-20 custom-scrollbar">
-                    {isLoading ? (
-                        <div className="flex justify-center py-10">
-                            <Spin />
-                        </div>
-                    ) : (
-                        <Menu
-                            mode="inline"
-                            theme={isDark ? 'dark' : 'light'}
-                            selectedKeys={[location.pathname]}
-                            openKeys={openKeys}
-                            onOpenChange={onOpenChange}
-                            items={items}
-                            className="border-none"
-                            onClick={({ key }) => {
-                                if (!key || key === '#' || key === '') return;
-                                navigate(key);
-                            }}
-                        />
-                    )}
-                </div>
-                
-                <div className="h-4 shrink-0" />
-            </div>
+            {menuComponent}
         </Sider>
     );
 };

@@ -8,6 +8,7 @@
 
     /* Bundler mode */
     "moduleResolution": "Bundler",
+    "types": ["node"],
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",

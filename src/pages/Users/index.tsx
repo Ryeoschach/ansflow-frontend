@@ -114,7 +114,7 @@ const UserManagement: React.FC = () => {
     };
 
     const columns: ColumnType<User>[] = [
-        { title: '用户名', dataIndex: 'username', key: 'username', fixed: 'left' },
+        { title: '用户名', dataIndex: 'username', key: 'username' },
         { title: '邮箱', dataIndex: 'email', key: 'email' },
         {
             title: '所属角色',
@@ -152,7 +152,6 @@ const UserManagement: React.FC = () => {
         {
             title: '操作',
             key: 'action',
-            fixed: 'right',
             width: 180,
             render: (_: any, record: User) => (
                 <Space size="middle">
@@ -213,6 +212,7 @@ const UserManagement: React.FC = () => {
                     columns={columns}
                     loading={isLoading}
                     rowKey="id"
+                    scroll={{ x: 1200 }}
                     pagination={{
                         total: data?.total,
                         current: params.page,

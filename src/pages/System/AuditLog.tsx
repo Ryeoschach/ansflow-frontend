@@ -233,6 +233,7 @@ const AuditLog: React.FC = () => {
                     dataSource={logs}
                     rowKey="id"
                     loading={loading}
+                    scroll={{ x: 1200 }}
                     pagination={{
                         current: queryParams.page,
                         pageSize: queryParams.page_size,
@@ -295,7 +296,7 @@ const AuditLog: React.FC = () => {
                         {(currentRecord.method === 'PUT' || currentRecord.method === 'PATCH' || currentRecord.method === 'DELETE') && currentRecord.old_data ? (
                             <div>
                                 <Typography.Title level={5}>数据快照比对 (Diff)</Typography.Title>
-                                <div className="flex gap-4">
+                                <div className="flex flex-col md:flex-row gap-4">
                                     <div className="flex-1">
                                         <div style={{ padding: '4px 8px', background: token.colorErrorBg, color: token.colorErrorText, fontWeight: 'bold', borderTopLeftRadius: '8px', borderTopRightRadius: '8px', fontSize: '12px' }}>
                                             修改前 (Old Data)

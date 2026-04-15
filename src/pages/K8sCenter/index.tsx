@@ -55,6 +55,7 @@ import {
 import { K8sResource } from '../../types';
 import request from "../../utils/requests";
 import useAppStore from "../../store/useAppStore.ts";
+import useBreakpoint from '../../utils/useBreakpoint';
 
 import useK8sStore from "../../store/useK8sStore";
 
@@ -69,6 +70,7 @@ const K8sCenter: React.FC = () => {
   const { token } = theme.useToken();
   const { message, modal } = App.useApp();
   const { hasPermission } = useAppStore();
+  const { isMobile } = useBreakpoint();
   
   // 接入 Zustand 持久化状态集
   const { 
@@ -675,6 +677,7 @@ const K8sCenter: React.FC = () => {
           dataSource={clustersData?.data || []}
           rowKey="id"
           loading={clustersLoading}
+          scroll={{ x: 1200 }}
           pagination={false}
           className="w-full"
         />
@@ -690,7 +693,8 @@ const K8sCenter: React.FC = () => {
           form.resetFields();
         }}
         footer={null}
-        width={600}
+        width={isMobile ? '95vw' : 600}
+        bodyStyle={{ overflowX: 'auto' }}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ auth_type: 'kubeconfig' }}>
           <Form.Item
@@ -784,7 +788,8 @@ const K8sCenter: React.FC = () => {
         open={isDetailVisible}
         onCancel={() => setIsDetailVisible(false)}
         footer={null}
-        width={1100}
+        width={isMobile ? '95vw' : 1100}
+        bodyStyle={{ overflowX: 'auto' }}
         className="top-5 custom-modal-premium"
       >
         <div className="flex flex-col gap-6 py-2">
@@ -915,7 +920,8 @@ const K8sCenter: React.FC = () => {
         open={isLogModalVisible}
         onCancel={() => setIsLogModalVisible(false)}
         footer={null}
-        width={1000}
+        width={isMobile ? '95vw' : 1000}
+        bodyStyle={{ overflowX: 'auto' }}
         className="top-5"
       >
         <pre 
@@ -943,7 +949,8 @@ const K8sCenter: React.FC = () => {
           style: hasPermission('k8s:cluster:update_yaml') ? {} : { display: 'none' }
         }}
         confirmLoading={yamlUpdateMutation.isPending}
-        width={900}
+        width={isMobile ? '95vw' : 900}
+        bodyStyle={{ overflowX: 'auto' }}
         className="top-5"
       >
         <TextArea
@@ -967,7 +974,8 @@ const K8sCenter: React.FC = () => {
         open={isShellModalVisible}
         onCancel={() => setIsShellModalVisible(false)}
         footer={null}
-        width={900}
+        width={isMobile ? '95vw' : 900}
+        bodyStyle={{ overflowX: 'auto' }}
         className="top-5"
       >
         <div className="mb-4 mt-3">

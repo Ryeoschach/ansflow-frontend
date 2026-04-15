@@ -263,6 +263,7 @@ const RoleManagement: React.FC = () => {
                 columns={columns}
                 dataSource={roles?.data}
                 rowKey="id"
+                scroll={{ x: 1200 }}
                 pagination={{
                     total: roles?.total,
                     current: params.page,

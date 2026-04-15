@@ -213,6 +213,7 @@ const PlatformManagement: React.FC = () => {
                 dataSource={data?.data}
                 columns={columns}
                 rowKey="id"
+                scroll={{ x: 1200 }}
                 pagination={{
                     total: data?.total,
                     current: params.page,

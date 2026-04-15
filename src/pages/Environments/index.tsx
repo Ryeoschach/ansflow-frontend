@@ -127,6 +127,7 @@ const Environment: React.FC = () => {
                 dataSource={envData?.data}
                 columns={columns}
                 rowKey="id"
+                scroll={{ x: 1200 }}
                 pagination={{
                     total: envData?.total,
                     current: params.page,

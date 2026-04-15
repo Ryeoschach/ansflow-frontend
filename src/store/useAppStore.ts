@@ -25,6 +25,10 @@ interface AppState {
   hasPermission: (permission: string) => boolean;
   isInitializing: boolean;
   setIsInitializing: (val: boolean) => void;
+  // 移动端侧边栏抽屉是否打开
+  mobileSidebarOpen: boolean;
+  setMobileSidebarOpen: (val: boolean) => void;
+  toggleMobileSidebar: () => void;
 }
 
 interface PersistedState {
@@ -60,6 +64,9 @@ const useAppStore = create<AppState>()(
     },
     isInitializing: true,
     setIsInitializing: (val) => set({ isInitializing: val }),
+    mobileSidebarOpen: false,
+    setMobileSidebarOpen: (val) => set({ mobileSidebarOpen: val }),
+    toggleMobileSidebar: () => set((state) => ({ mobileSidebarOpen: !state.mobileSidebarOpen })),
   }), {
     name: 'ansflow-app-storage',
     partialize: (state): PersistedState => ({

@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getMenus, createMenu, updateMenu, deleteMenu } from '../../api/rbac';
 import IconMapper from '../../components/IconMapper';
 import useAppStore from '../../store/useAppStore';
+import useBreakpoint from '../../utils/useBreakpoint';
 
 /**
  * 菜单管理页面
@@ -12,6 +13,7 @@ import useAppStore from '../../store/useAppStore';
 const MenuManagement: React.FC = () => {
     const queryClient = useQueryClient();
     const { hasPermission, token } = useAppStore();
+    const { isMobile } = useBreakpoint();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { message } = App.useApp();
     const [editingMenu, setEditingMenu] = useState<any>(null);
@@ -109,9 +111,9 @@ const MenuManagement: React.FC = () => {
                 <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>新增菜单</Button>
             )
         }>
-            <Table loading={isLoading} columns={columns} dataSource={menuTree} rowKey="id" pagination={false} expandable={{ defaultExpandAllRows: true }} />
+            <Table loading={isLoading} columns={columns} dataSource={menuTree} rowKey="id" scroll={{ x: 1200 }} pagination={false} expandable={{ defaultExpandAllRows: true }} />
 
-            <Modal title={editingMenu ? '编辑菜单' : '新增菜单'} open={isModalOpen} onCancel={() => setIsModalOpen(false)} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={600}>
+            <Modal title={editingMenu ? '编辑菜单' : '新增菜单'} open={isModalOpen} onCancel={() => setIsModalOpen(false)} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={isMobile ? '95vw' : 600} bodyStyle={{ overflowX: 'auto' }}>
                 <Form form={form} layout="vertical" onFinish={(values) => mutation.mutate({...values, parent: values.parent || null})} initialValues={{ order: 0 }}>
                     <Form.Item name="title" label="菜单名称" rules={[{ required: true, message: '请输入菜单名称' }]}><Input /></Form.Item>
                     <Form.Item name="key" label="Antd Key (唯一)" rules={[{ required: true, message: '请输入唯一Key' }]}><Input /></Form.Item>

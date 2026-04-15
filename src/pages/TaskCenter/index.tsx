@@ -24,6 +24,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAnsibleTasks, createAnsibleTask, updateAnsibleTask, runAnsibleTask, deleteAnsibleTask } from '../../api/tasks';
 import { getResourcePools } from '../../api/hosts';
 import useAppStore from '../../store/useAppStore';
+import useBreakpoint from '../../utils/useBreakpoint';
 import { useNavigate } from 'react-router-dom';
 import { TableSkeleton } from '../../components/Skeletons';
 
@@ -35,6 +36,7 @@ const TaskCenter: React.FC = () => {
     const navigate = useNavigate();
     const { message } = App.useApp();
     const { token, hasPermission } = useAppStore();
+    const { isMobile } = useBreakpoint();
     const [form] = Form.useForm();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<any>(null);
@@ -206,6 +208,7 @@ const TaskCenter: React.FC = () => {
                 columns={columns}
                 rowKey="id"
                 loading={listLoading}
+                scroll={{ x: 1200 }}
             />
                 )}
             <Modal
@@ -213,7 +216,8 @@ const TaskCenter: React.FC = () => {
                 open={isCreateModalOpen}
                 onCancel={() => { setIsCreateModalOpen(false); setEditingTask(null); }}
                 onOk={() => form.submit()}
-                width={800}
+                width={isMobile ? '95vw' : 800}
+                bodyStyle={{ overflowX: 'auto' }}
                 confirmLoading={saveMutation.isPending}
             >
                 <Form
@@ -226,14 +230,14 @@ const TaskCenter: React.FC = () => {
                     <Form.Item label="模板名称" name="name" rules={[{ required: true }]}>
                         <Input placeholder="任务名称摘要" />
                     </Form.Item>
-                    <div className="flex gap-4">
+                    <div className="flex flex-col md:flex-row gap-4">
                         <Form.Item label="类型" name="task_type" className="flex-1">
                             <Select options={[{label: 'Ad-hoc (Shell)', value: 'cmd'}, {label: 'Playbook', value: 'playbook'}]} />
                         </Form.Item>
                         <Form.Item label="目标资源池" name="resource_pool" className="flex-1">
                             <Select options={poolData?.data?.map((p: any) => ({ label: p.name, value: p.id }))} />
                         </Form.Item>
-                        <Form.Item label="超时(秒)" name="timeout" className="w-32" initialValue={3600}>
+                        <Form.Item label="超时(秒)" name="timeout" className="w-full md:w-32" initialValue={3600}>
                             <Input type="number" placeholder="3600" />
                         </Form.Item>
                     </div>

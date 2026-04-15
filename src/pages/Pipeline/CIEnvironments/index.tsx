@@ -213,6 +213,7 @@ const CIEnvironments: React.FC = () => {
                             columns={columns} 
                             dataSource={filteredData} 
                             rowKey="id"
+                            scroll={{ x: 1200 }}
                             pagination={{ pageSize: 10 }}
                             size="middle"
                         />

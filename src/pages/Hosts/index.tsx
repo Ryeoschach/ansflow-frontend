@@ -5,12 +5,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {getHosts, createHost, updateHost, deleteHost, getEnvironments, getPlatforms, getCredentials} from '../../api/hosts.ts';
 import useAppStore from '../../store/useAppStore';
 import {TableSkeleton} from "../../components/Skeletons";
+import { useBreakpoint } from '@/utils/useBreakpoint';
 
 const HostManagement: React.FC = () => {
     const queryClient = useQueryClient();
     const { message } = App.useApp();
     const { hasPermission } = useAppStore();
     const { token } = useAppStore.getState();
+    const { isMobile } = useBreakpoint();
     const [form] = Form.useForm();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingHost, setEditingHost] = useState<any>(null);
@@ -191,6 +193,7 @@ const HostManagement: React.FC = () => {
                 columns={columns}
                 loading={isLoading}
                 rowKey="id"
+                scroll={{ x: 1200 }}
                 pagination={{
                     total: data?.total,
                     current: params.page,
@@ -207,7 +210,9 @@ const HostManagement: React.FC = () => {
                 onOk={() => form.submit()}
                 onCancel={() => setIsModalOpen(false)}
                 confirmLoading={saveMutation.isPending}
-                width={600}
+                width={isMobile ? '95vw' : 600}
+                bodyStyle={{ overflowX: 'auto' }}
+                className={isMobile ? '!top-4' : ''}
             >
                 <Form
                     form={form}
@@ -215,7 +220,7 @@ const HostManagement: React.FC = () => {
                     className="mt-4"
                     onFinish={(values) => saveMutation.mutate(values)}
                 >
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <Form.Item label="主机名" name="hostname" rules={[{ required: true, message: '请输入主机名' }]}>
                             <Input placeholder="例如: web-server-01" />
                         </Form.Item>
@@ -227,7 +232,7 @@ const HostManagement: React.FC = () => {
                         </Form.Item>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Form.Item label="内网 IP" name="private_ip">
                             <Input placeholder="例如: 192.168.1.100" />
                         </Form.Item>
@@ -236,7 +241,7 @@ const HostManagement: React.FC = () => {
                         </Form.Item>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <Form.Item label="CPU (核)" name="cpu">
                             <InputNumber className="w-full" min={1} />
                         </Form.Item>
@@ -248,11 +253,11 @@ const HostManagement: React.FC = () => {
                         </Form.Item>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <Form.Item label="操作系统" name="os_type">
                             <Input placeholder="例如: CentOS 7.9" />
                         </Form.Item>
-                        <Form.Item label = "端口号" name="ports">
+                        <Form.Item label="端口号" name="ports">
                             <Input placeholder="例如：80 3306" />
                         </Form.Item>
                         <Form.Item label="主机状态" name="status">

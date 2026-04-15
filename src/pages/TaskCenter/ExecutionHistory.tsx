@@ -223,6 +223,7 @@ const ExecutionHistory: React.FC = () => {
                 columns={columns}
                 rowKey="id"
                 loading={listLoading}
+                scroll={{ x: 1200 }}
                 pagination={{
                     total: executionData?.total,
                     pageSize: params.size,

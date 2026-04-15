@@ -332,7 +332,7 @@ const ViewerCore = () => {
         <div className="flex flex-col h-full">
           <div className="p-6">
             <Card size="small" className="border-none shadow-sm rounded-2xl">
-                <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-xs py-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-xs py-2">
                     <div className="flex flex-col gap-1">
                         <Text type="secondary" className="uppercase text-[10px] tracking-widest font-bold text-slate-500 dark:text-slate-400">节点别名</Text>
                         <Text strong className="text-sm text-slate-800 dark:text-slate-200">{selectedNodeData?.label || '未命名宿主节点'}</Text>

@@ -6,13 +6,16 @@ import { Outlet } from 'react-router-dom';
 import { Footer } from 'antd/es/layout/layout';
 import { TableSkeleton } from '../components/Skeletons';
 import AppErrorBoundary from '../components/ErrorBoundary';
+import { useBreakpoint } from '@/utils/useBreakpoint';
 const { Content } = Layout;
 
 /**
- * 主页面布局组件
+ * 主页面布局组件 - 响应式版本
  */
 const MainLayout: React.FC<{ isLoading?: boolean }> = ({ isLoading }) => {
     const { token } = theme.useToken();
+    const { isMobile } = useBreakpoint();
+
     return (
         <Layout className="min-h-screen">
             {/* 侧边栏 */}
@@ -26,9 +29,12 @@ const MainLayout: React.FC<{ isLoading?: boolean }> = ({ isLoading }) => {
                 <Content
                     style={{
                         backgroundColor: token.colorBgContainer,
-                        minHeight: 'calc(100vh - 200px)' // 锁定高度，防止 Footer 跳动
+                        minHeight: 'calc(100vh - 200px)', // 锁定高度，防止 Footer 跳动
                     }}
-                    className="m-6 p-6 rounded-xl shadow-sm overflow-hidden"
+                    className={`
+                        ${isMobile ? 'm-2 p-3' : 'm-6 p-6'}
+                        rounded-xl shadow-sm overflow-hidden
+                    `}
                 >
                     {isLoading ? (
                         <TableSkeleton />

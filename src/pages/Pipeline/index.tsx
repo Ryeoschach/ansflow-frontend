@@ -130,7 +130,6 @@ const TemplateList = () => {
       title: '操作',
       key: 'action',
       width: 320,
-      fixed: 'right' as const,
       render: (_: any, record: any) => (
         <Space size="small">
           {hasPermission('pipeline:template:execute') && (

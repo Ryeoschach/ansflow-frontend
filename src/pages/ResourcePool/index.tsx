@@ -36,6 +36,7 @@ import {
     getHosts
 } from '../../api/hosts.ts';
 import useAppStore from '../../store/useAppStore';
+import useBreakpoint from '../../utils/useBreakpoint';
 import { App } from 'antd';
 import {TableSkeleton} from "../../components/Skeletons";
 
@@ -44,8 +45,8 @@ const { Text } = Typography;
 const ResourcePoolManagement: React.FC = () => {
     const queryClient = useQueryClient();
     const { message } = App.useApp();
-    const { token: antdToken } = theme.useToken();
-    const { token, hasPermission } = useAppStore();
+    const { isDark, token, hasPermission } = useAppStore();
+    const { isMobile } = useBreakpoint();
     const [form] = Form.useForm();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPool, setEditingPool] = useState<any>(null);
@@ -318,6 +319,7 @@ const ResourcePoolManagement: React.FC = () => {
                 columns={columns}
                 loading={poolsLoading}
                 rowKey="id"
+                scroll={{ x: 1200 }}
             />
                 )}
 
@@ -327,11 +329,12 @@ const ResourcePoolManagement: React.FC = () => {
                 onOk={() => form.submit()}
                 onCancel={() => setIsModalOpen(false)}
                 confirmLoading={saveMutation.isPending}
-                width={900}
+                width={isMobile ? '95vw' : 900}
+                bodyStyle={{ overflowX: 'auto' }}
                 style={{ top: 20 }}
             >
                 <Form form={form} layout="vertical" onFinish={(values) => saveMutation.mutate(values)}>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Form.Item label="名称" name="name" rules={[{ required: true, message: '请输入资源池名称' }]}>
                             <Input placeholder="例如: 核心业务网关池" />
                         </Form.Item>
@@ -342,7 +345,7 @@ const ResourcePoolManagement: React.FC = () => {
 
                     <Divider titlePlacement="left" plain><DatabaseOutlined /> 主机编排</Divider>
 
-                    <div className="flex gap-4">
+                    <div className="flex flex-col md:flex-row gap-4">
                         {/* 左侧：主机筛选与待选区 */}
                         <div 
                             className="flex-1 rounded-xl p-4 transition-all"

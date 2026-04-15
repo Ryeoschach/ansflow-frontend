@@ -49,6 +49,7 @@ import request from '../../utils/requests';
 import { Resizable } from 'react-resizable';
 import './TableResizable.css';
 import useAppStore from "../../store/useAppStore.ts";
+import useBreakpoint from '../../utils/useBreakpoint';
 
 
 const { Title, Text } = Typography;
@@ -95,11 +96,12 @@ const HelmCenter: React.FC = () => {
   const { token } = theme.useToken();
   const [selectedCluster, setSelectedCluster] = useState<any>(null);
   const [selectedNamespace, setSelectedNamespace] = useState<string | undefined>();
-  const [isChartModalVisible, setIsChartModalVisible] = useState(false);
-  const [chartForm] = Form.useForm();
-  const { hasPermission } = useAppStore();
+    const [isChartModalVisible, setIsChartModalVisible] = useState(false);
+    const [chartForm] = Form.useForm();
+    const { hasPermission } = useAppStore();
+    const { isMobile } = useBreakpoint();
   
-  const [installMode, setInstallMode] = useState<'repo' | 'upload' | 'create'>('upload');
+    const [installMode, setInstallMode] = useState<'repo' | 'upload' | 'create'>('upload');
   const [fileList, setFileList] = useState<any[]>([]);
   const [isUpgrade, setIsUpgrade] = useState(false);
 
@@ -193,7 +195,7 @@ const HelmCenter: React.FC = () => {
 
   // --- 表格列定义与缩放逻辑 ---
   const initialColumns: any[] = [
-    { title: 'Release 名称', dataIndex: 'name', key: 'name', fixed: 'left', width: 150 },
+    { title: 'Release 名称', dataIndex: 'name', key: 'name', width: 150 },
     { title: '维度 (NS)', dataIndex: 'namespace', key: 'namespace', width: 120 },
     { 
       title: '副本 / Pods', dataIndex: 'replicas_status', key: 'replicas_status', width: 120,
@@ -217,7 +219,7 @@ const HelmCenter: React.FC = () => {
     { title: 'Chart', dataIndex: 'chart', key: 'chart', width: 150, ellipsis: true },
     { title: '最新操作时间', dataIndex: 'updated', key: 'updated', width: 150, render: (v: string) => <Text className="text-xs" type="secondary">{formatDateTime(v)}</Text> },
     {
-      title: '操作', key: 'action', fixed: 'right', width: 150,
+      title: '操作', key: 'action', width: 150,
       render: (_: any, record: any) => {
         const items = [
           hasPermission('helm:chart:helm_history') ? { key: 'history', icon: <HistoryOutlined />, label: '版本历史 / 回滚', onClick: () => { setActiveRelease(record); setIsHistoryVisible(true); } } : null,
@@ -382,7 +384,7 @@ const HelmCenter: React.FC = () => {
               loading={helmLoading}
               pagination={{ pageSize: 10 }}
               className="w-full resizable-table"
-              scroll={{ x: 1000 }}
+              scroll={{ x: 1400 }}
             />
           )}
         </div>
@@ -476,7 +478,7 @@ const HelmCenter: React.FC = () => {
           </div>
         </div>
       </Modal>
-      <Modal title={`${activeRelease?.name} 版本历史`} open={isHistoryVisible} onCancel={() => setIsHistoryVisible(false)} footer={null} width={750}><Table columns={historyColumns} dataSource={Array.isArray(historyData) ? historyData : []} loading={historyLoading} rowKey="revision" pagination={false} /></Modal>
+      <Modal title={`${activeRelease?.name} 版本历史`} open={isHistoryVisible} onCancel={() => setIsHistoryVisible(false)} footer={null} width={isMobile ? '95vw' : 750} bodyStyle={{ overflowX: 'auto' }}><Table columns={historyColumns} dataSource={Array.isArray(historyData) ? historyData : []} loading={historyLoading} rowKey="revision" pagination={false} /></Modal>
     </div>
   );
 };

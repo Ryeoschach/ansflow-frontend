@@ -169,7 +169,6 @@ export default function PipelineHistory() {
       title: '操作中心',
       key: 'action',
       width: 160,
-      fixed: 'right' as const,
       render: (_: any, record: any) => (
         <Space size="middle">
           {hasPermission('pipeline:run:view') && (

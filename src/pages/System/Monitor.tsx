@@ -131,20 +131,20 @@ const MonitorCenter: React.FC = () => {
              实时监测 AnsFlow 各个核心组件的运行状态与响应时延
           </Text>
         </div>
-        <Space>
-          {data?.timestamp && (
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              最后更新: {new Date(data.timestamp).toLocaleTimeString()}
-            </Text>
-          )}
+        <Space direction="vertical" align="end">
           {hasPermission('system:monitor:view') && (
-          <Button 
-            icon={<SyncOutlined spin={isRefetching} />} 
+          <Button
+            icon={<SyncOutlined spin={isRefetching} />}
             onClick={() => refetch()}
             type="text"
           >
             立即同步
           </Button>
+          )}
+          {data?.timestamp && (
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              <span className="hidden md:inline">最后更新: </span>{new Date(data.timestamp).toLocaleTimeString()}
+            </Text>
           )}
         </Space>
       </div>

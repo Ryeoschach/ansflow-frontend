@@ -90,6 +90,7 @@ const RecentTasksTable: React.FC<RecentTasksTableProps> = ({ data, isLoading }) 
                     dataSource={dataSource}
                     columns={columns}
                     rowKey="id"
+                    scroll={{ x: 1200 }}
                     pagination={false}
                     size="small"
                 />

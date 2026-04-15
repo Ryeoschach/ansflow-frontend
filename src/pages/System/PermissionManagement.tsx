@@ -97,8 +97,9 @@ const PermissionManagement: React.FC = () => {
                 <Table 
                     dataSource={permissions?.data} 
                     columns={columns} 
-                    rowKey="id" 
-                    loading={isLoading} 
+                    rowKey="id"
+                    loading={isLoading}
+                    scroll={{ x: 1200 }}
                     pagination={{ 
                         total: permissions?.total,
                         current: params.page,

@@ -16,6 +16,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCredentials, createCredential, updateCredential, deleteCredential } from '../../api/credential';
 import useCredentialStore from '../../store/useCredentialStore';
 import useAppStore from '../../store/useAppStore';
+import useBreakpoint from '../../utils/useBreakpoint';
 
 const { Text, Title } = Typography;
 
@@ -28,6 +29,7 @@ const CredentialVault: React.FC = () => {
     const { message, modal } = App.useApp();
     const queryClient = useQueryClient();
     const { token: authToken, hasPermission } = useAppStore();
+    const { isMobile } = useBreakpoint();
     const [form] = Form.useForm();
 
     // Zustand 状态：持久化 UI 偏好
@@ -136,7 +138,6 @@ const CredentialVault: React.FC = () => {
             title: '操作',
             key: 'action',
             width: 160,
-            fixed: 'right' as any,
             render: (_: any, record: any) => (
                 <Space size="middle" className="pr-4">
                     {hasPermission('system:credential:edit') && (
@@ -226,14 +227,15 @@ const CredentialVault: React.FC = () => {
                 onCancel={() => setIsModalVisible(false)}
                 onOk={() => form.submit()}
                 confirmLoading={mutation.isPending}
-                width={550}
+                width={isMobile ? '95vw' : 550}
+                bodyStyle={{ overflowX: 'auto' }}
                 centered
                 className="custom-modal-premium"
                 okText="安全入库"
             >
                 <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} className="pt-6 px-1">
                     <Card size="small" style={{ background: token.colorBgLayout, borderColor: token.colorBorderSecondary }} className="rounded-xl mb-6 shadow-none">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Form.Item label={<Text strong type="secondary" style={{ fontSize: '12px' }}>凭据别名</Text>} name="name" rules={[{ required: true, message: '请输入标识名称' }]}>
                                 <Input placeholder="如: PROD-KEY" className="rounded-lg h-10" />
                             </Form.Item>

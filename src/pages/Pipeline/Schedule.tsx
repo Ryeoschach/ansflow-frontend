@@ -11,6 +11,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getPipelines, updatePipeline } from '../../api/pipeline';
 import useAppStore from '../../store/useAppStore';
+import useBreakpoint from '../../utils/useBreakpoint';
 
 const { Text } = Typography;
 
@@ -23,6 +24,7 @@ const ScheduleList: React.FC = () => {
   const { isDark, token, hasPermission } = useAppStore();
   const queryClient = useQueryClient();
   const { message, modal } = App.useApp();
+  const { isMobile } = useBreakpoint();
   const [form] = Form.useForm();
 
   // 局部状态：控制配置弹窗
@@ -215,6 +217,7 @@ const ScheduleList: React.FC = () => {
             dataSource={tableData} 
             rowKey="id"
             loading={isLoading}
+            scroll={{ x: 1200 }}
             pagination={false}
             className="custom-table-modern"
         />
@@ -234,7 +237,8 @@ const ScheduleList: React.FC = () => {
         confirmLoading={saveMutation.isPending}
         okText="保存并生效"
         centered
-        width={500}
+        width={isMobile ? '95vw' : 500}
+        bodyStyle={{ overflowX: 'auto' }}
         className="custom-modal-premium"
       >
         <Form form={form} layout="vertical" onFinish={(v) => saveMutation.mutate(v)} className="pt-4 px-1">

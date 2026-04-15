@@ -16,6 +16,7 @@ import { getRegistries, createRegistry, updateRegistry, deleteRegistry } from ".
 import { DeleteOutlined, EditOutlined, PlusOutlined, LockOutlined, UserOutlined, GlobalOutlined } from "@ant-design/icons";
 import { TableSkeleton } from "../../components/Skeletons";
 import useAppStore from '../../store/useAppStore';
+import { useBreakpoint } from '@/utils/useBreakpoint';
 
 
 const { Text } = Typography;
@@ -24,6 +25,7 @@ const ImageRegistries: React.FC = () => {
     const queryClient = useQueryClient();
     const { message } = App.useApp();
     const { token, hasPermission } = useAppStore();
+    const { isMobile } = useBreakpoint();
     const [form] = Form.useForm();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRegistry, setEditingRegistry] = useState<any>(null);
@@ -137,6 +139,7 @@ const ImageRegistries: React.FC = () => {
                     columns={columns}
                     rowKey="id"
                     loading={isLoading}
+                    scroll={{ x: 1200 }}
                     pagination={{ pageSize: 10 }}
                 />
             )}
@@ -147,7 +150,8 @@ const ImageRegistries: React.FC = () => {
                 forceRender
                 onCancel={() => setIsModalOpen(false)}
                 onOk={() => form.submit()}
-                width={600}
+                width={isMobile ? '95vw' : 600}
+                bodyStyle={{ overflowX: 'auto' }}
                 confirmLoading={createMutation.isPending || updateMutation.isPending}
             >
                 <Form
@@ -172,7 +176,7 @@ const ImageRegistries: React.FC = () => {
                         <Input placeholder="例如: library 或 ops" />
                     </Form.Item>
 
-                    <div className="flex gap-4">
+                    <div className="flex flex-col md:flex-row gap-4">
                         <Form.Item label="用户名" name="username" className="flex-1" rules={[{ required: true, message: '请输入用户名' }]}>
                             <Input prefix={<UserOutlined />} />
                         </Form.Item>

@@ -1,24 +1,19 @@
 import React from 'react';
 import { Layout, Button, theme, Space, Avatar, Dropdown, Switch } from 'antd';
+import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, LogoutOutlined, SunOutlined, MoonOutlined, MenuOutlined } from '@ant-design/icons';
 import useAppStore from '../../store/useAppStore';
-import {
-    MenuFoldOutlined,
-    MenuUnfoldOutlined,
-    UserOutlined,
-    LogoutOutlined,
-    SunOutlined,
-    MoonOutlined,
-} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useBreakpoint } from '@/utils/useBreakpoint';
 
 const { Header: AntHeader } = Layout;
 
 /**
- * 顶部导航栏组件
+ * 顶部导航栏组件 - 响应式版本
  */
 const Header: React.FC = () => {
-    const { collapsed, toggleCollapsed } = useAppStore();
-    const { isDark, setIsDark, setToken, setCurrentUser, currentUser } = useAppStore();
+    const { collapsed, toggleCollapsed, isDark, setIsDark, setToken, setCurrentUser, currentUser } = useAppStore();
+    const { toggleMobileSidebar } = useAppStore();
+    const { isMobile } = useBreakpoint();
     const {
         token: { colorText },
     } = theme.useToken();
@@ -55,12 +50,22 @@ const Header: React.FC = () => {
             style={{ color: colorText }}
         >
             <div className="flex items-center">
-                <Button
-                    type="text"
-                    icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                    onClick={toggleCollapsed}
-                    className="w-12 h-12 text-lg ml-2"
-                />
+                {/* 移动端：hamburger 按钮；桌面端：原有的折叠按钮 */}
+                {isMobile ? (
+                    <Button
+                        type="text"
+                        icon={<MenuOutlined />}
+                        onClick={toggleMobileSidebar}
+                        className="w-12 h-12 text-lg ml-2"
+                    />
+                ) : (
+                    <Button
+                        type="text"
+                        icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                        onClick={toggleCollapsed}
+                        className="w-12 h-12 text-lg ml-2"
+                    />
+                )}
                 <h2 className="m-0 text-lg font-semibold ml-2">运维自动化平台</h2>
             </div>
 
@@ -70,9 +75,8 @@ const Header: React.FC = () => {
                         color: colorText,
                     }}
                 >
-                    <span>主题切换</span>
+                    <span className="hidden md:inline">主题切换</span>
                     <Switch
-                        // defaultChecked
                         checked={isDark}
                         checkedChildren={<MoonOutlined />}
                         unCheckedChildren={<SunOutlined />}
