@@ -109,12 +109,12 @@ const MonitorCard: React.FC<{ component: HealthComponent }> = ({ component }) =>
 };
 
 const MonitorCenter: React.FC = () => {
-  const { token, hasPermission } = useAppStore();
+  const { token: authToken, hasPermission } = useAppStore();
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['systemHealth'],
     queryFn: getSystemHealth,
     refetchInterval: 30000, // 每 30 秒自动刷新一次
-    enabled: !!token && hasPermission('system:monitor:view'),
+    enabled: !!authToken && hasPermission('system:monitor:view'),
   });
 
   const overallStatus = data?.status || 'unknown';

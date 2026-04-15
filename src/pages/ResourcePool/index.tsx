@@ -45,7 +45,8 @@ const { Text } = Typography;
 const ResourcePoolManagement: React.FC = () => {
     const queryClient = useQueryClient();
     const { message } = App.useApp();
-    const { isDark, token, hasPermission } = useAppStore();
+    const { isDark, token: authToken, hasPermission } = useAppStore();
+    const { token: antdToken } = theme.useToken();
     const { isMobile } = useBreakpoint();
     const [form] = Form.useForm();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -74,20 +75,20 @@ const ResourcePoolManagement: React.FC = () => {
             size: 100,
             ...listFilters
         }),
-        enabled: !!token,
+        enabled: !!authToken,
     });
 
     // 2. 获取基础配置数据 (环境/平台)
     const { data: envData } = useQuery({
         queryKey: ['environments-all'],
         queryFn: () => getEnvironments({ page: 1, size: 100 }),
-        enabled: !!token,
+        enabled: !!authToken,
     });
 
     const { data: platformData } = useQuery({
         queryKey: ['platforms-all'],
         queryFn: () => getPlatforms({ page: 1, size: 100 }),
-        enabled: !!token,
+        enabled: !!authToken,
     });
 
     // 3. 根据筛选条件动态获取待选主机
@@ -98,7 +99,7 @@ const ResourcePoolManagement: React.FC = () => {
             platform: selectedPlatform || undefined,
             size: 100
         }),
-        enabled: !!token && isModalOpen && (!!selectedEnv || !!selectedPlatform),
+        enabled: !!authToken && isModalOpen && (!!selectedEnv || !!selectedPlatform),
     });
 
     const environments = envData?.data || [];

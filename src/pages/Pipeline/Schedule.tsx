@@ -21,7 +21,8 @@ const { Text } = Typography;
  * 将静态的流水线蓝图（Blueprint）装载至 Celery Beat 调度器，实现基于 Crontab 的自动化触发。
  */
 const ScheduleList: React.FC = () => {
-  const { isDark, token, hasPermission } = useAppStore();
+  const { isDark, token: _authToken, hasPermission } = useAppStore();
+  const { token: antdToken } = theme.useToken();
   const queryClient = useQueryClient();
   const { message, modal } = App.useApp();
   const { isMobile } = useBreakpoint();
@@ -39,7 +40,7 @@ const ScheduleList: React.FC = () => {
   const { data: scheduleData, isLoading } = useQuery({
     queryKey: ['pipelines', 'scheduled'],
     queryFn: () => getPipelines({ has_cron: 'true' }),
-    enabled: !!token && hasPermission('pipeline:template:edit'),
+    enabled: !!_authToken && hasPermission('pipeline:template:edit'),
   });
 
   /** @description 获取所有健康状态的流水线，用于装载目标选择 */
@@ -126,7 +127,7 @@ const ScheduleList: React.FC = () => {
       key: 'name',
       render: (text: string) => (
         <Space>
-            <SettingOutlined style={{ color: token.colorTextDescription }} />
+            <SettingOutlined style={{ color: antdToken.colorTextDescription }} />
             <Text strong>{text}</Text>
         </Space>
       )
@@ -137,11 +138,11 @@ const ScheduleList: React.FC = () => {
       key: 'cron_expression',
       render: (text: string) => (
         <Tag 
-          style={{ background: isDark ? 'rgba(129, 140, 248, 0.1)' : 'rgba(99, 102, 241, 0.1)', borderColor: token.colorBorderSecondary }}
-          icon={<ClockCircleOutlined style={{ color: token.colorPrimary }} />} 
+          style={{ background: isDark ? 'rgba(129, 140, 248, 0.1)' : 'rgba(99, 102, 241, 0.1)', borderColor: antdToken.colorBorderSecondary }}
+          icon={<ClockCircleOutlined style={{ color: antdToken.colorPrimary }} />} 
           className="font-mono rounded-lg px-3 border-none"
         >
-          <Text style={{ color: token.colorPrimary }}>{text}</Text>
+          <Text style={{ color: antdToken.colorPrimary }}>{text}</Text>
         </Tag>
       )
     },
@@ -259,7 +260,7 @@ const ScheduleList: React.FC = () => {
             rules={[{ required: true, message: '定时器不能为空' }]}
             extra={
                 <div 
-                  style={{ background: token.colorBgLayout, borderColor: token.colorBorderSecondary }}
+                  style={{ background: antdToken.colorBgLayout, borderColor: antdToken.colorBorderSecondary }}
                   className="p-3 rounded-lg border border-solid mt-2"
                 >
                     <Text strong type="secondary" className="text-[10px] block mb-2 uppercase tracking-wider">示例</Text>

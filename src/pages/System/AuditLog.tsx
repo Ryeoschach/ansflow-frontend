@@ -26,7 +26,8 @@ interface AuditLogRecord {
 }
 
 const AuditLog: React.FC = () => {
-    const { token, hasPermission } = useAppStore();
+    const { token: authToken, hasPermission } = useAppStore();
+    const { token: antdToken } = theme.useToken();
     const [queryParams, setQueryParams] = useState({ page: 1, page_size: 15, search: '', method: '' });
 
     const [form] = Form.useForm();
@@ -36,7 +37,7 @@ const AuditLog: React.FC = () => {
     const { data: qData, isLoading: loading, refetch } = useQuery({
         queryKey: ['auditLogs', queryParams],
         queryFn: () => getAuditLogs(queryParams),
-        enabled: !!token && hasPermission('rbac:audit:view'),
+        enabled: !!authToken && hasPermission('rbac:audit:view'),
     });
 
     const logs = qData?.results || qData?.data || [];
@@ -53,11 +54,11 @@ const AuditLog: React.FC = () => {
 
     const getMethodColor = (method: string) => {
         switch (method?.toUpperCase()) {
-            case 'POST': return token.colorSuccess;
-            case 'PUT': return token.colorWarning;
-            case 'PATCH': return token.colorPrimary;
-            case 'DELETE': return token.colorError;
-            default: return token.colorTextSecondary;
+            case 'POST': return antdToken.colorSuccess;
+            case 'PUT': return antdToken.colorWarning;
+            case 'PATCH': return antdToken.colorPrimary;
+            case 'DELETE': return antdToken.colorError;
+            default: return antdToken.colorTextSecondary;
         }
     };
 
@@ -71,7 +72,7 @@ const AuditLog: React.FC = () => {
                 <Space>
                     <div style={{
                         width: '32px', height: '32px', borderRadius: '50%',
-                        background: `linear-gradient(135deg, ${token.colorPrimary}, ${token.colorPrimaryActive})`,
+                        background: `linear-gradient(135deg, ${antdToken.colorPrimary}, ${antdToken.colorPrimaryActive})`,
                         color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontWeight: 'bold', fontSize: '14px'
                     }}>
@@ -91,12 +92,12 @@ const AuditLog: React.FC = () => {
                         <Typography.Text strong style={{ fontSize: '14px' }}>
                             {record.action_name || record.action || '操作'}
                         </Typography.Text>
-                        <span style={{ fontSize: '12px', color: token.colorTextQuaternary, marginLeft: 6 }}>
+                        <span style={{ fontSize: '12px', color: antdToken.colorTextQuaternary, marginLeft: 6 }}>
                             ({record.resource_name || record.resource || '-'})
                         </span>
                     </div>
                     {(record.object_id || record.path) && (
-                        <div style={{ marginTop: '4px', fontSize: '12px', fontFamily: 'monospace', color: token.colorTextSecondary }}>
+                        <div style={{ marginTop: '4px', fontSize: '12px', fontFamily: 'monospace', color: antdToken.colorTextSecondary }}>
                             Obj: {record.object_id || record.path.split('/').pop() || '-'}
                         </div>
                     )}
@@ -110,7 +111,7 @@ const AuditLog: React.FC = () => {
             render: (_: any, record: AuditLogRecord) => (
                 <div>
                     <div>
-                        <Tag style={{ fontWeight: 'bold', border: 'none', background: token.colorFillTertiary, color: getMethodColor(record.method) }}>
+                        <Tag style={{ fontWeight: 'bold', border: 'none', background: antdToken.colorFillTertiary, color: getMethodColor(record.method) }}>
                             {record.method}
                         </Tag>
                         <Tag
@@ -121,7 +122,7 @@ const AuditLog: React.FC = () => {
                         </Tag>
                     </div>
                     <div style={{
-                        marginTop: 4, fontSize: '11px', color: token.colorTextTertiary,
+                        marginTop: 4, fontSize: '11px', color: antdToken.colorTextTertiary,
                         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '250px'
                     }}>
                         {record.path}
@@ -135,7 +136,7 @@ const AuditLog: React.FC = () => {
             key: 'duration',
             width: 120,
             render: (duration: number) => {
-                const color = duration > 1.5 ? token.colorError : (duration > 0.5 ? token.colorWarning : token.colorSuccess);
+                const color = duration > 1.5 ? antdToken.colorError : (duration > 0.5 ? antdToken.colorWarning : antdToken.colorSuccess);
                 return (
                     <Typography.Text style={{ color, fontWeight: 500 }}>
                         {duration > 0 ? `${(duration).toFixed(3)} s` : '< 0.001 s'}
@@ -156,7 +157,7 @@ const AuditLog: React.FC = () => {
             key: 'create_time',
             width: 180,
             render: (time: string) => (
-                <div style={{ color: token.colorTextSecondary }}>
+                <div style={{ color: antdToken.colorTextSecondary }}>
                     {dayjs(time).format('YYYY-MM-DD HH:mm:ss')}
                 </div>
             )
@@ -248,7 +249,7 @@ const AuditLog: React.FC = () => {
             <Drawer
                 title={
                     <div className="flex items-center gap-2">
-                        <SafetyCertificateOutlined style={{ color: token.colorPrimary }} />
+                        <SafetyCertificateOutlined style={{ color: antdToken.colorPrimary }} />
                         <span>操作快照详情</span>
                     </div>
                 }
@@ -269,7 +270,7 @@ const AuditLog: React.FC = () => {
                             />
                         )}
 
-                        <Descriptions column={2} bordered size="small" labelStyle={{ width: '130px', background: token.colorFillQuaternary }}>
+                        <Descriptions column={2} bordered size="small" labelStyle={{ width: '130px', background: antdToken.colorFillQuaternary }}>
                             <Descriptions.Item label="操作人">
                                 <Typography.Text strong>{currentRecord.username}</Typography.Text>
                             </Descriptions.Item>
@@ -298,7 +299,7 @@ const AuditLog: React.FC = () => {
                                 <Typography.Title level={5}>数据快照比对 (Diff)</Typography.Title>
                                 <div className="flex flex-col md:flex-row gap-4">
                                     <div className="flex-1">
-                                        <div style={{ padding: '4px 8px', background: token.colorErrorBg, color: token.colorErrorText, fontWeight: 'bold', borderTopLeftRadius: '8px', borderTopRightRadius: '8px', fontSize: '12px' }}>
+                                        <div style={{ padding: '4px 8px', background: antdToken.colorErrorBg, color: antdToken.colorErrorText, fontWeight: 'bold', borderTopLeftRadius: '8px', borderTopRightRadius: '8px', fontSize: '12px' }}>
                                             修改前 (Old Data)
                                         </div>
                                         <div style={{
@@ -312,7 +313,7 @@ const AuditLog: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="flex-1">
-                                        <div style={{ padding: '4px 8px', background: token.colorSuccessBg, color: token.colorSuccessText, fontWeight: 'bold', borderTopLeftRadius: '8px', borderTopRightRadius: '8px', fontSize: '12px' }}>
+                                        <div style={{ padding: '4px 8px', background: antdToken.colorSuccessBg, color: antdToken.colorSuccessText, fontWeight: 'bold', borderTopLeftRadius: '8px', borderTopRightRadius: '8px', fontSize: '12px' }}>
                                             拦截 / 更新的载荷 (New Request)
                                         </div>
                                         <div style={{
@@ -345,11 +346,11 @@ const AuditLog: React.FC = () => {
 
                         {(currentRecord.response_data && Object.keys(currentRecord.response_data).length > 0) && (
                             <div>
-                                <Typography.Title level={5} style={{ color: currentRecord.response_status >= 400 ? token.colorError : token.colorPrimary }}>
+                                <Typography.Title level={5} style={{ color: currentRecord.response_status >= 400 ? antdToken.colorError : antdToken.colorPrimary }}>
                                     Response 简短摘要
                                 </Typography.Title>
                                 <div style={{
-                                    background: currentRecord.response_status >= 400 ? token.colorErrorBg : token.colorFillTertiary,
+                                    background: currentRecord.response_status >= 400 ? antdToken.colorErrorBg : antdToken.colorFillTertiary,
                                     padding: '16px', borderRadius: '8px',
                                     overflow: 'auto', maxHeight: '300px',
                                     fontSize: '13px', fontFamily: 'monospace'

@@ -16,8 +16,9 @@ interface CIEnvironment {
 }
 
 const CIEnvironments: React.FC = () => {
-    const { token, hasPermission } = useAppStore();
+    const { token: _authToken, hasPermission } = useAppStore();
     const { isDark } = useAppStore();
+    const { token: antdToken } = theme.useToken();
     const { message, modal } = AntdApp.useApp();
     const queryClient = useQueryClient();
     
@@ -29,7 +30,7 @@ const CIEnvironments: React.FC = () => {
     const { data: response, isLoading } = useQuery({
         queryKey: ['ci-environments'],
         queryFn: () => getCIEnvironments(),
-        enabled: !!token && hasPermission('pipeline:ci_env:view'),
+        enabled: !!_authToken && hasPermission('pipeline:ci_env:view'),
     });
     
     // DRF returns paginated object with .results, or direct array
@@ -80,7 +81,7 @@ const CIEnvironments: React.FC = () => {
                     <CodeOutlined className="text-gray-400" />
                     <span 
                         className="font-mono text-xs px-2 py-1 rounded-md transition-all shadow-sm"
-                        style={{ backgroundColor: isDark ? '#2a2a2a' : token.colorPrimaryBg }}
+                        style={{ backgroundColor: isDark ? '#2a2a2a' : antdToken.colorPrimaryBg }}
                     >
                         {text}
                     </span>
