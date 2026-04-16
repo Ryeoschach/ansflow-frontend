@@ -53,6 +53,18 @@ export default defineConfig(({ mode }) => {
           target: 'http://127.0.0.1:8000',
           changeOrigin: true,
         },
+        '/api/docs': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+        },
+        '/api/schema': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+        },
+        '/api/redoc': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+        },
         '/ws': {
           target: 'ws://127.0.0.1:8000',
           ws: true,

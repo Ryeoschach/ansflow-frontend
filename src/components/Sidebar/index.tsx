@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getMyMenus } from '../../api/rbac';
 import { getK8sClusters, getHelmLocalCharts } from '../../api/k8s';
 import IconMapper from '../IconMapper';
+import { ApiOutlined } from '@ant-design/icons';
 
 
 const { Sider } = Layout;
@@ -169,6 +170,15 @@ const Sidebar: React.FC = () => {
                         onClick={handleMenuClick}
                     />
                 )}
+            </div>
+
+            {/* 底部链接 */}
+            <div className="shrink-0 px-3 py-3 border-t cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                onClick={() => window.open('/api/docs/', '_blank')}>
+                <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+                    <ApiOutlined />
+                    {!collapsed && <span>接口文档</span>}
+                </div>
             </div>
 
             <div className="h-4 shrink-0" />
