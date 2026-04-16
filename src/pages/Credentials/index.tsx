@@ -34,6 +34,7 @@ const CredentialManagement: React.FC = () => {
     const [isTestModalOpen, setIsTestModalOpen] = useState(false);
     const [editingCredential, setEditingCredential] = useState<any>(null);
     const [testingId, setTestingId] = useState<number | null>(null);
+    const [authType, setAuthType] = useState<'password' | 'key'>('password');
 
     // 1. 获取凭据列表
     const { data: credData, isLoading } = useQuery({
@@ -88,6 +89,7 @@ const CredentialManagement: React.FC = () => {
 
     const handleEdit = (record: any) => {
         setEditingCredential(record);
+        setAuthType(record.auth_type || 'password');
         form.setFieldsValue(record);
         setIsModalOpen(true);
     };
@@ -95,6 +97,7 @@ const CredentialManagement: React.FC = () => {
     const handleAdd = () => {
         setEditingCredential(null);
         form.resetFields();
+        setAuthType('password');
         setIsModalOpen(true);
     };
 
@@ -223,10 +226,11 @@ const CredentialManagement: React.FC = () => {
                     layout="vertical"
                     className="mt-4"
                     onFinish={(values) => {
+                        const data = { ...values, description: values.remark };
                         if (editingCredential) {
-                            updateMutation.mutate({ id: editingCredential.id, data: values });
+                            updateMutation.mutate({ id: editingCredential.id, data });
                         } else {
-                            createMutation.mutate(values);
+                            createMutation.mutate(data);
                         }
                     }}
                     initialValues={{ auth_type: 'password', username: 'root' }}
@@ -240,35 +244,34 @@ const CredentialManagement: React.FC = () => {
                             <Input prefix={<UserOutlined />} />
                         </Form.Item>
                         <Form.Item label="认证方式" name="auth_type" className="flex-1" rules={[{ required: true }]}>
-                            <Select options={[
-                                { label: '账号密码', value: 'password' },
-                                { label: 'SSH 密钥', value: 'key' },
-                            ]} />
+                            <Select
+                                options={[
+                                    { label: '账号密码', value: 'password' },
+                                    { label: 'SSH 密钥', value: 'key' },
+                                ]}
+                                onChange={(val) => setAuthType(val)}
+                            />
                         </Form.Item>
                     </div>
 
-                    <Form.Item noStyle shouldUpdate={(prev, curr) => prev.auth_type !== curr.auth_type}>
-                        {({ getFieldValue }) => (
-                            getFieldValue('auth_type') === 'password' ? (
-                                <Form.Item label="密码" name="password" rules={[{ required: !editingCredential, message: '请输入密码' }]}>
-                                    <Input.Password prefix={<LockOutlined />} placeholder="请输入 SSH 登录密码" />
-                                </Form.Item>
-                            ) : (
-                                <>
-                                    <Form.Item label="私钥内容" name="private_key" rules={[{ required: !editingCredential, message: '请输入私钥内容' }]}>
-                                        <Input.TextArea
-                                            rows={8}
-                                            placeholder="-----BEGIN RSA PRIVATE KEY-----"
-                                            className="font-mono text-xs"
-                                        />
-                                    </Form.Item>
-                                    <Form.Item label="私钥密码 (Passphrase)" name="passphrase">
-                                        <Input.Password placeholder="如果没有则不填" />
-                                    </Form.Item>
-                                </>
-                            )
-                        )}
-                    </Form.Item>
+                    {authType === 'password' ? (
+                        <Form.Item label="密码" name="password" rules={[{ required: !editingCredential, message: '请输入密码' }]}>
+                            <Input.Password prefix={<LockOutlined />} placeholder="请输入 SSH 登录密码" />
+                        </Form.Item>
+                    ) : (
+                        <>
+                            <Form.Item label="私钥内容" name="private_key" rules={[{ required: !editingCredential, message: '请输入私钥内容' }]}>
+                                <Input.TextArea
+                                    rows={8}
+                                    placeholder="-----BEGIN RSA PRIVATE KEY-----"
+                                    className="font-mono text-xs"
+                                />
+                            </Form.Item>
+                            <Form.Item label="私钥密码 (Passphrase)" name="passphrase">
+                                <Input.Password placeholder="如果没有则不填" />
+                            </Form.Item>
+                        </>
+                    )}
                     <Form.Item label="备注" name="remark">
                         <Input.TextArea />
                     </Form.Item>

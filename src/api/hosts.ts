@@ -31,11 +31,40 @@ export const syncPlatformAssets = (id: number) => request.post(`/platforms/${id}
 // ========================
 // SSH 凭据接口
 // ========================
-export const getCredentials = (params?: any) => request.get('/ssh_credentials/', { params });
-export const createCredential = (data: any) => request.post('/ssh_credentials/', data);
-export const updateCredential = (id: number, data: any) => request.patch(`/ssh_credentials/${id}/`, data);
+
+/**
+ * 后端 SshCredential 模型字段与前端表单字段一致:
+ * - auth_type: 'password' | 'key' (两者一致)
+ * - password / private_key / passphrase (字段名一致)
+ * 只需处理 remark <-> description 的映射
+ */
+
+/** 将前端表单数据转换为后端 API 格式 */
+const toCredentialData = (data: any) => {
+    const { remark, ...rest } = data;
+    return { ...rest, description: remark };
+};
+
+/** 将后端响应转换为前端格式 */
+const fromCredentialData = (item: any) => ({
+    ...item,
+    remark: item.description,
+});
+
+export const getCredentials = (params?: any) =>
+    request.get('/ssh_credentials/', { params }).then((res: any) => ({
+        ...res,
+        data: res.data?.map(fromCredentialData),
+    }));
+
+export const createCredential = (data: any) =>
+    request.post('/ssh_credentials/', toCredentialData(data));
+
+export const updateCredential = (id: number, data: any) =>
+    request.patch(`/ssh_credentials/${id}/`, toCredentialData(data));
+
 export const deleteCredential = (id: number) => request.delete(`/ssh_credentials/${id}/`);
-export const verifyCredential = (id: number, data: { host: string; port?: number }) => 
+export const verifyCredential = (id: number, data: { host: string; port?: number }) =>
     request.post(`/ssh_credentials/${id}/verify/`, data);
 
 

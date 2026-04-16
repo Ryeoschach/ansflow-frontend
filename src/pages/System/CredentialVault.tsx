@@ -48,9 +48,22 @@ const CredentialVault: React.FC = () => {
 
     /** @description 凭据持久化指令 */
     const mutation = useMutation({
-        mutationFn: (values: any) => editingRecord 
-            ? updateCredential(editingRecord.id, values) 
-            : createCredential(values),
+        mutationFn: (values: any) => {
+            const payload = { ...values };
+            // 根据 auth_type 将前端单一的 secret_value 分发到后端的正确字段
+            if (payload.secret_value) {
+                if (payload.auth_type === 'password' || payload.auth_type === 'login_pass') {
+                    payload.password = payload.secret_value;
+                } else {
+                    payload.private_key = payload.secret_value;
+                }
+            }
+            delete payload.secret_value;
+            
+            return editingRecord 
+                ? updateCredential(editingRecord.id, payload) 
+                : createCredential(payload);
+        },
         onSuccess: () => {
             message.success(editingRecord ? '凭据加密信息已更新' : '新凭据已安全入库');
             setIsModalVisible(false);
@@ -108,14 +121,16 @@ const CredentialVault: React.FC = () => {
             title: '类型',
             key: 'type',
             render: (_: any, record: any) => {
-                const typeValue = record.type || record.auth_type;
+                const typeValue = record.auth_type || record.type;
                 const map: any = {
+                    'key': { color: 'purple', icon: <KeyOutlined />, text: 'SSH 私钥' },
                     'ssh_key': { color: 'purple', icon: <KeyOutlined />, text: 'SSH 私钥' },
+                    'password': { color: 'blue', icon: <LockOutlined />, text: '账号密码' },
                     'login_pass': { color: 'blue', icon: <LockOutlined />, text: '账号密码' },
                     'token': { color: 'orange', icon: <InfoCircleOutlined />, text: 'API Token' },
                     'file': { color: 'cyan', icon: <FileTextOutlined />, text: '证书文件' },
                 };
-                const conf = map[typeValue] || { color: 'default', text: typeValue };
+                const conf = map[typeValue] || { color: 'default', icon: <KeyOutlined />, text: typeValue };
                 return <Tag color={conf.color} icon={conf.icon} className="rounded-full px-3">{conf.text}</Tag>;
             }
         },
@@ -239,10 +254,10 @@ const CredentialVault: React.FC = () => {
                             <Form.Item label={<Text strong type="secondary" style={{ fontSize: '12px' }}>凭据别名</Text>} name="name" rules={[{ required: true, message: '请输入标识名称' }]}>
                                 <Input placeholder="如: PROD-KEY" className="rounded-lg h-10" />
                             </Form.Item>
-                            <Form.Item label={<Text strong type="secondary" style={{ fontSize: '12px' }}>凭据类型</Text>} name="type" rules={[{ required: true }]}>
+                            <Form.Item label={<Text strong type="secondary" style={{ fontSize: '12px' }}>凭据类型</Text>} name="auth_type" rules={[{ required: true }]}>
                                 <Select options={[
-                                    { label: 'SSH 私钥', value: 'ssh_key' },
-                                    { label: '用户名密码', value: 'login_pass' },
+                                    { label: 'SSH 私钥', value: 'key' },
+                                    { label: '用户名密码', value: 'password' },
                                     { label: 'API Token', value: 'token' },
                                     { label: '证书文件', value: 'file' },
                                 ]} className="h-10 custom-select-premium" />
@@ -270,7 +285,7 @@ const CredentialVault: React.FC = () => {
                         <Input.TextArea rows={5} className="font-mono text-[11px] rounded-lg p-3" placeholder="Paste your secrets here..." />
                     </Form.Item>
 
-                    <Form.Item label={<Text strong type="secondary" style={{ fontSize: '12px' }}>用途备注</Text>} name="description" className="mb-0">
+                    <Form.Item label={<Text strong type="secondary" style={{ fontSize: '12px' }}>用途备注</Text>} name="remark" className="mb-0">
                         <Input placeholder="记录适用范围..." className="rounded-lg h-10" />
                     </Form.Item>
                 </Form>

@@ -30,7 +30,7 @@
 - `test`: 测试
 - `chore`: 构建/工具变更
 
-### 示例
+### 示例：内容使用中文
 
 ```
 feat(pipeline): add DAG viewer component
