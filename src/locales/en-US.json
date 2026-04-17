@@ -13,7 +13,8 @@
     "error": "Error",
     "loading": "Loading...",
     "noData": "No Data",
-    "required": "is required"
+    "required": "is required",
+    "seconds": "seconds"
   },
   "menu": {
     "dashboard": "Dashboard",

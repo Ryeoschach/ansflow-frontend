@@ -13,7 +13,8 @@
     "error": "错误",
     "loading": "加载中...",
     "noData": "暂无数据",
-    "required": "不能为空"
+    "required": "不能为空",
+    "seconds": "秒"
   },
   "menu": {
     "dashboard": "仪表盘",
