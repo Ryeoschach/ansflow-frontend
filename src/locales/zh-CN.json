@@ -492,6 +492,8 @@
     "createMenu": "新增菜单",
     "menuName": "菜单名称",
     "menuNameRequired": "请输入菜单名称",
+    "menuNameEn": "英文名称 (可选)",
+    "menuNameEnPlaceholder": "英文菜单名称，不填则默认显示中文",
     "antdKey": "Antd Key (唯一)",
     "antdKeyRequired": "请输入唯一Key",
     "routePath": "路由路径",

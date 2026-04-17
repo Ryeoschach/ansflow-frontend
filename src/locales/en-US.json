@@ -493,6 +493,8 @@
     "createMenu": "Add Menu",
     "menuName": "Menu Name",
     "menuNameRequired": "Please enter menu name",
+    "menuNameEn": "English Name (Optional)",
+    "menuNameEnPlaceholder": "Leave empty to show Chinese name",
     "antdKey": "Antd Key (Unique)",
     "antdKeyRequired": "Please enter unique Key",
     "routePath": "Route Path",

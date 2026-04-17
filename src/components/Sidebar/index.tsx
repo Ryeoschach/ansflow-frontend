@@ -32,7 +32,7 @@ interface MenuItemData {
  */
 const Sidebar: React.FC = () => {
     const { t } = useTranslation();
-    const { collapsed, isDark, token, mobileSidebarOpen, setMobileSidebarOpen } = useAppStore();
+    const { collapsed, isDark, token, mobileSidebarOpen, setMobileSidebarOpen, language } = useAppStore();
     const { isMobile } = useBreakpoint();
     const navigate = useNavigate();
     const location = useLocation();
@@ -88,9 +88,10 @@ const Sidebar: React.FC = () => {
                     rootKeys.push(finalKey);
                 }
 
+                const menuLabel = (language === 'en-US' && item.title_en) ? item.title_en : item.title;
                 return {
                     key: finalKey,
-                    label: item.title,
+                    label: menuLabel,
                     onMouseEnter: () => handleMenuHover(finalKey),
                     icon: item.icon ? <IconMapper iconName={item.icon} /> : null,
                     children: item.children && item.children.length > 0

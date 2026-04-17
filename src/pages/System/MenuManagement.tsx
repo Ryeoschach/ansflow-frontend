@@ -118,6 +118,7 @@ const MenuManagement: React.FC = () => {
             <Modal title={editingMenu ? t('menuManagement.editMenu') : t('menuManagement.createMenu')} open={isModalOpen} onCancel={() => setIsModalOpen(false)} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={isMobile ? '95vw' : 600} bodyStyle={{ overflowX: 'auto' }}>
                 <Form form={form} layout="vertical" onFinish={(values) => mutation.mutate({...values, parent: values.parent || null})} initialValues={{ order: 0 }}>
                     <Form.Item name="title" label={t('menuManagement.menuName')} rules={[{ required: true, message: t('menuManagement.menuNameRequired') }]}><Input /></Form.Item>
+                    <Form.Item name="title_en" label={t('menuManagement.menuNameEn')}><Input placeholder={t('menuManagement.menuNameEnPlaceholder')} /></Form.Item>
                     <Form.Item name="key" label={t('menuManagement.antdKey')} rules={[{ required: true, message: t('menuManagement.antdKeyRequired') }]}><Input /></Form.Item>
                     <Form.Item name="path" label={t('menuManagement.routePath')} rules={[{ required: true, message: t('menuManagement.routePathRequired') }]}><Input /></Form.Item>
                     <Form.Item name="icon" label={t('menuManagement.iconLabel')}><Input placeholder={t('menuManagement.iconPlaceholder')} /></Form.Item>
