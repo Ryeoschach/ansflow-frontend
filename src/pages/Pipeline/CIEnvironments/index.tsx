@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TableSkeleton } from '../../../components/Skeletons';
 import { getCIEnvironments, createCIEnvironment, updateCIEnvironment, deleteCIEnvironment } from '../../../api/pipeline';
 import useAppStore from '../../../store/useAppStore';
+import { useTranslation } from 'react-i18next';
 
 interface CIEnvironment {
     id: string | number;
@@ -16,12 +17,13 @@ interface CIEnvironment {
 }
 
 const CIEnvironments: React.FC = () => {
+    const { t } = useTranslation();
     const { token: _authToken, hasPermission } = useAppStore();
     const { isDark } = useAppStore();
     const { token: antdToken } = theme.useToken();
     const { message, modal } = AntdApp.useApp();
     const queryClient = useQueryClient();
-    
+
     const [searchText, setSearchText] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingId, setEditingId] = useState<string | number | null>(null);
@@ -32,54 +34,54 @@ const CIEnvironments: React.FC = () => {
         queryFn: () => getCIEnvironments(),
         enabled: !!_authToken && hasPermission('pipeline:ci_env:view'),
     });
-    
+
     // DRF returns paginated object with .results, or direct array
     const environments: CIEnvironment[] = response?.data?.results || response?.data || [];
 
     const createMutation = useMutation({
         mutationFn: createCIEnvironment,
         onSuccess: () => {
-            message.success('创建环境成功');
+            message.success(t('ciEnv.createSuccess'));
             setIsModalOpen(false);
             queryClient.invalidateQueries({ queryKey: ['ci-environments'] });
         },
-        onError: () => message.error('创建失败，请检查配置')
+        onError: () => message.error(t('ciEnv.createFailed'))
     });
 
     const updateMutation = useMutation({
         mutationFn: ({ id, data }: { id: string | number, data: any }) => updateCIEnvironment(id, data),
         onSuccess: () => {
-            message.success('更新环境成功');
+            message.success(t('ciEnv.updateSuccess'));
             setIsModalOpen(false);
             queryClient.invalidateQueries({ queryKey: ['ci-environments'] });
         },
-        onError: () => message.error('更新失败')
+        onError: () => message.error(t('ciEnv.updateFailed'))
     });
 
     const deleteMutation = useMutation({
         mutationFn: deleteCIEnvironment,
         onSuccess: () => {
-            message.success('已删除环境');
+            message.success(t('ciEnv.deleteSuccess'));
             queryClient.invalidateQueries({ queryKey: ['ci-environments'] });
         },
-        onError: () => message.error('删除失败')
+        onError: () => message.error(t('ciEnv.deleteFailed'))
     });
 
     const columns = [
         {
-            title: '环境名称',
+            title: t('ciEnv.name'),
             dataIndex: 'name',
             key: 'name',
             render: (text: string) => <span className="font-semibold text-[15px]">{text}</span>,
         },
         {
-            title: 'Docker 镜像 URI',
+            title: t('ciEnv.image'),
             dataIndex: 'image',
             key: 'image',
             render: (text: string) => (
                 <div className="flex items-center gap-2">
                     <CodeOutlined className="text-gray-400" />
-                    <span 
+                    <span
                         className="font-mono text-xs px-2 py-1 rounded-md transition-all shadow-sm"
                         style={{ backgroundColor: isDark ? '#2a2a2a' : antdToken.colorPrimaryBg }}
                     >
@@ -89,7 +91,7 @@ const CIEnvironments: React.FC = () => {
             )
         },
         {
-            title: '编译类型',
+            title: t('ciEnv.type'),
             dataIndex: 'type',
             key: 'type',
             render: (type: string) => {
@@ -104,24 +106,24 @@ const CIEnvironments: React.FC = () => {
             }
         },
         {
-            title: '状态',
+            title: t('ciEnv.status'),
             dataIndex: 'status',
             key: 'status',
             render: (status: string) => {
-                if (status === 'READY') return <Tag color="success" className="border-0">可用</Tag>;
-                if (status === 'PULLING') return <Tag color="processing" className="border-0">拉取中</Tag>;
-                return <Tag color="error" className="border-0">异常</Tag>;
+                if (status === 'READY') return <Tag color="success" className="border-0">{t('ciEnv.statusReady')}</Tag>;
+                if (status === 'PULLING') return <Tag color="processing" className="border-0">{t('ciEnv.statusPulling')}</Tag>;
+                return <Tag color="error" className="border-0">{t('ciEnv.statusError')}</Tag>;
             }
         },
         {
-            title: '用途描述',
+            title: t('ciEnv.description'),
             dataIndex: 'description',
             key: 'description',
             ellipsis: true,
             render: (text: string) => <span className="text-gray-500 text-sm">{text || '-'}</span>,
         },
         {
-            title: '操作',
+            title: t('ciEnv.action'),
             key: 'action',
             render: (_: any, record: CIEnvironment) => (
                 <Space size="middle">
@@ -136,8 +138,8 @@ const CIEnvironments: React.FC = () => {
         }
     ];
 
-    const filteredData = environments.filter(env => 
-        (env.name || '').toLowerCase().includes(searchText.toLowerCase()) || 
+    const filteredData = environments.filter(env =>
+        (env.name || '').toLowerCase().includes(searchText.toLowerCase()) ||
         (env.type || '').toLowerCase().includes(searchText.toLowerCase()) ||
         (env.image || '').toLowerCase().includes(searchText.toLowerCase())
     );
@@ -159,11 +161,11 @@ const CIEnvironments: React.FC = () => {
 
     const handleDelete = (id: string | number) => {
         modal.confirm({
-            title: '确认删除该构建环境？',
-            content: '删除后，使用该环境模板的流水线可能无法正常工作。',
-            okText: '删除',
+            title: t('ciEnv.confirmDelete'),
+            content: t('ciEnv.confirmDeleteContent'),
+            okText: t('common.delete'),
             okType: 'danger',
-            cancelText: '取消',
+            cancelText: t('common.cancel'),
             onOk: () => deleteMutation.mutate(id),
         });
     };
@@ -186,8 +188,8 @@ const CIEnvironments: React.FC = () => {
         <div className="flex flex-col gap-6">
             {/* Header Area */}
             <div>
-                <h2 className="text-2xl font-bold mb-1 tracking-tight">构建镜像管理 (CI Environments)</h2>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">统一化管理流水线的底层执行沙箱，流水线使用者将能在表单中直接选用这里的环境进行安全编译。</p>
+                <h2 className="text-2xl font-bold mb-1 tracking-tight">{t('ciEnv.title')}</h2>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">{t('ciEnv.subtitle')}</p>
             </div>
 
             <Card className="shadow-sm border-0 root-card">
@@ -197,7 +199,7 @@ const CIEnvironments: React.FC = () => {
                     <div className="flex flex-col gap-4">
                         <div className="flex justify-between items-center">
                             <Input
-                                placeholder="搜索环境名称、镜像或类型..."
+                                placeholder={t('ciEnv.searchPlaceholder')}
                                 prefix={<SearchOutlined className="text-gray-400" />}
                                 className="w-72"
                                 value={searchText}
@@ -206,13 +208,13 @@ const CIEnvironments: React.FC = () => {
                             />
                             {hasPermission('pipeline:ci_env:add') && (
                             <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate} className="shadow-sm">
-                                注册新环境
+                                {t('ciEnv.register')}
                             </Button>
                             )}
                         </div>
-                        <Table 
-                            columns={columns} 
-                            dataSource={filteredData} 
+                        <Table
+                            columns={columns}
+                            dataSource={filteredData}
                             rowKey="id"
                             scroll={{ x: 1200 }}
                             pagination={{ pageSize: 10 }}
@@ -223,37 +225,37 @@ const CIEnvironments: React.FC = () => {
             </Card>
 
             <Modal
-                title={editingId ? "编辑构建环境" : "注册新构建环境"}
+                title={editingId ? t('ciEnv.modalTitleEdit') : t('ciEnv.modalTitleCreate')}
                 open={isModalOpen}
                 onOk={handleModalOk}
                 onCancel={() => setIsModalOpen(false)}
-                okText="保存"
-                cancelText="取消"
+                okText={t('common.save')}
+                cancelText={t('common.cancel')}
                 confirmLoading={createMutation.isPending || updateMutation.isPending}
             >
                 <div className="pt-4">
                     <Form form={form} layout="vertical">
-                        <Form.Item label="环境展示名称" name="name" rules={[{ required: true, message: '请填写名称' }]}>
-                            <Input placeholder="例如：Node.js 18 LTS" />
+                        <Form.Item label={t('ciEnv.fieldName')} name="name" rules={[{ required: true, message: t('ciEnv.fieldNamePlaceholder') }]}>
+                            <Input placeholder={t('ciEnv.fieldNamePlaceholder')} />
                         </Form.Item>
-                        <Form.Item 
-                            label="Docker 镜像地址" 
-                            name="image" 
-                            rules={[{ required: true, message: '请填写镜像URI' }]}
-                            extra={<span className="text-xs text-gray-500">保存后系统宿主机（或节点）将自动拉取此 Docker 镜像作为本地沙箱备用。</span>}
+                        <Form.Item
+                            label={t('ciEnv.fieldImage')}
+                            name="image"
+                            rules={[{ required: true, message: t('ciEnv.fieldImageError') }]}
+                            extra={<span className="text-xs text-gray-500">{t('ciEnv.fieldImageExtra')}</span>}
                         >
-                            <Input placeholder="例如：node:18-alpine 或 hub.docker.com/my-node:18" prefix={<CodeOutlined className="text-gray-400" />} />
+                            <Input placeholder={t('ciEnv.fieldImagePlaceholder')} prefix={<CodeOutlined className="text-gray-400" />} />
                         </Form.Item>
-                        <Form.Item label="技术栈标签" name="type" rules={[{ required: true, message: '请选择或填写技术栈' }]}>
-                            <Select 
-                                mode="tags" 
+                        <Form.Item label={t('ciEnv.fieldType')} name="type" rules={[{ required: true, message: t('ciEnv.fieldTypeError') }]}>
+                            <Select
+                                mode="tags"
                                 maxCount={1}
                                 options={[{ value: 'Frontend', label: 'Frontend' }, { value: 'Java', label: 'Java' }, { value: 'Go', label: 'Go' }, { value: 'Python', label: 'Python' }]}
-                                placeholder="选择或输入标签" 
+                                placeholder={t('ciEnv.fieldTypePlaceholder')}
                             />
                         </Form.Item>
-                        <Form.Item label="用途描述" name="description">
-                            <Input.TextArea rows={3} placeholder="描述此环境通常用于何种流水的编译或执行..." />
+                        <Form.Item label={t('ciEnv.fieldDesc')} name="description">
+                            <Input.TextArea rows={3} placeholder={t('ciEnv.fieldDescPlaceholder')} />
                         </Form.Item>
                     </Form>
                 </div>

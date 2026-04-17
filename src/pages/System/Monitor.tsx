@@ -11,6 +11,7 @@ import {
   ClockCircleOutlined,
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { getSystemHealth, HealthComponent } from '../../api/system';
 import { Button } from 'antd';
 import useAppStore from '../../store/useAppStore';
@@ -25,6 +26,7 @@ const componentsIcons: Record<string, React.ReactNode> = {
 };
 
 const MonitorCard: React.FC<{ component: HealthComponent }> = ({ component }) => {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   
   const getStatusColor = (status: string) => {
@@ -77,7 +79,7 @@ const MonitorCard: React.FC<{ component: HealthComponent }> = ({ component }) =>
       
       {component.status === 'unhealthy' ? (
         <Text type="danger" style={{ fontSize: '13px', display: 'block', minHeight: '40px' }}>
-          {component.message || '连接不可达'}
+          {component.message || t('monitor.unreachable')}
         </Text>
       ) : (
         <div className="space-y-2 mt-4 min-h-15">
@@ -98,7 +100,7 @@ const MonitorCard: React.FC<{ component: HealthComponent }> = ({ component }) =>
       <div className="mt-6 pt-4 border-t border-gray-100 dark:border-white/10 flex justify-between items-center">
         <Space size={4}>
           <ClockCircleOutlined style={{ fontSize: '12px', color: token.colorTextSecondary }} />
-          <Text type="secondary" style={{ fontSize: '12px' }}>耗时</Text>
+          <Text type="secondary" style={{ fontSize: '12px' }}>{t('monitor.latency')}</Text>
         </Space>
         <Text strong style={{ fontSize: '12px', color: statusColor }}>
           {component.latency || 'N/A'}
@@ -109,6 +111,7 @@ const MonitorCard: React.FC<{ component: HealthComponent }> = ({ component }) =>
 };
 
 const MonitorCenter: React.FC = () => {
+  const { t } = useTranslation();
   const { token: authToken, hasPermission } = useAppStore();
   const { token: antdToken } = theme.useToken();
   const { data, isLoading, refetch, isRefetching } = useQuery({
@@ -126,10 +129,10 @@ const MonitorCenter: React.FC = () => {
         <div>
           <Title level={4} className="m-0 flex items-center gap-2">
             <HeartOutlined style={{ color: antdToken.colorError }} />
-            系统健康监测
+            {t('monitor.title')}
           </Title>
           <Text type="secondary" className="mt-1 block">
-             实时监测 AnsFlow 各个核心组件的运行状态与响应时延
+             {t('monitor.subtitle')}
           </Text>
         </div>
         <Space direction="vertical" align="end">
@@ -139,12 +142,12 @@ const MonitorCenter: React.FC = () => {
             onClick={() => refetch()}
             type="text"
           >
-            立即同步
+            {t('monitor.syncNow')}
           </Button>
           )}
           {data?.timestamp && (
             <Text type="secondary" style={{ fontSize: '12px' }}>
-              <span className="hidden md:inline">最后更新: </span>{new Date(data.timestamp).toLocaleTimeString()}
+              <span className="hidden md:inline">{t('monitor.lastUpdate')}</span>{new Date(data.timestamp).toLocaleTimeString()}
             </Text>
           )}
         </Space>
@@ -185,19 +188,19 @@ const MonitorCenter: React.FC = () => {
                 <div className="text-white">
                   <div className="text-white/60 text-xs font-semibold uppercase tracking-[0.2em]">Infrastructure Intelligence</div>
                   <div className="text-3xl font-semibold mt-1 tracking-tight">
-                    {overallStatus === 'healthy' ? '全系统节点运行稳健' : '监测到部分组件响应异常'}
+                    {overallStatus === 'healthy' ? t('monitor.statusHealthy') : t('monitor.statusUnhealthy')}
                   </div>
                   <div className="flex items-center gap-4 mt-5">
-                    <Tooltip title="Healthy Components">
+                    <Tooltip title={t('monitor.healthyComponents')}>
                        <Space size={6} className="bg-white/5 border border-white/10 px-4 py-1.5 rounded-2xl text-[11px] font-medium transition-colors hover:bg-white/10">
                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></div>
-                         {data.components.filter(c => c.status === 'healthy').length} 运行中
+                         {data.components.filter(c => c.status === 'healthy').length} {t('monitor.runningCount')}
                        </Space>
                     </Tooltip>
                     {data.components.some(c => c.status !== 'healthy') && (
                        <Space size={6} className="bg-white/5 border border-white/10 px-4 py-1.5 rounded-2xl text-[11px] font-medium transition-colors hover:bg-white/10">
                          <div className="w-1.5 h-1.5 rounded-full bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.5)]"></div>
-                         {data.components.filter(c => c.status !== 'healthy').length} 待扫描
+                         {data.components.filter(c => c.status !== 'healthy').length} {t('monitor.pendingCount')}
                        </Space>
                     )}
                   </div>
@@ -214,7 +217,7 @@ const MonitorCenter: React.FC = () => {
           </Row>
         </>
       ) : (
-        <Empty description="未能获取到监控数据" />
+        <Empty description={t('monitor.noData')} />
       )}
     </div>
   );

@@ -32,6 +32,7 @@ import {
   PauseCircleOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   getK8sClusters,
   getK8sNamespaces,
@@ -92,6 +93,7 @@ interface ScaffoldFile {
 }
 
 const HelmCenter: React.FC = () => {
+  const { t } = useTranslation();
   const { message, modal: appModal } = App.useApp();
   const { token } = theme.useToken();
   const [selectedCluster, setSelectedCluster] = useState<any>(null);
@@ -146,91 +148,91 @@ const HelmCenter: React.FC = () => {
   // Mutations
   const installChartMutation = useMutation({
     mutationFn: (data: { name: string; chart: string; namespace?: string }) => installHelmChart(selectedCluster?.id!, data),
-    onSuccess: (res: any) => { message.success(res?.msg || '发布成功'); setIsChartModalVisible(false); chartForm.resetFields(); refetchHelm(); },
-    onError: (err: any) => { message.error(`发布失败: ${err.response?.data?.error || err.message}`); }
+    onSuccess: (res: any) => { message.success(res?.msg || t('helm.publishSuccess')); setIsChartModalVisible(false); chartForm.resetFields(); refetchHelm(); },
+    onError: (err: any) => { message.error(`${t('helm.publishFailed')}: ${err.response?.data?.error || err.message}`); }
   });
 
   const upgradeChartMutation = useMutation({
     mutationFn: (data: { name: string; chart?: string; namespace?: string; force?: boolean; values?: string }) =>
       upgradeHelmChart(selectedCluster?.id!, data),
-    onSuccess: (res: any) => { message.success(res?.msg || '操作成功'); setIsChartModalVisible(false); chartForm.resetFields(); refetchHelm(); },
-    onError: (err: any) => { message.error(`提交失败: ${err.response?.data?.error || err.message}`); }
+    onSuccess: (res: any) => { message.success(res?.msg || t('helm.operateSuccess')); setIsChartModalVisible(false); chartForm.resetFields(); refetchHelm(); },
+    onError: (err: any) => { message.error(`${t('helm.submitFailed')}: ${err.response?.data?.error || err.message}`); }
   });
 
   const uploadChartMutation = useMutation({
     mutationFn: (formData: FormData) => request.post(`/k8s/${selectedCluster?.id}/chart_upload/`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
-    onSuccess: (res: any) => { message.success(res?.msg || res?.data?.msg || '操作成功'); setIsChartModalVisible(false); chartForm.resetFields(); setFileList([]); refetchHelm(); },
-    onError: (err: any) => { message.error(`提交失败: ${err.response?.data?.error || err.message}`); }
+    onSuccess: (res: any) => { message.success(res?.msg || res?.data?.msg || t('helm.operateSuccess')); setIsChartModalVisible(false); chartForm.resetFields(); setFileList([]); refetchHelm(); },
+    onError: (err: any) => { message.error(`${t('helm.submitFailed')}: ${err.response?.data?.error || err.message}`); }
   });
 
   const createChartMutation = useMutation({
     mutationFn: (data: { name: string; namespace?: string, files?: ScaffoldFile[] }) => request.post(`/k8s/${selectedCluster?.id}/chart_create/`, data),
-    onSuccess: (res: any) => { message.success(res?.msg || 'Chart 发布成功'); setIsChartModalVisible(false); chartForm.resetFields(); setScaffoldFiles([]); setActiveFilePath(null); refetchHelm(); },
-    onError: (err: any) => { message.error(`创建失败: ${err.response?.data?.error || err.message}`); }
+    onSuccess: (res: any) => { message.success(res?.msg || t('helm.chartReleasePublishSuccess')); setIsChartModalVisible(false); chartForm.resetFields(); setScaffoldFiles([]); setActiveFilePath(null); refetchHelm(); },
+    onError: (err: any) => { message.error(`${t('helm.createFailed')}: ${err.response?.data?.error || err.message}`); }
   });
 
   const uninstallMutation = useMutation({
     mutationFn: (record: any) => uninstallHelmChart(selectedCluster?.id!, { name: record.name, namespace: record.namespace }),
-    onSuccess: (res: any) => { message.success(res?.msg || '已卸载 Release'); refetchHelm(); },
-    onError: (err: any) => { message.error(`卸载失败: ${err.response?.data?.error || err.message}`); }
+    onSuccess: (res: any) => { message.success(res?.msg || t('helm.uninstallSuccess')); refetchHelm(); },
+    onError: (err: any) => { message.error(`${t('helm.uninstallFailed')}: ${err.response?.data?.error || err.message}`); }
   });
 
   const rollbackMutation = useMutation({
     mutationFn: (revision: number) => rollbackHelmChart(selectedCluster?.id!, { name: activeRelease?.name, revision, namespace: activeRelease?.namespace }),
-    onSuccess: (res: any) => { message.success(res?.msg || '回滚成功'); setIsHistoryVisible(false); refetchHelm(); },
-    onError: (err: any) => { message.error(`回滚失败: ${err.response?.data?.error || err.message}`); }
+    onSuccess: (res: any) => { message.success(res?.msg || t('helm.rollbackSuccess')); setIsHistoryVisible(false); refetchHelm(); },
+    onError: (err: any) => { message.error(`${t('helm.rollbackFailed')}: ${err.response?.data?.error || err.message}`); }
   });
 
   const restartMutation = useMutation({
     mutationFn: (record: any) => restartHelmChart(selectedCluster?.id!, { name: record.name, namespace: record.namespace }),
-    onSuccess: (res: any) => message.success(res?.msg || '已触发重启'),
-    onError: (err: any) => message.error(`重启失败: ${err.response?.data?.error || err.message}`)
+    onSuccess: (res: any) => message.success(res?.msg || t('helm.restartSuccess')),
+    onError: (err: any) => message.error(`${t('helm.restartFailed')}: ${err.response?.data?.error || err.message}`)
   });
 
   const stopMutation = useMutation({
     mutationFn: (record: any) => stopHelmChart(selectedCluster?.id!, { name: record.name, namespace: record.namespace }),
-    onSuccess: (res: any) => message.success(res?.msg || '已停止副本'),
-    onError: (err: any) => message.error(`停止失败: ${err.response?.data?.error || err.message}`)
+    onSuccess: (res: any) => message.success(res?.msg || t('helm.stoppedReplicas')),
+    onError: (err: any) => message.error(`${t('helm.stopFailed')}: ${err.response?.data?.error || err.message}`)
   });
 
   // --- 表格列定义与缩放逻辑 ---
   const initialColumns: any[] = [
-    { title: 'Release 名称', dataIndex: 'name', key: 'name', width: 150 },
-    { title: '维度 (NS)', dataIndex: 'namespace', key: 'namespace', width: 120 },
-    { 
-      title: '副本 / Pods', dataIndex: 'replicas_status', key: 'replicas_status', width: 120,
+    { title: t('helm.releaseName'), dataIndex: 'name', key: 'name', width: 150 },
+    { title: t('helm.dimension'), dataIndex: 'namespace', key: 'namespace', width: 120 },
+    {
+      title: t('helm.replicasPods'), dataIndex: 'replicas_status', key: 'replicas_status', width: 120,
       render: (v: string) => {
           const [ready, total] = (v || '-/-').split('/');
           const color = ready === total && total !== '0' ? 'success' : (total === '0' ? 'default' : 'processing');
           return <Tag color={color}>{v}</Tag>;
       }
     },
-    { 
-      title: '部署镜像', dataIndex: 'deployed_images', key: 'deployed_images', width: 220, ellipsis: true,
-      render: (images: string[]) => images && images.length > 0 
-        ? images.map((img, i) => <Tag key={i} color="geekblue" style={{ marginBottom: 2 }}>{img}</Tag>) 
-        : <Text type="secondary">-</Text> 
-    },
-    { title: '发布批次', dataIndex: 'revision', key: 'revision', width: 100, render: (v: any) => <Tag color="purple">Rev: {v}</Tag> },
-    { 
-      title: '状态', dataIndex: 'status', key: 'status', width: 100,
-      render: (s: string) => <Tag color={s === 'deployed' ? 'success' : 'warning'}>{s}</Tag> 
-    },
-    { title: 'Chart', dataIndex: 'chart', key: 'chart', width: 150, ellipsis: true },
-    { title: '最新操作时间', dataIndex: 'updated', key: 'updated', width: 150, render: (v: string) => <Text className="text-xs" type="secondary">{formatDateTime(v)}</Text> },
     {
-      title: '操作', key: 'action', width: 150,
+      title: t('helm.deployedImage'), dataIndex: 'deployed_images', key: 'deployed_images', width: 220, ellipsis: true,
+      render: (images: string[]) => images && images.length > 0
+        ? images.map((img, i) => <Tag key={i} color="geekblue" style={{ marginBottom: 2 }}>{img}</Tag>)
+        : <Text type="secondary">-</Text>
+    },
+    { title: t('helm.releaseBatch'), dataIndex: 'revision', key: 'revision', width: 100, render: (v: any) => <Tag color="purple">Rev: {v}</Tag> },
+    {
+      title: t('helm.status'), dataIndex: 'status', key: 'status', width: 100,
+      render: (s: string) => <Tag color={s === 'deployed' ? 'success' : 'warning'}>{s}</Tag>
+    },
+    { title: t('helm.chart'), dataIndex: 'chart', key: 'chart', width: 150, ellipsis: true },
+    { title: t('helm.latestOperationTime'), dataIndex: 'updated', key: 'updated', width: 150, render: (v: string) => <Text className="text-xs" type="secondary">{formatDateTime(v)}</Text> },
+    {
+      title: t('helm.action'), key: 'action', width: 150,
       render: (_: any, record: any) => {
         const items = [
-          hasPermission('helm:chart:helm_history') ? { key: 'history', icon: <HistoryOutlined />, label: '版本历史 / 回滚', onClick: () => { setActiveRelease(record); setIsHistoryVisible(true); } } : null,
-          hasPermission('helm:chart:helm_restart') ? { key: 'restart', icon: <RotateRightOutlined />, label: '滚动重启', onClick: () => restartMutation.mutate(record) } : null,
-          hasPermission('helm:chart:helm_stop') ? { key: 'stop', icon: <PauseCircleOutlined />, label: '停止运行 (副本置0)', danger: true, onClick: () => appModal.confirm({ title: '确认停止', content: `确定要将 Release ${record.name} 的副本数设置为 0 吗？`, onOk: () => stopMutation.mutate(record)}) } : null,
-          hasPermission('helm:chart:helm_uninstall') ? { key: 'uninstall', icon: <DeleteOutlined />, label: '卸载应用', danger: true, onClick: () => appModal.confirm({ title: '确认卸载', content: `确定要卸载应用 ${record.name} 吗？此操作不可逆！`, onOk: () => uninstallMutation.mutate(record)}) } : null,
+          hasPermission('helm:chart:helm_history') ? { key: 'history', icon: <HistoryOutlined />, label: t('helm.versionHistoryRollback'), onClick: () => { setActiveRelease(record); setIsHistoryVisible(true); } } : null,
+          hasPermission('helm:chart:helm_restart') ? { key: 'restart', icon: <RotateRightOutlined />, label: t('helm.rollingRestart'), onClick: () => restartMutation.mutate(record) } : null,
+          hasPermission('helm:chart:helm_stop') ? { key: 'stop', icon: <PauseCircleOutlined />, label: t('helm.stopRunning'), danger: true, onClick: () => appModal.confirm({ title: t('helm.confirmStopDeployment'), content: t('helm.confirmStopDeploymentContent', { name: record.name }), onOk: () => stopMutation.mutate(record)}) } : null,
+          hasPermission('helm:chart:helm_uninstall') ? { key: 'uninstall', icon: <DeleteOutlined />, label: t('helm.uninstallApp'), danger: true, onClick: () => appModal.confirm({ title: t('helm.confirmUninstall'), content: t('helm.confirmUninstallContent', { name: record.name }), onOk: () => uninstallMutation.mutate(record)}) } : null,
         ].filter(Boolean) as MenuProps['items'];
         return (
           <Space>
             { hasPermission('helm:chart:helm_upgrade') && (
-            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => showUpgradeModal(record)}>升级</Button>
+            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => showUpgradeModal(record)}>{t('helm.upgrade')}</Button>
                 )}
             { items && items.length > 0 && (
               <Dropdown menu={{ items }} placement="bottomRight"><Button type="text" size="small" icon={<EllipsisOutlined />} /></Dropdown>
@@ -286,16 +288,16 @@ const HelmCenter: React.FC = () => {
 
   const handleScaffold = async () => {
     const name = chartForm.getFieldValue('name');
-    if (!name) { message.warning('请先输入 Release 名称'); return; }
+    if (!name) { message.warning(t('helm.enterReleaseNameFirst')); return; }
     setIsScaffolding(true);
     try {
       const res = await request.post(`/k8s/${selectedCluster?.id}/chart_scaffold/`, { name });
       const files = Array.isArray(res) ? res : (res as any)?.data || [];
-      if (files.length === 0) { message.warning('脚高架生成成功但未找到文件，请检查 Release 名称格式'); return; }
+      if (files.length === 0) { message.warning(t('helm.scaffoldGeneratedSuccessNoFiles')); return; }
       setScaffoldFiles(files);
       setActiveFilePath(files[0].path);
-      message.success('脚手架生成成功，可以开始编辑');
-    } catch (err: any) { message.error(`生成失败: ${err.response?.data?.error || err.message}`);
+      message.success(t('helm.scaffoldGeneratedSuccessEdit'));
+    } catch (err: any) { message.error(`${t('helm.generateFailed')}: ${err.response?.data?.error || err.message}`);
     } finally { setIsScaffolding(false); }
   };
 
@@ -306,12 +308,12 @@ const HelmCenter: React.FC = () => {
     chartForm.setFieldsValue({
       name: record.name,
       namespace: record.namespace,
-      chart: record.origin_mode === 'repo' ? (record.repo_chart_path || record.chart) : '', 
+      chart: record.origin_mode === 'repo' ? (record.repo_chart_path || record.chart) : '',
     });
     setActiveRelease(record);
     const cId = record.cluster_id || selectedCluster?.id!;
     if (!cId) {
-        message.warning('无法确定集群上下文，请刷新后再试');
+        message.warning(t('helm.cannotDetermineClusterContext'));
         return;
     }
 
@@ -328,53 +330,52 @@ const HelmCenter: React.FC = () => {
   const handleFileContentChange = (content: string) => setScaffoldFiles(prev => prev.map(f => f.path === activeFilePath ? { ...f, content } : f));
 
   const historyColumns = [
-    { title: '版本', dataIndex: 'revision', key: 'revision', width: 70 },
-    { title: '更新时间', dataIndex: 'updated', key: 'updated', width: 180, render: (v: string) => formatDateTime(v) },
-    { title: '状态', dataIndex: 'status', key: 'status', render: (v: string) => <Tag>{v}</Tag> },
-    { title: 'Chart 版本', dataIndex: 'chart', key: 'chart' },
-    { title: '操作', key: 'actions', render: (_: any, row: any) =>
+    { title: t('helm.revision'), dataIndex: 'revision', key: 'revision', width: 70 },
+    { title: t('helm.updateTime'), dataIndex: 'updated', key: 'updated', width: 180, render: (v: string) => formatDateTime(v) },
+    { title: t('helm.status'), dataIndex: 'status', key: 'status', render: (v: string) => <Tag>{v}</Tag> },
+    { title: t('helm.chartVersion'), dataIndex: 'chart', key: 'chart' },
+    { title: t('helm.action'), key: 'actions', render: (_: any, row: any) =>
           hasPermission('helm:chart:helm_rollback') && (
-          <Button type="link" size="small" disabled={row.status === 'deployed'} onClick={() => rollbackMutation.mutate(row.revision)}>回滚</Button>
+          <Button type="link" size="small" disabled={row.status === 'deployed'} onClick={() => rollbackMutation.mutate(row.revision)}>{t('helm.rollback')}</Button>
           )
     }
   ];
 
   return (
     <div className="p-6">
-      <Card title={<Space><RocketOutlined style={{ color: token.colorPrimary }} /><Title level={4} className="m-0">Helm 应用中心</Title></Space>}>
+      <Card title={<Space><RocketOutlined style={{ color: token.colorPrimary }} /><Title level={4} className="m-0">{t('helm.helmApplicationCenter')}</Title></Space>}>
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap gap-4 items-center">
-            <Select 
-              className="w-64" 
-              placeholder="请选择目标集群" 
-              onChange={(val) => { 
+            <Select
+              className="w-64"
+              placeholder={t('k8s.selectTargetCluster')}
+              onChange={(val) => {
                 const clustersArr = Array.isArray(clustersData) ? clustersData : (clustersData as any)?.data || [];
-                // 使用 == 处理可能的 string/number 混用问题
-                const cluster = clustersArr.find((c: any) => c.id == val); 
-                setSelectedCluster(cluster); 
-                setSelectedNamespace(undefined); 
-              }} 
+                const cluster = clustersArr.find((c: any) => c.id == val);
+                setSelectedCluster(cluster);
+                setSelectedNamespace(undefined);
+              }}
               value={selectedCluster?.id}
               options={(Array.isArray(clustersData) ? clustersData : (clustersData as any)?.data || []).map((c: any) => ({ label: c.name, value: c.id }))}
             />
-            <Select 
-              className="w-48" 
-              placeholder="全选命名空间" 
-              allowClear 
-              onChange={(val) => setSelectedNamespace(val)} 
-              value={selectedNamespace} 
+            <Select
+              className="w-48"
+              placeholder={t('k8s.allNamespaces')}
+              allowClear
+              onChange={(val) => setSelectedNamespace(val)}
+              value={selectedNamespace}
               disabled={!selectedCluster}
               options={namespacesData?.map((ns: string) => ({ label: ns, value: ns }))}
             />
-            <Button icon={<ReloadOutlined />} onClick={() => refetchHelm()} disabled={!selectedCluster}>刷新列表</Button>
+            <Button icon={<ReloadOutlined />} onClick={() => refetchHelm()} disabled={!selectedCluster}>{t('helm.refreshList')}</Button>
             <div className="flex-1 text-right">
               { hasPermission('helm:chart:add') && (
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => { setIsUpgrade(false); setIsChartModalVisible(true); chartForm.resetFields(); setScaffoldFiles([]); setEditValuesYaml(''); setActiveFilePath(null); }} disabled={!selectedCluster}>发布新应用</Button>
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => { setIsUpgrade(false); setIsChartModalVisible(true); chartForm.resetFields(); setScaffoldFiles([]); setEditValuesYaml(''); setActiveFilePath(null); }} disabled={!selectedCluster}>{t('helm.publishNewApp')}</Button>
               )}
             </div>
           </div>
           {!selectedCluster ? (
-            <div className="text-center py-24 bg-gray-50 dark:bg-black/20 rounded-lg"><Text type="secondary" className="text-lg">请先在上方切换目标 Kubernetes 集群</Text></div>
+            <div className="text-center py-24 bg-gray-50 dark:bg-black/20 rounded-lg"><Text type="secondary" className="text-lg">{t('helm.switchClusterFirst')}</Text></div>
           ) : (
             <Table
               components={{ header: { cell: ResizableTitle } }}
@@ -391,85 +392,85 @@ const HelmCenter: React.FC = () => {
       </Card>
 
       <Modal
-        title={isUpgrade ? "升级 Helm 应用" : "发布 Helm 应用"}
+        title={isUpgrade ? t('helm.upgradeHelmApp') : t('helm.publishHelmApp')}
         open={isChartModalVisible}
         onCancel={() => { setIsChartModalVisible(false); chartForm.resetFields(); setInstallMode('upload'); setFileList([]); setIsUpgrade(false); setScaffoldFiles([]); setEditValuesYaml(''); }}
         onOk={() => chartForm.submit()}
         confirmLoading={installChartMutation.isPending || upgradeChartMutation.isPending || uploadChartMutation.isPending || createChartMutation.isPending || isScaffolding}
-        okText={isUpgrade ? "确认升级" : "立即发布"}
+        okText={isUpgrade ? t('helm.confirmUpgrade') : t('helm.publishNow')}
         width={isUpgrade || scaffoldFiles?.length > 0 ? 1100 : 700}
         style={{ top: 20 }}
         transitionName=""
       >
         <div className="flex flex-col gap-4">
           <div className="mb-2 text-center">
-            <Select 
-                value={installMode} 
-                onChange={(v: any) => setInstallMode(v)} 
-                className="w-72" 
+            <Select
+                value={installMode}
+                onChange={(v: any) => setInstallMode(v)}
+                className="w-72"
                 options={[
-                    { label: '上传本地 Chart 包 (.tgz)', value: 'upload' },
-                    { label: '从官方/添加的 Repo 发布', value: 'repo' },
-                    ...(!isUpgrade ? [{ label: '在线创建基础 Chart (Scaffold)', value: 'create' }] : [])
+                    { label: t('helm.uploadLocalChart'), value: 'upload' },
+                    { label: t('helm.uploadFromRepo'), value: 'repo' },
+                    ...(!isUpgrade ? [{ label: t('helm.onlineCreateChart'), value: 'create' }] : [])
                 ]}
             />
           </div>
           <div className="flex gap-6">
             <div className={isUpgrade || scaffoldFiles?.length > 0 ? "w-1/3" : "w-full"}>
               <Form form={chartForm} layout="vertical" onFinish={handleInstallSubmit} initialValues={{ namespace: selectedNamespace || 'default' }}>
-                <Form.Item name="name" label="Release 名称" rules={[{ required: true }]}><Input placeholder="例如: my-nginx" disabled={isUpgrade || (scaffoldFiles?.length ?? 0) > 0} /></Form.Item>
-                <Form.Item name="namespace" label="命名空间" rules={[{ required: true }]}>
-                  <Select 
-                    placeholder="选择命名空间" 
-                    disabled={isUpgrade || (scaffoldFiles?.length ?? 0) > 0} 
+                <Form.Item name="name" label={t('helm.releaseName')} rules={[{ required: true }]}><Input placeholder={t('helm.releaseNamePlaceholder')} disabled={isUpgrade || (scaffoldFiles?.length ?? 0) > 0} /></Form.Item>
+                <Form.Item name="namespace" label={t('k8s.namespace')} rules={[{ required: true }]}>
+                  <Select
+                    placeholder={t('helm.selectNamespace')}
+                    disabled={isUpgrade || (scaffoldFiles?.length ?? 0) > 0}
                     options={namespacesData?.map((ns: string) => ({ label: ns, value: ns }))}
                   />
                 </Form.Item>
                 {installMode === 'repo' && (
                   <>
-                    <Form.Item name="chart" label="Chart 来源" rules={[{ required: !isUpgrade }]}><Input placeholder={isUpgrade ? "不填则尝试自动识别" : "例如: bitnami/nginx"} /></Form.Item>
-                    <Form.Item name="version" label="Chart 版本号 (可选)" extra="例如: 25.3.7，不填则拉取最新版"><Input placeholder="latest" /></Form.Item>
+                    <Form.Item name="chart" label={t('helm.chartSource')} rules={[{ required: !isUpgrade }]}><Input placeholder={isUpgrade ? t('helm.autoIdentify') : "bitnami/nginx"} /></Form.Item>
+                    <Form.Item name="version" label={t('helm.chartVersionOptional')} extra={t('helm.chartVersionExample')}><Input placeholder="latest" /></Form.Item>
                   </>
                 )}
                 {installMode === 'upload' && (
-                  <Form.Item label="Chart 文件 (.tgz)" required={!isUpgrade}>
-                    <Upload beforeUpload={(f) => { setFileList([f]); return false; }} fileList={fileList} maxCount={1} accept=".tgz"><Button icon={<CloudUploadOutlined />} block>{isUpgrade ? "重新上传并更新 (可选)" : "选择 .tgz 文件"}</Button></Upload>
-                    {isUpgrade && <Text type="secondary" className="text-xs">如果您只想更改配置，可以不上传文件直接修改右侧 YAML。</Text>}
+                  <Form.Item label={t('helm.chartFile')} required={!isUpgrade}>
+                    <Upload beforeUpload={(f) => { setFileList([f]); return false; }} fileList={fileList} maxCount={1} accept=".tgz"><Button icon={<CloudUploadOutlined />} block>{isUpgrade ? t('helm.reuploadAndUpdateOptional') : t('helm.selectTgzFile')}</Button></Upload>
+                    {isUpgrade && <Text type="secondary" className="text-xs">{t('helm.justChangeConfig')}</Text>}
                   </Form.Item>
                 )}
-                {!isUpgrade && installMode === 'create' && (scaffoldFiles?.length ?? 0) === 0 && <Button icon={<BuildOutlined />} onClick={handleScaffold} loading={isScaffolding} block>生成脚手架</Button>}
-                {isUpgrade && <Form.Item name="force" valuePropName="checked"><Checkbox>强制覆盖 (Force)</Checkbox></Form.Item>}
+                {!isUpgrade && installMode === 'create' && (scaffoldFiles?.length ?? 0) === 0 && <Button icon={<BuildOutlined />} onClick={handleScaffold} loading={isScaffolding} block>{t('helm.generateScaffold')}</Button>}
+                {isUpgrade && <Form.Item name="force" valuePropName="checked"><Checkbox>{t('helm.forceOverwrite')}</Checkbox></Form.Item>}
               </Form>
             </div>
             {(isUpgrade || scaffoldFiles?.length > 0) && (
               <div className="w-2/3 flex flex-col border-l pl-6">
-                <div className="mb-2 flex justify-between items-center"><Text strong>{isUpgrade ? "在线编辑 Values.yaml" : "编辑脚手架文件"}</Text>{isUpgrade && <Tag color="blue">实时同步</Tag>}</div>
+                <div className="mb-2 flex justify-between items-center"><Text strong>{isUpgrade ? t('helm.editValuesYaml') : t('helm.editScaffoldFiles')}</Text>{isUpgrade && <Tag color="blue">{t('helm.realtimeSync')}</Tag>}</div>
                 {isUpgrade ? (
-                  <TextArea 
-                    value={editValuesYaml} 
-                    onChange={(e) => setEditValuesYaml(e.target.value)} 
+                  <TextArea
+                    value={editValuesYaml}
+                    onChange={(e) => setEditValuesYaml(e.target.value)}
                     className="h-112.5 font-mono text-xs bg-gray-50 border-gray-200 text-gray-800 dark:bg-gray-950 dark:border-gray-800 dark:text-green-400 p-4 rounded-lg"
-                    placeholder="# 在此输入或修改配置..." 
+                    placeholder={t('helm.editConfigHere')}
                   />) : (
                     <div className="flex gap-4 h-112.5">
                         <div className="w-40 overflow-y-auto border border-gray-200 dark:border-gray-800 rounded p-2 bg-gray-50 dark:bg-gray-950">
-                          <List 
-                            size="small" 
-                            dataSource={scaffoldFiles} 
+                          <List
+                            size="small"
+                            dataSource={scaffoldFiles}
                             renderItem={item => (
-                              <div 
-                                onClick={() => setActiveFilePath(item.path)} 
+                              <div
+                                onClick={() => setActiveFilePath(item.path)}
                                 className={`p-2 cursor-pointer rounded truncate text-[11px] mb-1 transition-colors ${activeFilePath === item.path ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800'}`}
                               >
                                 {item.path}
                               </div>
-                            )} 
+                            )}
                           />
                         </div>
-                        <TextArea 
-                          value={activeFileContent} 
-                          onChange={(e) => handleFileContentChange(e.target.value)} 
-                          className="flex-1 font-mono text-xs bg-gray-50 border-gray-200 text-gray-800 dark:bg-gray-950 dark:border-gray-800 dark:text-green-400 p-4 rounded-lg" 
+                        <TextArea
+                          value={activeFileContent}
+                          onChange={(e) => handleFileContentChange(e.target.value)}
+                          className="flex-1 font-mono text-xs bg-gray-50 border-gray-200 text-gray-800 dark:bg-gray-950 dark:border-gray-800 dark:text-green-400 p-4 rounded-lg"
                         />
                     </div>
                 )}
@@ -478,7 +479,7 @@ const HelmCenter: React.FC = () => {
           </div>
         </div>
       </Modal>
-      <Modal title={`${activeRelease?.name} 版本历史`} open={isHistoryVisible} onCancel={() => setIsHistoryVisible(false)} footer={null} width={isMobile ? '95vw' : 750} bodyStyle={{ overflowX: 'auto' }}><Table columns={historyColumns} dataSource={Array.isArray(historyData) ? historyData : []} loading={historyLoading} rowKey="revision" pagination={false} /></Modal>
+      <Modal title={t('helm.releaseHistory', { name: activeRelease?.name })} open={isHistoryVisible} onCancel={() => setIsHistoryVisible(false)} footer={null} width={isMobile ? '95vw' : 750} bodyStyle={{ overflowX: 'auto' }}><Table columns={historyColumns} dataSource={Array.isArray(historyData) ? historyData : []} loading={historyLoading} rowKey="revision" pagination={false} /></Modal>
     </div>
   );
 };

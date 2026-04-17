@@ -7,6 +7,7 @@ import {
     WarningOutlined,
 } from '@ant-design/icons';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface MetricCardsProps {
     data: any;
@@ -14,6 +15,7 @@ interface MetricCardsProps {
 }
 
 const MetricCards: React.FC<MetricCardsProps> = ({ data, isLoading }) => {
+    const { t } = useTranslation();
     const { token } = theme.useToken();
     const metrics = data?.metrics || {};
 
@@ -25,9 +27,9 @@ const MetricCards: React.FC<MetricCardsProps> = ({ data, isLoading }) => {
                         <StatsSkeleton />
                     ) : (
                         <Statistic
-                            title={<span className="text-gray-500 dark:text-gray-400 font-medium">托管主机总数</span>}
+                            title={<span className="text-gray-500 dark:text-gray-400 font-medium">{t('dashboard.totalHosts')}</span>}
                             value={metrics.totalHosts}
-                            suffix={<span className="text-sm text-gray-400">/ {metrics.onlineHosts} 在线</span>}
+                            suffix={<span className="text-sm text-gray-400">/ {metrics.onlineHosts} {t('dashboard.onlineHosts')}</span>}
                             prefix={<HddOutlined className="text-blue-500" />}
                             styles={{
                                 content: {
@@ -38,14 +40,14 @@ const MetricCards: React.FC<MetricCardsProps> = ({ data, isLoading }) => {
                     )}
                 </Card>
             </Col>
-            
+
             <Col xs={24} sm={12} md={6}>
                 <Card className="shadow-sm border-0 h-full">
                     {isLoading ? (
                         <StatsSkeleton />
                     ) : (
                         <Statistic
-                            title={<span className="text-gray-500 dark:text-gray-400 font-medium">资源池数量</span>}
+                            title={<span className="text-gray-500 dark:text-gray-400 font-medium">{t('dashboard.resourcePools')}</span>}
                             value={metrics.totalResourcePools}
                             prefix={<DatabaseOutlined className="text-purple-500" />}
                             styles={{
@@ -57,14 +59,14 @@ const MetricCards: React.FC<MetricCardsProps> = ({ data, isLoading }) => {
                     )}
                 </Card>
             </Col>
-            
+
             <Col xs={24} sm={12} md={6}>
                 <Card className="shadow-sm border-0 h-full">
                     {isLoading ? (
                         <StatsSkeleton />
                     ) : (
                         <Statistic
-                            title={<span className="text-gray-500 dark:text-gray-400 font-medium">今日任务执行</span>}
+                            title={<span className="text-gray-500 dark:text-gray-400 font-medium">{t('dashboard.dailyTasks')}</span>}
                             value={metrics.dailyTaskRuns}
                             styles={{
                                 content: {
@@ -84,7 +86,7 @@ const MetricCards: React.FC<MetricCardsProps> = ({ data, isLoading }) => {
                         <StatsSkeleton />
                     ) : (
                         <Statistic
-                            title={<span className="text-gray-500 dark:text-gray-400 font-bold">失败任务数 (24h)</span>}
+                            title={<span className="text-gray-500 dark:text-gray-400 font-bold">{t('dashboard.failedTasks24h')}</span>}
                             value={metrics.dailyFailedTasks}
                             styles={{
                                 content: {

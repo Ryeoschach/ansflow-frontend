@@ -9,11 +9,11 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Layout, Typography, Space, Button, theme, Tag, Drawer, Spin, Card, App, Tooltip } from 'antd';
-import { 
-  ArrowLeftOutlined, 
-  LoadingOutlined, 
-  SyncOutlined, 
-  MonitorOutlined, 
+import {
+  ArrowLeftOutlined,
+  LoadingOutlined,
+  SyncOutlined,
+  MonitorOutlined,
   StopOutlined,
   ClockCircleOutlined,
   HistoryOutlined,
@@ -24,6 +24,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getPipelineRunDetail, stopPipelineRun } from '../../api/pipeline';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useWebSocket from 'react-use-websocket';
+import { useTranslation } from 'react-i18next';
 import useLogStore from '../../store/useLogStore';
 import useAppStore from '../../store/useAppStore';
 
@@ -89,6 +90,7 @@ const AnsiLog = React.memo(({ text }: { text: string }) => {
  * @description 流水线运行详情核心逻辑，实现：基于 WebSocket 的 DAG 图秒级状态同步、黑客风格渲染控制台。
  */
 const ViewerCore = () => {
+  const { t } = useTranslation();
   const { runId } = useParams();
   const navigate = useNavigate();
   const { token } = theme.useToken();
@@ -153,10 +155,10 @@ const ViewerCore = () => {
   const stopRunMutation = useMutation({
     mutationFn: stopPipelineRun,
     onSuccess: () => {
-        message.success('SIGTERM 信号已广播');
+        message.success(t('runViewer.sigtermBroadcast'));
         queryClient.invalidateQueries({ queryKey: ['pipeline_run', runId] });
     },
-    onError: (err: any) => message.error(`控制指令拒绝: ${err.message}`)
+    onError: (err: any) => message.error(`${t('runViewer.controlCommandRejected')}: ${err.message}`)
   });
 
   /**
@@ -215,11 +217,11 @@ const ViewerCore = () => {
 
   const getStatusTag = (status: string) => {
       switch(status) {
-          case 'running': return <Tag icon={<SyncOutlined spin />} color="processing" className="rounded-full px-3">执行中</Tag>;
-          case 'success': return <Tag color="success" className="rounded-full px-3">成功</Tag>;
-          case 'failed': return <Tag color="error" className="rounded-full px-3">失败</Tag>;
-          case 'cancelled': return <Tag icon={<StopOutlined />} color="default" className="rounded-full px-3">已取消</Tag>;
-          default: return <Tag color="default" className="rounded-full px-3">队列中</Tag>;
+          case 'running': return <Tag icon={<SyncOutlined spin />} color="processing" className="rounded-full px-3">{t('runViewer.executing')}</Tag>;
+          case 'success': return <Tag color="success" className="rounded-full px-3">{t('runViewer.success')}</Tag>;
+          case 'failed': return <Tag color="error" className="rounded-full px-3">{t('runViewer.failed')}</Tag>;
+          case 'cancelled': return <Tag icon={<StopOutlined />} color="default" className="rounded-full px-3">{t('runViewer.cancelled')}</Tag>;
+          default: return <Tag color="default" className="rounded-full px-3">{t('runViewer.queued')}</Tag>;
       }
   };
 
@@ -239,7 +241,7 @@ const ViewerCore = () => {
           <div className="flex flex-col">
             <div className="flex items-center gap-3">
                 <MonitorOutlined className="text-blue-500 text-lg" /> 
-                <Title level={5} style={{ margin: 0 }}>{payload?.pipeline_name || '探测中...'}</Title>
+                <Title level={5} style={{ margin: 0 }}>{payload?.pipeline_name || t('runViewer.detecting')}</Title>
                 {getStatusTag(payload?.status)}
             </div>
             <Text type="secondary" className="text-[10px] uppercase tracking-tighter">
@@ -257,9 +259,9 @@ const ViewerCore = () => {
                 icon={<StopOutlined />} 
                 onClick={() => {
                     modal.confirm({
-                        title: '高危操作：强行中止',
-                        content: '强制终止会导致已分配的 Worker 节点立即释放，可能会留下挂起的中间态资源，确认继续？',
-                        okText: '强制结束',
+                        title: t('runViewer.highRiskOperationForceStop'),
+                        content: t('runViewer.forceStopWillReleaseWorker'),
+                        okText: t('runViewer.forceEnd'),
                         okType: 'danger',
                         onOk: () => stopRunMutation.mutate(Number(runId)),
                     });
@@ -267,7 +269,7 @@ const ViewerCore = () => {
                 loading={stopRunMutation.isPending}
                 className="rounded-xl"
               >
-                中止流水线
+                {t('runViewer.abortPipeline')}
               </Button>
           )}
         </Space>
@@ -277,7 +279,7 @@ const ViewerCore = () => {
         {isLoading ? (
           <div className="flex h-full flex-col items-center justify-center gap-4 bg-white/50 backdrop-blur-xl">
             <Spin indicator={<LoadingOutlined style={{ fontSize: 40 }} spin />} />
-            <Text type="secondary" className="animate-pulse">正在初始化集群拓扑引擎...</Text>
+            <Text type="secondary" className="animate-pulse">{t('runViewer.initializingClusterTopology')}</Text>
           </div>
         ) : (
           <ReactFlow
@@ -315,7 +317,7 @@ const ViewerCore = () => {
         title={
             <Space size="middle">
                 <HistoryOutlined className="text-blue-600" />
-                <span className="text-slate-900 dark:text-slate-200 font-bold text-base">节点执行轨迹</span>
+                <span className="text-slate-900 dark:text-slate-200 font-bold text-base">{t('runViewer.title')}</span>
             </Space>
         }
         placement="right"
@@ -334,11 +336,11 @@ const ViewerCore = () => {
             <Card size="small" className="border-none shadow-sm rounded-2xl">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-xs py-2">
                     <div className="flex flex-col gap-1">
-                        <Text type="secondary" className="uppercase text-[10px] tracking-widest font-bold text-slate-500 dark:text-slate-400">节点别名</Text>
-                        <Text strong className="text-sm text-slate-800 dark:text-slate-200">{selectedNodeData?.label || '未命名宿主节点'}</Text>
+                        <Text type="secondary" className="uppercase text-[10px] tracking-widest font-bold text-slate-500 dark:text-slate-400">{t('runViewer.nodeAlias')}</Text>
+                        <Text strong className="text-sm text-slate-800 dark:text-slate-200">{selectedNodeData?.label || t('runViewer.unnamedHostNode')}</Text>
                     </div>
                     <div className="flex flex-col gap-1">
-                        <Text type="secondary" className="uppercase text-[10px] tracking-widest font-bold dark:text-slate-500">累计耗时</Text>
+                        <Text type="secondary" className="uppercase text-[10px] tracking-widest font-bold dark:text-slate-500">{t('runViewer.totalDuration')}</Text>
                         <Space className="text-blue-600 dark:text-blue-400 font-mono">
                             <ClockCircleOutlined />
                             <Text strong className="dark:text-blue-400">
@@ -361,18 +363,18 @@ const ViewerCore = () => {
 
           <div className="flex-1 px-6 pb-6 flex flex-col min-h-0">
              <div className="flex items-center justify-between mb-3 px-2">
-                <Text className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">终端实时回显</Text>
+                <Text className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t('runViewer.terminalRealtimeEcho')}</Text>
                 <Space size="middle">
-                    <Tooltip title="自动滚动到底部">
-                        <Button 
-                            type={autoScroll ? 'primary' : 'text'} 
-                            size="small" 
-                            icon={<VerticalAlignBottomOutlined />} 
+                    <Tooltip title={t('runViewer.autoScrollToBottom')}>
+                        <Button
+                            type={autoScroll ? 'primary' : 'text'}
+                            size="small"
+                            icon={<VerticalAlignBottomOutlined />}
                             onClick={() => setAutoScroll(!autoScroll)}
                             className="rounded-lg"
                         />
                     </Tooltip>
-                    <Tooltip title="调节字体大小">
+                    <Tooltip title={t('runViewer.adjustFontSize')}>
                         <Button 
                             type="text" 
                             size="small" 

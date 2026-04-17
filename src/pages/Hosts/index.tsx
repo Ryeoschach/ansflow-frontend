@@ -6,8 +6,10 @@ import {getHosts, createHost, updateHost, deleteHost, getEnvironments, getPlatfo
 import useAppStore from '../../store/useAppStore';
 import {TableSkeleton} from "../../components/Skeletons";
 import { useBreakpoint } from '@/utils/useBreakpoint';
+import { useTranslation } from 'react-i18next';
 
 const HostManagement: React.FC = () => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const { message } = App.useApp();
     const { hasPermission } = useAppStore();
@@ -56,7 +58,7 @@ const HostManagement: React.FC = () => {
     const saveMutation = useMutation({
         mutationFn: (values: any) => editingHost ? updateHost(editingHost.id, values) : createHost(values),
         onSuccess: () => {
-            message.success(editingHost ? '主机更新成功' : '主机创建成功');
+            message.success(editingHost ? t('host.hostUpdated') : t('host.hostCreated'));
             setIsModalOpen(false);
             queryClient.invalidateQueries({ queryKey: ['Hosts'] });
         }
@@ -65,28 +67,28 @@ const HostManagement: React.FC = () => {
     const deleteMutation = useMutation({
         mutationFn: deleteHost,
         onSuccess: () => {
-            message.success('主机已删除');
+            message.success(t('host.hostDeleted'));
             queryClient.invalidateQueries({ queryKey: ['Hosts'] });
         }
     });
 
     // 状态映射字典
     const statusMap: Record<number, { text: string; color: string }> = {
-        0: { text: '下线', color: 'default' },
-        1: { text: '在线', color: 'success' },
-        2: { text: '故障', color: 'error' },
-        3: { text: '备用', color: 'processing' },
+        0: { text: t('host.statusOffline'), color: 'default' },
+        1: { text: t('host.statusOnline'), color: 'success' },
+        2: { text: t('host.statusError'), color: 'error' },
+        3: { text: t('host.statusStandby'), color: 'processing' },
     };
 
     const columns = [
         {
-            title: '主机名',
+            title: t('host.hostname'),
             dataIndex: 'hostname',
             key: 'hostname',
             render: (text: string) => <span className="font-semibold"><DesktopOutlined className="mr-2 opacity-50"/>{text}</span>
         },
         {
-            title: '环境',
+            title: t('host.environment'),
             dataIndex: 'env',
             key: 'env',
             render: (envId: number) => {
@@ -95,49 +97,47 @@ const HostManagement: React.FC = () => {
             }
         },
         {
-            title: '平台',
+            title: t('host.platform'),
             dataIndex: 'platform',
             key: 'platform',
             render: (platformId: number) => {
-                if (!platformId) return <Tag color="default">未分类</Tag>;
+                if (!platformId) return <Tag color="default">{t('host.unclassified')}</Tag>;
 
-                // 去数组里找对应的平台名称
                 const p = platforms.find((p: any) => p.id === platformId);
                 return <Tag color="cyan">{p?.name || `ID:${platformId}`}</Tag>;
             }
         },
         {
-            title: 'IP地址',
+            title: t('host.ipAddress'),
             key: 'ip',
             render: (_: any, record: any) => (
                 <div className="flex flex-col text-xs">
-                    {record.private_ip && <span className="text-gray-500">内网: {record.private_ip}</span>}
-                    {record.ip_address && <span className="text-blue-500">公网: {record.ip_address}</span>}
+                    {record.private_ip && <span className="text-gray-500">{t('host.privateIp')}: {record.private_ip}</span>}
+                    {record.ip_address && <span className="text-blue-500">{t('host.publicIp')}: {record.ip_address}</span>}
                 </div>
             )
         },
         {
-            title: '开放端口',
+            title: t('host.openPorts'),
             key: 'ports',
             dataIndex: 'ports',
-            // render: (text: string) => <span className="font-semibold">{text}</span>
         },
         {
-            title: '配置',
+            title: t('host.config'),
             key: 'specs',
             render: (_: any, record: any) => (
                 <span className="text-xs text-gray-500">
-                    {record.cpu}核 / {record.memory}G / {record.disk}G
+                    {record.cpu}C / {record.memory}G / {record.disk}G
                 </span>
             )
         },
         {
-            title: '操作系统',
+            title: t('host.os'),
             dataIndex: 'os_type',
             key: 'os_type',
         },
         {
-            title: '状态',
+            title: t('host.statusLabel'),
             dataIndex: 'status',
             key: 'status',
             render: (status: number) => {
@@ -146,19 +146,19 @@ const HostManagement: React.FC = () => {
             }
         },
         {
-            title: '操作',
+            title: t('host.action'),
             key: 'action',
             render: (_: any, record: any) => (
                 <Space size="middle">
-                    <Tooltip title="编辑">
+                    <Tooltip title={t('host.edit')}>
                         <Button type="text" icon={<EditOutlined />} onClick={() => {
                             setEditingHost(record);
                             form.setFieldsValue(record);
                             setIsModalOpen(true);
                         }} />
                     </Tooltip>
-                    <Popconfirm title="确定删除此主机吗？" onConfirm={() => deleteMutation.mutate(record.id)}>
-                        <Tooltip title="删除">
+                    <Popconfirm title={t('host.confirmDelete')} onConfirm={() => deleteMutation.mutate(record.id)}>
+                        <Tooltip title={t('host.delete')}>
                             <Button type="text" danger icon={<DeleteOutlined />} />
                         </Tooltip>
                     </Popconfirm>
@@ -168,20 +168,19 @@ const HostManagement: React.FC = () => {
     ];
 
     return (
-        <Card title="主机管理" className="m-4 shadow-sm" extra={
+        <Card title={t('host.title')} className="m-4 shadow-sm" extra={
             (hasPermission('*') || hasPermission('resource:hosts:add')) && (
             <Button
                 type="primary"
                 icon={<PlusOutlined />}
                 onClick={() => {
                     setEditingHost(null);
-                    // 提供一些默认值
                     form.resetFields();
                     form.setFieldsValue({ status: 1, cpu: 2, memory: 4, disk: 50, os_type: 'Linux' });
                     setIsModalOpen(true);
                 }}
             >
-                录入主机
+                {t('host.enterHost')}
             </Button>
             )
         }>
@@ -205,7 +204,7 @@ const HostManagement: React.FC = () => {
                 )}
 
             <Modal
-                title={editingHost ? '编辑主机' : '录入主机'}
+                title={editingHost ? t('host.editHost') : t('host.createHost')}
                 open={isModalOpen}
                 onOk={() => form.submit()}
                 onCancel={() => setIsModalOpen(false)}
@@ -221,58 +220,58 @@ const HostManagement: React.FC = () => {
                     onFinish={(values) => saveMutation.mutate(values)}
                 >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Form.Item label="主机名" name="hostname" rules={[{ required: true, message: '请输入主机名' }]}>
-                            <Input placeholder="例如: web-server-01" />
+                        <Form.Item label={t('host.hostname')} name="hostname" rules={[{ required: true, message: t('host.hostname') + t('common.required') }]}>
+                            <Input placeholder={t('host.hostnamePlaceholder')} />
                         </Form.Item>
-                        <Form.Item label="所属环境" name="env" rules={[{ required: true, message: '请选择环境' }]}>
-                            <Select placeholder="请选择环境" options={environments.map((e: any) => ({ label: e.name, value: e.id }))} />
+                        <Form.Item label={t('host.environment')} name="env" rules={[{ required: true, message: t('host.envRequired') }]}>
+                            <Select placeholder={t('host.envPlaceholder')} options={environments.map((e: any) => ({ label: e.name, value: e.id }))} />
                         </Form.Item>
-                        <Form.Item label="所属平台" name="platform">
-                            <Select placeholder="请选择平台(可选)" options={platforms.map((p: any) => ({ label: p.name, value: p.id }))} allowClear/>
+                        <Form.Item label={t('host.platform')} name="platform">
+                            <Select placeholder={t('host.platformPlaceholder')} options={platforms.map((p: any) => ({ label: p.name, value: p.id }))} allowClear/>
                         </Form.Item>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Form.Item label="内网 IP" name="private_ip">
-                            <Input placeholder="例如: 192.168.1.100" />
+                        <Form.Item label={t('host.privateIpLabel')} name="private_ip">
+                            <Input placeholder={t('host.privateIpPlaceholder')} />
                         </Form.Item>
-                        <Form.Item label="公网 IP" name="ip_address">
-                            <Input placeholder="例如: 8.8.8.8" />
-                        </Form.Item>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Form.Item label="CPU (核)" name="cpu">
-                            <InputNumber className="w-full" min={1} />
-                        </Form.Item>
-                        <Form.Item label="内存 (GB)" name="memory">
-                            <InputNumber className="w-full" min={1} />
-                        </Form.Item>
-                        <Form.Item label="磁盘 (GB)" name="disk">
-                            <InputNumber className="w-full" min={1} />
+                        <Form.Item label={t('host.publicIpLabel')} name="ip_address">
+                            <Input placeholder={t('host.publicIpPlaceholder')} />
                         </Form.Item>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Form.Item label="操作系统" name="os_type">
-                            <Input placeholder="例如: CentOS 7.9" />
+                        <Form.Item label={t('host.cpuLabel')} name="cpu">
+                            <InputNumber className="w-full" min={1} />
                         </Form.Item>
-                        <Form.Item label="端口号" name="ports">
-                            <Input placeholder="例如：80 3306" />
+                        <Form.Item label={t('host.memoryLabel')} name="memory">
+                            <InputNumber className="w-full" min={1} />
                         </Form.Item>
-                        <Form.Item label="主机状态" name="status">
+                        <Form.Item label={t('host.diskLabel')} name="disk">
+                            <InputNumber className="w-full" min={1} />
+                        </Form.Item>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Form.Item label={t('host.osLabel')} name="os_type">
+                            <Input placeholder={t('host.osPlaceholder')} />
+                        </Form.Item>
+                        <Form.Item label={t('host.portsLabel')} name="ports">
+                            <Input placeholder={t('host.portsPlaceholder')} />
+                        </Form.Item>
+                        <Form.Item label={t('host.statusLabel')} name="status">
                             <Select options={[
-                                { label: '在线', value: 1 },
-                                { label: '下线', value: 0 },
-                                { label: '故障', value: 2 },
-                                { label: '备用', value: 3 },
+                                { label: t('host.statusOnline'), value: 1 },
+                                { label: t('host.statusOffline'), value: 0 },
+                                { label: t('host.statusError'), value: 2 },
+                                { label: t('host.statusStandby'), value: 3 },
                             ]} />
                         </Form.Item>
                     </div>
 
-                    <Form.Item label="SSH 登录凭据 (可选)" name="credential" help="留空则使用所属平台的默认凭据">
-                        <Select 
-                            placeholder="选择此主机的特定登录凭据"
+                    <Form.Item label={t('host.credentialLabel')} name="credential" help={t('host.credentialHelp')}>
+                        <Select
+                            placeholder={t('host.credentialPlaceholder')}
                             options={credData?.data?.map((c: any) => ({ label: c.name, value: c.id }))}
                             allowClear
                         />

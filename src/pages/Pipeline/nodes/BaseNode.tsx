@@ -2,6 +2,7 @@ import React, { memo, ReactNode } from 'react';
 import { Handle, Position } from 'reactflow';
 import { theme } from 'antd';
 import { CheckCircleFilled, CloseCircleFilled, SyncOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 
 interface BaseNodeProps {
   title: string;
@@ -14,15 +15,16 @@ interface BaseNodeProps {
   className?: string;
 }
 
-const BaseNode: React.FC<BaseNodeProps> = ({ 
-  title, 
-  icon, 
-  data, 
-  isConnectable, 
+const BaseNode: React.FC<BaseNodeProps> = ({
+  title,
+  icon,
+  data,
+  isConnectable,
   children,
   defaultColor,
   className = ''
 }) => {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const isRunning = data.runStatus === 'running';
   const isSuccess = data.runStatus === 'success';
@@ -152,7 +154,7 @@ const BaseNode: React.FC<BaseNodeProps> = ({
               wordBreak: 'break-all',
               lineHeight: '1.4'
           }}>
-            {data?.label || `未配置关联${title}`}
+            {data?.label || `${t('pipelineNode.notConfigured')}${title}`}
           </div>
         )}
       </div>

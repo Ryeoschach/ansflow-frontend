@@ -11,6 +11,9 @@ interface AppState {
   // 切换主题
   isDark: boolean;
   setIsDark: (isDark: boolean) => void;
+  // 语言
+  language: string;
+  setLanguage: (lang: string) => void;
   // UI 偏好
   pipelineActiveTab: string;
   setPipelineActiveTab: (tab: string) => void;
@@ -49,6 +52,8 @@ const useAppStore = create<AppState>()(
     toggleCollapsed: () => set((state) => ({ collapsed: !state.collapsed })),
     isDark: false,
     setIsDark: (isDark) => set({ isDark }),
+    language: 'zh-CN',
+    setLanguage: (language) => set({ language }),
     pipelineActiveTab: 'templates',
     setPipelineActiveTab: (pipelineActiveTab) => set({ pipelineActiveTab }),
     token: null,

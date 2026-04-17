@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Table, Button, Space, Modal, Form, Input, App, Popconfirm, Card, Drawer, Tag, Tooltip, Tabs, Spin, Select, Typography, Alert, Divider, Checkbox, Collapse, theme } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SecurityScanOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { getRoles, createRole, updateRole, deleteRole, getPermissions, getMenus, updateRoleDataPolicies } from '../../api/rbac';
 import { getPipelines } from '../../api/pipeline';
 import { getK8sClusters } from '../../api/k8s';
@@ -15,6 +16,7 @@ import { PaginatedResponse, Permission } from '../../types';
  * 角色管理页面
  */
 const RoleManagement: React.FC = () => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const { message } = App.useApp();
     const { token } = theme.useToken();
@@ -137,7 +139,7 @@ const RoleManagement: React.FC = () => {
     const mutation = useMutation({
         mutationFn: (values: any) => editingRole ? updateRole(editingRole.id, values) : createRole(values),
         onSuccess: () => {
-            message.success(editingRole ? '修改成功' : '添加成功');
+            message.success(editingRole ? t('role.updateSuccess') : t('role.createSuccess'));
             setIsModalOpen(false);
             queryClient.invalidateQueries({ queryKey: ['roles'] });
         }
@@ -146,7 +148,7 @@ const RoleManagement: React.FC = () => {
     const deleteMutation = useMutation({
         mutationFn: deleteRole,
         onSuccess: () => {
-            message.success('删除成功');
+            message.success(t('role.deleteSuccess'));
             queryClient.invalidateQueries({ queryKey: ['roles'] });
         }
     });
@@ -161,13 +163,13 @@ const RoleManagement: React.FC = () => {
             await updateRoleDataPolicies(editingRole.id, policies);
         },
         onSuccess: () => {
-            message.success('权限及数据范围配置成功');
+            message.success(t('role.configSuccess'));
             setIsDrawerOpen(false);
             queryClient.invalidateQueries({ queryKey: ['roles'] });
             queryClient.invalidateQueries({ queryKey: ['my_menus'] });
         },
         onError: (err: any) => {
-            message.error(err.response?.data?.message || '配置失败');
+            message.error(err.response?.data?.message || t('role.configError'));
         }
     });
 
@@ -203,10 +205,10 @@ const RoleManagement: React.FC = () => {
     };
 
     const columns = [
-        { title: '角色名称', dataIndex: 'name', key: 'name' },
-        { title: '角色标识', dataIndex: 'code', key: 'code', render: (code: string) => <Tag color="blue">{code}</Tag> },
+        { title: t('role.columnName'), dataIndex: 'name', key: 'name' },
+        { title: t('role.columnCode'), dataIndex: 'code', key: 'code', render: (code: string) => <Tag color="blue">{code}</Tag> },
         {
-            title: '继承自',
+            title: t('role.columnParents'),
             dataIndex: 'parents',
             key: 'parents',
             render: (parents: number[]) => {
@@ -222,23 +224,23 @@ const RoleManagement: React.FC = () => {
             }
         },
         {
-            title: '操作',
+            title: t('role.columnAction'),
             key: 'action',
             render: (_: any, record: any) => (
                 <Space size="middle">
                     {(hasPermission('*') || hasPermission('rbac:role:edit')) && (
-                        <Tooltip title="授权设置">
+                        <Tooltip title={t('role.authorize')}>
                             <Button type="text" icon={<SecurityScanOutlined />} onClick={() => showAssignDrawer(record)} />
                         </Tooltip>
                     )}
                     {(hasPermission('*') || hasPermission('rbac:role:edit')) && (
-                        <Tooltip title="编辑">
+                        <Tooltip title={t('role.edit')}>
                             <Button type="text" icon={<EditOutlined />} onClick={() => showModal(record)} />
                         </Tooltip>
                     )}
                     {(hasPermission('*') || hasPermission('rbac:role:delete')) && (
-                        <Popconfirm title="确定删除吗？" onConfirm={() => deleteMutation.mutate(record.id)}>
-                            <Tooltip title="删除">
+                        <Popconfirm title={t('role.deleteConfirm')} onConfirm={() => deleteMutation.mutate(record.id)}>
+                            <Tooltip title={t('role.delete')}>
                                 <Button type="text" danger icon={<DeleteOutlined />} />
                             </Tooltip>
                         </Popconfirm>
@@ -252,10 +254,10 @@ const RoleManagement: React.FC = () => {
 
     return (
         <Card
-            title="角色管理"
+            title={t('role.title')}
             className="m-4 shadow-sm"
             extra={(hasPermission('*') || hasPermission('rbac:role:add')) && (
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>新增角色</Button>
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>{t('role.addRole')}</Button>
             )}
         >
             <Table
@@ -274,18 +276,18 @@ const RoleManagement: React.FC = () => {
             />
 
             {/* 编辑框 */}
-            <Modal title={editingRole ? '编辑角色' : '新增角色'} open={isModalOpen} onCancel={() => setIsModalOpen(false)} onOk={() => form.submit()} confirmLoading={mutation.isPending}>
+            <Modal title={editingRole ? t('role.editRole') : t('role.createRole')} open={isModalOpen} onCancel={() => setIsModalOpen(false)} onOk={() => form.submit()} confirmLoading={mutation.isPending}>
                 <Form form={form} layout="vertical" onFinish={(values) => mutation.mutate(values)}>
-                    <Form.Item name="name" label="角色名称" rules={[{ required: true, message: '请输入名称' }]}>
+                    <Form.Item name="name" label={t('role.roleName')} rules={[{ required: true, message: t('role.roleNameRequired') }]}>
                         <Input />
                     </Form.Item>
-                    <Form.Item name="code" label="角色标识" rules={[{ required: true, message: '请输入标识' }]}>
-                        <Input placeholder="例如: ops_manager" />
+                    <Form.Item name="code" label={t('role.roleCode')} rules={[{ required: true, message: t('role.roleCodeRequired') }]}>
+                        <Input placeholder={t('role.roleCodePlaceholder')} />
                     </Form.Item>
-                    <Form.Item name="parents" label="继承自(父角色)" tooltip="继承后将自动获得父角色的所有侧边栏菜单和 API 功能权限">
+                    <Form.Item name="parents" label={t('role.inheritFrom')} tooltip={t('role.inheritFromTooltip')}>
                         <Select
                             mode="multiple"
-                            placeholder="请选择要继承的角色模板"
+                            placeholder={t('role.inheritFromPlaceholder')}
                             allowClear
                             options={roles?.data
                                 ?.filter((r: any) => r.id !== editingRole?.id)
@@ -315,9 +317,9 @@ const RoleManagement: React.FC = () => {
                             }}
                             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(22,119,255,0.25)')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                            title="拖动调整宽度"
+                            title={t('role.dragToResize')}
                         />
-                        <span>权限配置 - {editingRole?.name}</span>
+                        <span>{t('role.drawerTitle', { name: editingRole?.name })}</span>
                     </div>
                 }
                 width={drawerWidth}
@@ -332,7 +334,7 @@ const RoleManagement: React.FC = () => {
                             const cleanPerms = Array.from(new Set(selectedPerms.map(String))).map(Number).filter(Boolean);
 
                             console.log('Final Payload:', { menus: cleanMenus, permissions: cleanPerms, policies: dataPolicies });
-                            
+
                             assignMutation.mutate({
                                 menus: cleanMenus,
                                 permissions: cleanPerms,
@@ -340,7 +342,7 @@ const RoleManagement: React.FC = () => {
                             });
                         }}
                         loading={assignMutation.isPending}
-                    >保存配置</Button>
+                    >{t('role.saveConfig')}</Button>
                 }
             >
                 <Tabs
@@ -348,7 +350,7 @@ const RoleManagement: React.FC = () => {
                     items={[
                         {
                             key: '1',
-                            label: '菜单分配',
+                            label: t('role.tabMenuAllocation'),
                             children: (
                                 <div className="py-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 250px)' }}>
                                     {isLoadingMenuTree ? (
@@ -433,7 +435,7 @@ const RoleManagement: React.FC = () => {
                                                                     </Typography.Text>
                                                                     {hasChildren && (
                                                                         <span style={{ fontSize: '12px', color: token.colorTextQuaternary }}>
-                                                                            ({checkedChildCount}/{children.length} 已选)
+                                                                            ({t('role.selectedCount', { checked: checkedChildCount, total: children.length })})
                                                                         </span>
                                                                     )}
                                                                 </div>
@@ -483,7 +485,7 @@ const RoleManagement: React.FC = () => {
                                                                 </div>
                                                             ) : (
                                                                 <div className="px-5 py-3" style={{ color: token.colorTextQuaternary, fontSize: '13px' }}>
-                                                                    此菜单无子项
+                                                                    {t('role.noChildren')}
                                                                 </div>
                                                             )}
                                                         </Collapse.Panel>
@@ -497,21 +499,21 @@ const RoleManagement: React.FC = () => {
                         },
                         {
                             key: '2',
-                            label: '功能权限',
+                            label: t('role.tabFunctionalPermission'),
                             children: (
                                 <div className="py-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 250px)' }}>
                                     {(() => {
                                         const permsList = Array.isArray(permissions?.data) ? permissions.data : [];
 
                                         const MODULE_NAMES: Record<string, string> = {
-                                            'pipeline':   '流水线引擎',
-                                            'tasks':      '自动化任务',
-                                            'k8s':        '容器管理',
-                                            'host':       '资产中心',
-                                            'registry':   '产物仓库',
-                                            'credential': '凭据认证',
-                                            'rbac':       '成员与权限',
-                                            'config':     '全局配置',
+                                            'pipeline':   t('role.moduleNames.pipeline'),
+                                            'tasks':      t('role.moduleNames.tasks'),
+                                            'k8s':        t('role.moduleNames.k8s'),
+                                            'host':       t('role.moduleNames.host'),
+                                            'registry':   t('role.moduleNames.registry'),
+                                            'credential': t('role.moduleNames.credential'),
+                                            'rbac':       t('role.moduleNames.rbac'),
+                                            'config':     t('role.moduleNames.config'),
                                         };
 
                                         const dangerVariants: Record<string, { color: string; border: string; bg: string }> = {
@@ -563,7 +565,7 @@ const RoleManagement: React.FC = () => {
                                                                         {MODULE_NAMES[mod] || mod.toUpperCase()}
                                                                     </Typography.Text>
                                                                     <span style={{ fontSize: '12px', color: token.colorTextQuaternary }}>
-                                                                        ({checkedModCount}/{allModPermIds.length} 已选)
+                                                                        ({t('role.selectedCount', { checked: checkedModCount, total: allModPermIds.length })})
                                                                     </span>
                                                                 </div>
                                                             }
@@ -612,7 +614,7 @@ const RoleManagement: React.FC = () => {
                                                                                     {res}
                                                                                 </span>
                                                                                 <span style={{ fontSize: '11px', color: token.colorTextQuaternary, marginTop: '2px' }}>
-                                                                                    ({checkedResCount}/{allResPermIds.length} 已选)
+                                                                                    ({t('role.selectedCount', { checked: checkedResCount, total: allResPermIds.length })})
                                                                                 </span>
                                                                             </div>
                                                                         </div>
@@ -681,46 +683,46 @@ const RoleManagement: React.FC = () => {
                         },
                         {
                             key: '3',
-                            label: '资源隔离',
+                            label: t('role.tabResourceIsolation'),
                             children: (
                                 <div className="py-2 space-y-6">
-                                    <Alert 
-                                        message="【管理权限】允许编辑/删除该实例；【引用权限】仅允许在流水线或任务中作为参数使用或查看详情。" 
-                                        type="info" 
-                                        showIcon 
+                                    <Alert
+                                        message={t('role.isolationAlert')}
+                                        type="info"
+                                        showIcon
                                         className="mb-4"
                                     />
-                                    
+
                                     {/* 流水线配置 */}
                                     <div className="mb-8">
                                         <div className="flex items-center gap-3 mb-4">
                                             <div className="w-1.5 h-6 rounded-full"
                                                  style={{ background: `linear-gradient(to bottom, ${token.colorPrimary}, ${token.colorPrimaryActive})`, boxShadow: `0 2px 4px ${token.colorPrimary}40` }}
                                             />
-                                            <Typography.Title level={5} style={{ margin: 0 }}>流水线模版 (Pipelines)</Typography.Title>
+                                            <Typography.Title level={5} style={{ margin: 0 }}>{t('role.pipelineSection')}</Typography.Title>
                                         </div>
 
                                         <div className="grid grid-cols-1 gap-4 mt-2">
                                             <div>
-                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>管理权限 (Manage):</Typography.Text>
+                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.managePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
                                                     className="w-full mt-1"
-                                                    placeholder="拥有完全控制权的 ID"
+                                                    placeholder={t('role.managePlaceholder')}
                                                     value={dataPolicies.pipeline?.manage}
                                                     onChange={(v) => setDataPolicies({...dataPolicies, pipeline: {...dataPolicies.pipeline, manage: v}})}
-                                                    options={[{label: '--- 全部 ---', value: '*'}, ...(pipelines?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
+                                                    options={[{label: t('role.allOption'), value: '*'}, ...(pipelines?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
                                             <div>
-                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>引用权限 (Use/View):</Typography.Text>
+                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.usePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
                                                     className="w-full mt-1"
-                                                    placeholder="仅可见且可执行的 ID"
+                                                    placeholder={t('role.usePlaceholder')}
                                                     value={dataPolicies.pipeline?.use}
                                                     onChange={(v) => setDataPolicies({...dataPolicies, pipeline: {...dataPolicies.pipeline, use: v}})}
-                                                    options={[{label: '--- 全部 ---', value: '*'}, ...(pipelines?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
+                                                    options={[{label: t('role.allOption'), value: '*'}, ...(pipelines?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
                                         </div>
@@ -734,29 +736,29 @@ const RoleManagement: React.FC = () => {
                                             <div className="w-1.5 h-6 rounded-full"
                                                  style={{ background: `linear-gradient(to bottom, ${token.colorPrimary}, ${token.colorPrimaryActive})`, boxShadow: `0 2px 4px ${token.colorPrimary}40` }}
                                             />
-                                            <Typography.Title level={5} style={{ margin: 0 }}>Ansible 任务模版 (Job Templates)</Typography.Title>
+                                            <Typography.Title level={5} style={{ margin: 0 }}>{t('role.ansibleSection')}</Typography.Title>
                                         </div>
                                         <div className="grid grid-cols-1 gap-4 mt-2">
                                             <div>
-                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>管理权限 (Manage):</Typography.Text>
+                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.managePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
                                                     className="w-full mt-1"
-                                                    placeholder="允许修改模版定义的 ID"
+                                                    placeholder={t('role.ansibleManagePlaceholder')}
                                                     value={dataPolicies.ansible_task?.manage}
                                                     onChange={(v) => setDataPolicies({...dataPolicies, ansible_task: {...dataPolicies.ansible_task, manage: v}})}
-                                                    options={[{label: '--- 全部 ---', value: '*'}, ...(ansibleTasks?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
+                                                    options={[{label: t('role.allOption'), value: '*'}, ...(ansibleTasks?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
                                             <div>
-                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>执行权限 (Use/Run):</Typography.Text>
+                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.runPermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
                                                     className="w-full mt-1"
-                                                    placeholder="仅允许运行任务/查看日志的 ID"
+                                                    placeholder={t('role.ansibleRunPlaceholder')}
                                                     value={dataPolicies.ansible_task?.use}
                                                     onChange={(v) => setDataPolicies({...dataPolicies, ansible_task: {...dataPolicies.ansible_task, use: v}})}
-                                                    options={[{label: '--- 全部 ---', value: '*'}, ...(ansibleTasks?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
+                                                    options={[{label: t('role.allOption'), value: '*'}, ...(ansibleTasks?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
                                         </div>
@@ -770,34 +772,34 @@ const RoleManagement: React.FC = () => {
                                             <div className="w-1.5 h-6 rounded-full"
                                                  style={{ background: `linear-gradient(to bottom, ${token.colorPrimary}, ${token.colorPrimaryActive})`, boxShadow: `0 2px 4px ${token.colorPrimary}40` }}
                                             />
-                                            <Typography.Title level={5} style={{ margin: 0 }}>K8s 集群 (Clusters)</Typography.Title>
+                                            <Typography.Title level={5} style={{ margin: 0 }}>{t('role.k8sSection')}</Typography.Title>
                                         </div>
                                         <div className="grid grid-cols-1 gap-4 mt-2">
                                             <div>
-                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>管理权限 (Manage):</Typography.Text>
+                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.managePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
                                                     className="w-full mt-1"
-                                                    placeholder="允许修改集群配置的 ID"
+                                                    placeholder={t('role.k8sManagePlaceholder')}
                                                     value={dataPolicies.k8s_cluster?.manage}
                                                     onChange={(v) => setDataPolicies({...dataPolicies, k8s_cluster: {...dataPolicies.k8s_cluster, manage: v}})}
-                                                    options={[{label: '--- 全部 ---', value: '*'}, ...(clusters?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
+                                                    options={[{label: t('role.allOption'), value: '*'}, ...(clusters?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
                                             <div>
-                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>引用权限 (Use):</Typography.Text>
+                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.usePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
                                                     className="w-full mt-1"
-                                                    placeholder="仅允许部署应用到该集群"
+                                                    placeholder={t('role.k8sUsePlaceholder')}
                                                     value={dataPolicies.k8s_cluster?.use}
                                                     onChange={(v) => setDataPolicies({...dataPolicies, k8s_cluster: {...dataPolicies.k8s_cluster, use: v}})}
-                                                    options={[{label: '--- 全部 ---', value: '*'}, ...(clusters?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
+                                                    options={[{label: t('role.allOption'), value: '*'}, ...(clusters?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <Divider />
 
                                     {/* 资源池配置 */}
@@ -806,29 +808,29 @@ const RoleManagement: React.FC = () => {
                                             <div className="w-1.5 h-6 rounded-full"
                                                  style={{ background: `linear-gradient(to bottom, ${token.colorPrimary}, ${token.colorPrimaryActive})`, boxShadow: `0 2px 4px ${token.colorPrimary}40` }}
                                             />
-                                            <Typography.Title level={5} style={{ margin: 0 }}>资产资源池 (Resource Pools)</Typography.Title>
+                                            <Typography.Title level={5} style={{ margin: 0 }}>{t('role.resourcePoolSection')}</Typography.Title>
                                         </div>
                                         <div className="grid grid-cols-1 gap-4 mt-2">
                                             <div>
-                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>管理权限 (Manage):</Typography.Text>
+                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.managePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
                                                     className="w-full mt-1"
-                                                    placeholder="允许修改资源池定义的 ID"
+                                                    placeholder={t('role.poolManagePlaceholder')}
                                                     value={dataPolicies.resource_pool?.manage}
                                                     onChange={(v) => setDataPolicies({...dataPolicies, resource_pool: {...dataPolicies.resource_pool, manage: v}})}
-                                                    options={[{label: '--- 全部 ---', value: '*'}, ...(resourcePools?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
+                                                    options={[{label: t('role.allOption'), value: '*'}, ...(resourcePools?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
                                             <div>
-                                                <Typography.Text type="secondary">使用权限 (Use):</Typography.Text>
+                                                <Typography.Text type="secondary">{t('role.usePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
                                                     className="w-full mt-1"
-                                                    placeholder="仅可在 Ansble/流水线中作为目标的 ID"
+                                                    placeholder={t('role.poolUsePlaceholder')}
                                                     value={dataPolicies.resource_pool?.use}
                                                     onChange={(v) => setDataPolicies({...dataPolicies, resource_pool: {...dataPolicies.resource_pool, use: v}})}
-                                                    options={[{label: '--- 全部 ---', value: '*'}, ...(resourcePools?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
+                                                    options={[{label: t('role.allOption'), value: '*'}, ...(resourcePools?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
                                         </div>
@@ -842,29 +844,29 @@ const RoleManagement: React.FC = () => {
                                             <div className="w-1.5 h-6 rounded-full"
                                                  style={{ background: `linear-gradient(to bottom, ${token.colorPrimary}, ${token.colorPrimaryActive})`, boxShadow: `0 2px 4px ${token.colorPrimary}40` }}
                                             />
-                                            <Typography.Title level={5} style={{ margin: 0 }}>镜像仓库 (Image Registries)</Typography.Title>
+                                            <Typography.Title level={5} style={{ margin: 0 }}>{t('role.registrySection')}</Typography.Title>
                                         </div>
                                         <div className="grid grid-cols-1 gap-4 mt-2">
                                             <div>
-                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>管理权限 (Manage):</Typography.Text>
+                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.managePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
                                                     className="w-full mt-1"
-                                                    placeholder="允许修改镜像仓库管理的 ID"
+                                                    placeholder={t('role.registryManagePlaceholder')}
                                                     value={dataPolicies.registry?.manage}
                                                     onChange={(v) => setDataPolicies({...dataPolicies, registry: {...dataPolicies.registry, manage: v}})}
-                                                    options={[{label: '--- 全部 ---', value: '*'}, ...(registries?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
+                                                    options={[{label: t('role.allOption'), value: '*'}, ...(registries?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
                                             <div>
-                                                <Typography.Text type="secondary">使用权限 (Use):</Typography.Text>
+                                                <Typography.Text type="secondary">{t('role.usePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
                                                     className="w-full mt-1"
-                                                    placeholder="仅允许镜像构建引用的 ID"
+                                                    placeholder={t('role.registryUsePlaceholder')}
                                                     value={dataPolicies.registry?.use}
                                                     onChange={(v) => setDataPolicies({...dataPolicies, registry: {...dataPolicies.registry, use: v}})}
-                                                    options={[{label: '--- 全部 ---', value: '*'}, ...(registries?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
+                                                    options={[{label: t('role.allOption'), value: '*'}, ...(registries?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
                                         </div>
@@ -878,29 +880,29 @@ const RoleManagement: React.FC = () => {
                                             <div className="w-1.5 h-6 rounded-full"
                                                  style={{ background: `linear-gradient(to bottom, ${token.colorPrimary}, ${token.colorPrimaryActive})`, boxShadow: `0 2px 4px ${token.colorPrimary}40` }}
                                             />
-                                            <Typography.Title level={5} style={{ margin: 0 }}>SSH 凭据 (Credentials)</Typography.Title>
+                                            <Typography.Title level={5} style={{ margin: 0 }}>{t('role.credentialSection')}</Typography.Title>
                                         </div>
                                         <div className="grid grid-cols-1 gap-4 mt-2">
                                             <div>
-                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>管理权限 (Manage):</Typography.Text>
+                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.managePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
                                                     className="w-full mt-1"
-                                                    placeholder="允许修改账号密码/私钥的 ID"
+                                                    placeholder={t('role.credManagePlaceholder')}
                                                     value={dataPolicies.credential?.manage}
                                                     onChange={(v) => setDataPolicies({...dataPolicies, credential: {...dataPolicies.credential, manage: v}})}
-                                                    options={[{label: '--- 全部 ---', value: '*'}, ...((credentials as any)?.results || (credentials as any)?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
+                                                    options={[{label: t('role.allOption'), value: '*'}, ...((credentials as any)?.results || (credentials as any)?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
                                             <div>
-                                                <Typography.Text type="secondary">使用权限 (Use):</Typography.Text>
+                                                <Typography.Text type="secondary">{t('role.usePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
                                                     className="w-full mt-1"
-                                                    placeholder="仅允许 SSH 登录时使用的 ID"
+                                                    placeholder={t('role.credUsePlaceholder')}
                                                     value={dataPolicies.credential?.use}
                                                     onChange={(v) => setDataPolicies({...dataPolicies, credential: {...dataPolicies.credential, use: v}})}
-                                                    options={[{label: '--- 全部 ---', value: '*'}, ...((credentials as any)?.results || (credentials as any)?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
+                                                    options={[{label: t('role.allOption'), value: '*'}, ...((credentials as any)?.results || (credentials as any)?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
                                         </div>

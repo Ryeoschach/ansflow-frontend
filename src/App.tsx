@@ -2,7 +2,9 @@ import { ConfigProvider, App as AntdApp, theme } from 'antd';
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import MainLayout from './layouts/MainLayout';
 import zhCN from 'antd/locale/zh_CN';
+import enUS from 'antd/locale/en_US';
 import useAppStore from './store/useAppStore';
+import { useTranslation } from 'react-i18next';
 import UserManagement from './pages/Users';
 import React, { useEffect, lazy } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
@@ -192,9 +194,20 @@ const QueryPersistenceManager = () => {
 };
 
 function App() {
-  const { isDark, token, setToken, setPermissions, setCurrentUser } = useAppStore();
+  const { isDark, token, setToken, setPermissions, setCurrentUser, language } = useAppStore();
   const { isInitializing, setIsInitializing } = useAppStore();
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+
+  // 同步 i18n 语言到 store（启动时和语言切换时）
+  useEffect(() => {
+    const syncLang = (l: string) => useAppStore.getState().setLanguage(l);
+    i18n.on('languageChanged', syncLang);
+    return () => i18n.off('languageChanged', syncLang);
+  }, [i18n]);
+
+  // Ant Design locale mapping
+  const antdLocale = language === 'en-US' ? enUS : zhCN;
 
   useEffect(() => {
     const initAuth = async () => {
@@ -267,7 +280,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ConfigProvider
-        locale={zhCN}
+        locale={antdLocale}
         theme={{
           cssVar: {},
           algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,

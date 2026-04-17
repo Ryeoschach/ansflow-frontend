@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import {
     Table, Button, Space, Input, App, Popconfirm, Tag, Typography, Tabs, theme, Card as AntdCard
 } from 'antd';
-import { 
-  PlusOutlined, 
-  SearchOutlined, 
-  DeleteOutlined, 
-  EditOutlined, 
+import {
+  PlusOutlined,
+  SearchOutlined,
+  DeleteOutlined,
+  EditOutlined,
   PlayCircleOutlined,
   HistoryOutlined,
   ProjectOutlined,
@@ -21,6 +21,7 @@ import dayjs from 'dayjs';
 import History from './History';
 import ScheduleList from './Schedule';
 import useAppStore from '../../store/useAppStore';
+import { useTranslation } from 'react-i18next';
 
 const { Title, Text } = Typography;
 
@@ -29,6 +30,7 @@ const { Title, Text } = Typography;
  * @description 流水线模板管理子模块。提供 DAG 模板的搜索、删除、编排入口及即时触发执行能力。
  */
 const TemplateList = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { token } = theme.useToken();
@@ -46,10 +48,10 @@ const TemplateList = () => {
   const deleteMutation = useMutation({
     mutationFn: deletePipeline,
     onSuccess: () => {
-      message.success('流水线模板已安全移除');
+      message.success(t('pipeline.deleteSuccess'));
       queryClient.invalidateQueries({ queryKey: ['pipelines'] });
     },
-    onError: (err: any) => message.error(`操作被拒绝: ${err.message}`)
+    onError: (err: any) => message.error(`${t('pipeline.deleteFailed')}: ${err.message}`)
   });
 
   /** @description 立即触发流水线执行：支持审批拦截逻辑 */
@@ -58,32 +60,32 @@ const TemplateList = () => {
     onSuccess: (res: any) => {
       if (res.code === 202 || res.status === 'pending_approval') {
           modal.warning({
-            title: '触发安全风控拦截',
+            title: t('pipeline.approvalInterceptTitle'),
             content: (
                 <div className="mt-3">
-                    <p>{res.message || '系统安全策略：该操作需要审批，已自动转入后台审批池。'}</p>
+                    <p>{res.message || t('pipeline.approvalInterceptContent')}</p>
                     <p className="text-gray-400 text-xs mt-2">
-                        拦截凭证: <Tag color="warning">#APP-{res.ticket_id || 'N/A'}</Tag>
+                        {t('pipeline.approvalTicket')}: <Tag color="warning">#APP-{res.ticket_id || 'N/A'}</Tag>
                     </p>
-                    <p className="mt-3 font-semibold text-blue-600">一旦审批通过，系统将为您自动完成本次部署补发。</p>
+                    <p className="mt-3 font-semibold text-blue-600">{t('pipeline.approvalNote')}</p>
                 </div>
             ),
-            okText: '前往审批中心',
+            okText: t('pipeline.goToApproval'),
             maskClosable: false,
             onOk: () => navigate('/v1/system/approvals')
           });
           return;
       }
       const runId = res.run_id || res.data?.run_id;
-      message.success(`执行引擎已响应 (Run ID: ${runId})`);
+      message.success(t('pipeline.executeSuccess').replace('{{runId}}', runId));
       navigate(`/v1/pipeline/runs/${runId}`);
     },
-    onError: (err: any) => message.error(`执行引擎拒绝触发: ${err.message}`)
+    onError: (err: any) => message.error(`${t('pipeline.executeFailed')}: ${err.message}`)
   });
 
   const columns = [
     {
-      title: '流水线名称',
+      title: t('pipeline.name'),
       dataIndex: 'name',
       key: 'name',
       width: 280,
@@ -102,32 +104,32 @@ const TemplateList = () => {
       )
     },
     {
-      title: '描述',
+      title: t('pipeline.desc'),
       dataIndex: 'desc',
       key: 'desc',
       ellipsis: true,
-      render: (text: string) => text || <Text type="secondary" className="text-[11px] italic">暂无架构描述</Text>
+      render: (text: string) => text || <Text type="secondary" className="text-[11px] italic">{t('pipeline.descPlaceholder')}</Text>
     },
     {
-        title: '流水线状态',
+        title: t('pipeline.status'),
         dataIndex: 'is_active',
         key: 'is_active',
         width: 120,
         render: (active: boolean) => active ? (
-            <Tag color="success" className="rounded-full px-3">ACTIVE</Tag>
+            <Tag color="success" className="rounded-full px-3">{t('pipeline.active')}</Tag>
         ) : (
-            <Tag color="default" className="rounded-full px-3 text-gray-400 border-dashed">PAUSED</Tag>
+            <Tag color="default" className="rounded-full px-3 text-gray-400 border-dashed">{t('pipeline.paused')}</Tag>
         )
     },
     {
-      title: '更新时间',
+      title: t('pipeline.updateTime'),
       dataIndex: 'update_time',
       key: 'update_time',
       width: 170,
-      render: (t: string) => <Text type="secondary" className="text-xs">{dayjs(t).format('YYYY/MM/DD HH:mm')}</Text>
+      render: (val: string) => <Text type="secondary" className="text-xs">{dayjs(val).format('YYYY/MM/DD HH:mm')}</Text>
     },
     {
-      title: '操作',
+      title: t('pipeline.action'),
       key: 'action',
       width: 320,
       render: (_: any, record: any) => (
@@ -141,7 +143,7 @@ const TemplateList = () => {
             loading={executeMutation.isPending}
             className="rounded-lg shadow-blue-100"
           >
-            执行
+            {t('pipeline.execute')}
           </Button>
           )}
           {hasPermission('pipeline:template:edit') && (
@@ -151,7 +153,7 @@ const TemplateList = () => {
               onClick={() => navigate(`/v1/pipeline/designer?id=${record.id}`)}
               className="rounded-lg"
             >
-              编排
+              {t('pipeline.edit')}
           </Button>
           )}
           {hasPermission('pipeline:run:view') && (
@@ -161,17 +163,17 @@ const TemplateList = () => {
               onClick={() => navigate(`/v1/pipeline/list?tab=history&pipeline_id=${record.id}`)}
               className="rounded-lg"
             >
-              历史
+              {t('pipeline.history2')}
           </Button>
           )}
           {hasPermission('pipeline:template:delete') && (
           <Popconfirm
-            title="确定要销毁该蓝图吗？"
-            description="删除后相关定时任务将一并失效。"
+            title={t('pipeline.confirmDeleteTitle')}
+            description={t('pipeline.confirmDeleteContent')}
             onConfirm={() => deleteMutation.mutate(record.id)}
-            okText="确定销毁"
+            okText={t('pipeline.confirmDestroy')}
             okButtonProps={{ danger: true }}
-            cancelText="取消"
+            cancelText={t('common.cancel')}
           >
             <Button size="small" danger ghost icon={<DeleteOutlined />} className="rounded-lg" />
           </Popconfirm>
@@ -185,7 +187,7 @@ const TemplateList = () => {
     <div style={{ background: token.colorBgContainer }} className="flex flex-col h-full antialiased">
         <div className="mb-5 flex justify-between items-center px-1">
             <Input
-              placeholder="搜索流水线名称或 ID..."
+              placeholder={t('pipeline.searchPlaceholder')}
               prefix={<SearchOutlined />}
               value={searchText}
               onChange={e => setSearchText(e.target.value)}
@@ -199,7 +201,7 @@ const TemplateList = () => {
               onClick={() => navigate('/v1/pipeline/designer')}
               className="h-10 px-6 rounded-xl"
             >
-              新建流水线
+              {t('pipeline.create')}
             </Button>
             )}
         </div>
@@ -228,6 +230,7 @@ const TemplateList = () => {
  * @description 流水线管理门户。集成了模板管理、运行历史、定时调度三大核心视窗。
  */
 export default function PipelinePage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { token } = theme.useToken();
 
@@ -259,7 +262,7 @@ export default function PipelinePage() {
                     <ProjectOutlined className="text-xl" />
                 </div>
                 <div>
-                    <Title level={4} style={{ margin: 0 }}>流水线列表中心</Title>
+                    <Title level={4} style={{ margin: 0 }}>{t('pipeline.title')}</Title>
                 </div>
             </Space>
         </div>
@@ -273,7 +276,7 @@ export default function PipelinePage() {
                 {
                     label: (
                         <Space className="px-2">
-                            <RocketOutlined /> 流水线模板
+                            <RocketOutlined /> {t('pipeline.templates')}
                         </Space>
                     ),
                     key: 'templates',
@@ -286,7 +289,7 @@ export default function PipelinePage() {
                 {
                     label: (
                         <Space className="px-2">
-                            <FieldTimeOutlined /> 执行历史
+                            <FieldTimeOutlined /> {t('pipeline.history')}
                         </Space>
                     ),
                     key: 'history',
@@ -299,7 +302,7 @@ export default function PipelinePage() {
                 {
                     label: (
                         <Space className="px-2">
-                            <ClockCircleOutlined /> 定时编排
+                            <ClockCircleOutlined /> {t('pipeline.schedule')}
                         </Space>
                     ),
                     key: 'schedule',

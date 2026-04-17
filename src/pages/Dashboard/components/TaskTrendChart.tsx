@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, Skeleton, theme } from 'antd';
 import ReactECharts from 'echarts-for-react';
 import useAppStore from '../../../store/useAppStore';
+import { useTranslation } from 'react-i18next';
 
 interface TaskTrendChartProps {
     data: any;
@@ -9,13 +10,14 @@ interface TaskTrendChartProps {
 }
 
 const TaskTrendChart: React.FC<TaskTrendChartProps> = ({ data, isLoading }) => {
+    const { t } = useTranslation();
     const { token } = theme.useToken();
     const { isDark } = useAppStore();
     const trendData = data?.taskTrend || [];
 
     const option = {
         title: {
-            text: '24小时任务执行趋势',
+            text: t('dashboard.trendTitle'),
             textStyle: {
                 color: token.colorTextHeading,
                 fontSize: 16,
@@ -28,7 +30,7 @@ const TaskTrendChart: React.FC<TaskTrendChartProps> = ({ data, isLoading }) => {
             trigger: 'axis',
         },
         legend: {
-            data: ['成功', '失败'],
+            data: [t('dashboard.success'), t('dashboard.failed')],
             right: 0,
             top: '0',
             textStyle: {
@@ -63,7 +65,7 @@ const TaskTrendChart: React.FC<TaskTrendChartProps> = ({ data, isLoading }) => {
         },
         series: [
             {
-                name: '成功',
+                name: t('dashboard.success'),
                 type: 'line',
                 smooth: true,
                 itemStyle: { color: isDark ? '#34D399' : '#10b981' },
@@ -81,7 +83,7 @@ const TaskTrendChart: React.FC<TaskTrendChartProps> = ({ data, isLoading }) => {
                 data: trendData.map((d: any) => d.success),
             },
             {
-                name: '失败',
+                name: t('dashboard.failed'),
                 type: 'line',
                 smooth: true,
                 itemStyle: { color: '#ef4444' },

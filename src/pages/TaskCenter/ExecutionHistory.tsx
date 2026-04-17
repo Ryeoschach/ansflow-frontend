@@ -23,6 +23,7 @@ import {
     StopOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { getExecutions, getExecutionLogs, terminateExecution } from '../../api/tasks';
 import useAppStore from '../../store/useAppStore';
 import { LogSkeleton } from '../../components/Skeletons';
@@ -31,6 +32,7 @@ import { LogSkeleton } from '../../components/Skeletons';
 const { Text } = Typography;
 
 const ExecutionHistory: React.FC = () => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const [searchParams, setSearchParams] = useSearchParams();
     const { message, modal } = App.useApp();
@@ -75,19 +77,19 @@ const ExecutionHistory: React.FC = () => {
     const terminateMutation = useMutation({
         mutationFn: terminateExecution,
         onSuccess: () => {
-            message.success("终止指令已发送");
+            message.success(t('executionHistory.terminateInstructionSent'));
             queryClient.invalidateQueries({ queryKey: ['ansible-executions'] });
         },
         onError: (err: any) => {
-            message.error(err.response?.data?.error || "终止失败");
+            message.error(err.response?.data?.error || t('executionHistory.terminateFailed'));
         }
     });
 
     const statusMap: any = {
-        'pending': { color: 'default', text: '排队中', icon: <SyncOutlined spin /> },
-        'running': { color: 'processing', text: '执行中', icon: <LoadingOutlined /> },
-        'success': { color: 'success', text: '成功', icon: <CheckCircleOutlined /> },
-        'failed': { color: 'error', text: '失败', icon: <CloseCircleOutlined /> },
+        'pending': { color: 'default', text: t('executionHistory.pending'), icon: <SyncOutlined spin /> },
+        'running': { color: 'processing', text: t('executionHistory.running'), icon: <LoadingOutlined /> },
+        'success': { color: 'success', text: t('executionHistory.success'), icon: <CheckCircleOutlined /> },
+        'failed': { color: 'error', text: t('executionHistory.failed'), icon: <CloseCircleOutlined /> },
     };
 
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -108,24 +110,24 @@ const ExecutionHistory: React.FC = () => {
 
     const columns = [
         {
-            title: '执行 ID',
+            title: t('executionHistory.executionId'),
             dataIndex: 'id',
             key: 'id',
             width: 80,
         },
         {
-            title: '任务模板',
+            title: t('executionHistory.taskTemplate'),
             dataIndex: 'task_name',
             key: 'task_name',
             render: (text: string) => <Text>{text}</Text>
         },
         {
-            title: '目标资源池',
+            title: t('executionHistory.targetResourcePool'),
             dataIndex: 'resource_pool_name',
             key: 'resource_pool_name',
         },
         {
-            title: '状态',
+            title: t('executionHistory.status'),
             dataIndex: 'status',
             key: 'status',
             render: (val: string) => {
@@ -134,19 +136,19 @@ const ExecutionHistory: React.FC = () => {
             }
         },
         {
-            title: '执行者',
+            title: t('executionHistory.executor'),
             dataIndex: 'executor_name',
             key: 'executor_name',
-            render: (val: string) => <Tag color="orange">{val || '系统'}</Tag>
+            render: (val: string) => <Tag color="orange">{val || t('executionHistory.system')}</Tag>
         },
         {
-            title: '创建时间',
+            title: t('executionHistory.createTime'),
             dataIndex: 'create_time',
             key: 'create_time',
             render: (val: string) => val ? new Date(val).toLocaleString() : '-'
         },
         {
-            title: '操作',
+            title: t('executionHistory.action'),
             key: 'action',
             render: (_: any, record: any) => (
                 <Space>
@@ -160,7 +162,7 @@ const ExecutionHistory: React.FC = () => {
                                 setLogDrawerVisible(true);
                             }}
                         >
-                            日志
+                            {t('executionHistory.logs')}
                         </Button>
                     )}
                     {(record.status === 'running' || record.status === 'pending') && (
@@ -171,17 +173,17 @@ const ExecutionHistory: React.FC = () => {
                             icon={<StopOutlined />}
                             onClick={() => {
                                 modal.confirm({
-                                    title: '确认停止任务？',
-                                    content: '强制停止将杀死正在执行的远程进程。',
+                                    title: t('executionHistory.confirmStopTask'),
+                                    content: t('executionHistory.forceStopKillProcess'),
                                     onOk: () => terminateMutation.mutate(record.id),
-                                    okText: '强制停止',
-                                    cancelText: '取消',
+                                    okText: t('executionHistory.forceStop'),
+                                    cancelText: t('executionHistory.cancel'),
                                     okButtonProps: { danger: true }
                                 });
                             }}
                             loading={terminateMutation.isPending && terminateMutation.variables === record.id}
                         >
-                            停止
+                            {t('executionHistory.stop')}
                         </Button>
                     )}
                 </Space>
@@ -194,25 +196,25 @@ const ExecutionHistory: React.FC = () => {
             title={
                 <Space>
                     <HistoryOutlined className="text-amber-500" />
-                    <span>执行历史审计</span>
+                    <span>{t('executionHistory.title')}</span>
                 </Space>
             }
         >
             <div className="mb-4 flex gap-4">
                 <Input
                     prefix={<SearchOutlined />}
-                    placeholder="任务名关键字"
+                    placeholder={t('executionHistory.searchByTaskName')}
                     style={{ width: 200 }}
                     onPressEnter={(e: any) => setParams({ ...params, task_name: e.target.value })}
                 />
                 <Select
                     allowClear
-                    placeholder="执行状态"
+                    placeholder={t('executionHistory.executionStatus')}
                     style={{ width: 120 }}
                     options={[
-                        { label: '成功', value: 'success' },
-                        { label: '失败', value: 'failed' },
-                        { label: '运行中', value: 'running' },
+                        { label: t('executionHistory.success'), value: 'success' },
+                        { label: t('executionHistory.failed'), value: 'failed' },
+                        { label: t('executionHistory.running'), value: 'running' },
                     ]}
                     onChange={(val) => setParams({ ...params, status: val })}
                 />
@@ -233,7 +235,7 @@ const ExecutionHistory: React.FC = () => {
             />
 
             <Drawer
-                title={`日志详情 [#${activeExecutionId}]`}
+                title={t('executionHistory.logDetails', { id: activeExecutionId })}
                 placement="right"
                 size={drawerWidth}
                 onClose={() => {
@@ -273,7 +275,7 @@ const ExecutionHistory: React.FC = () => {
                     ) : (
                         <div className="text-slate-500 italic flex flex-col items-center justify-center h-full gap-2">
                             <SyncOutlined />
-                            <span>暂无日志输出，请等待任务开始...</span>
+                            <span>{t('executionHistory.noLogsOutputWaitTask')}</span>
                         </div>
                     )}
                 </div>

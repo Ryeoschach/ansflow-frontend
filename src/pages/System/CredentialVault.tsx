@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import { Table, Button, Space, Tag, Modal, Form, Input, Select, App, Typography, Card, Tooltip, theme } from 'antd';
-import { 
-  PlusOutlined, 
-  EditOutlined, 
-  DeleteOutlined, 
-  KeyOutlined, 
-  LockOutlined, 
-  FileTextOutlined, 
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  KeyOutlined,
+  LockOutlined,
+  FileTextOutlined,
   InfoCircleOutlined,
   EyeOutlined,
   EyeInvisibleOutlined,
   SafetyCertificateOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { getCredentials, createCredential, updateCredential, deleteCredential } from '../../api/credential';
 import useCredentialStore from '../../store/useCredentialStore';
 import useAppStore from '../../store/useAppStore';
@@ -25,6 +26,7 @@ const { Text, Title } = Typography;
  * @description 安全凭据保险库。负责中心化加密存储 SSH 密钥、API Token 及账号密码。
  */
 const CredentialVault: React.FC = () => {
+    const { t } = useTranslation();
     const { token } = theme.useToken();
     const { message, modal } = App.useApp();
     const queryClient = useQueryClient();
@@ -65,18 +67,18 @@ const CredentialVault: React.FC = () => {
                 : createCredential(payload);
         },
         onSuccess: () => {
-            message.success(editingRecord ? '凭据加密信息已更新' : '新凭据已安全入库');
+            message.success(editingRecord ? t('credentialVault.updateSuccess') : t('credentialVault.createSuccess'));
             setIsModalVisible(false);
             queryClient.invalidateQueries({ queryKey: ['credentials'] });
         },
-        onError: (e: any) => message.error(`写入失败: ${e.response?.data?.detail || e.message}`)
+        onError: (e: any) => message.error(t('credentialVault.deleteError', { error: e.response?.data?.detail || e.message }))
     });
 
     /** @description 凭据销毁指令 */
     const deleteMutation = useMutation({
         mutationFn: (id: number) => deleteCredential(id),
         onSuccess: () => {
-            message.success('凭据已从加密磁盘彻底抹除');
+            message.success(t('credentialVault.deleteSuccess'));
             queryClient.invalidateQueries({ queryKey: ['credentials'] });
         }
     });
@@ -96,10 +98,10 @@ const CredentialVault: React.FC = () => {
 
     const handleDelete = (record: any) => {
         modal.confirm({
-            title: '高危：凭据彻底销毁',
+            title: t('credentialVault.deleteConfirmTitle'),
             icon: <DeleteOutlined className="text-red-500" />,
-            content: '⚠️ 此操作不可逆！依赖此凭据的项目将立即失去授权。',
-            okText: '确认销毁',
+            content: t('credentialVault.deleteConfirmContent'),
+            okText: t('credentialVault.deleteConfirmOkText'),
             okType: 'danger',
             onOk: () => deleteMutation.mutate(record.id)
         });
@@ -107,7 +109,7 @@ const CredentialVault: React.FC = () => {
 
     const columns = [
         {
-            title: '凭据标识',
+            title: t('credentialVault.columnName'),
             dataIndex: 'name',
             key: 'name',
             render: (text: string) => (
@@ -118,24 +120,24 @@ const CredentialVault: React.FC = () => {
             )
         },
         {
-            title: '类型',
+            title: t('credentialVault.columnType'),
             key: 'type',
             render: (_: any, record: any) => {
                 const typeValue = record.auth_type || record.type;
                 const map: any = {
-                    'key': { color: 'purple', icon: <KeyOutlined />, text: 'SSH 私钥' },
-                    'ssh_key': { color: 'purple', icon: <KeyOutlined />, text: 'SSH 私钥' },
-                    'password': { color: 'blue', icon: <LockOutlined />, text: '账号密码' },
-                    'login_pass': { color: 'blue', icon: <LockOutlined />, text: '账号密码' },
-                    'token': { color: 'orange', icon: <InfoCircleOutlined />, text: 'API Token' },
-                    'file': { color: 'cyan', icon: <FileTextOutlined />, text: '证书文件' },
+                    'key': { color: 'purple', icon: <KeyOutlined />, text: t('credentialVault.typeSshKey') },
+                    'ssh_key': { color: 'purple', icon: <KeyOutlined />, text: t('credentialVault.typeSshKey') },
+                    'password': { color: 'blue', icon: <LockOutlined />, text: t('credentialVault.typePassword') },
+                    'login_pass': { color: 'blue', icon: <LockOutlined />, text: t('credentialVault.typePassword') },
+                    'token': { color: 'orange', icon: <InfoCircleOutlined />, text: t('credentialVault.typeToken') },
+                    'file': { color: 'cyan', icon: <FileTextOutlined />, text: t('credentialVault.typeFile') },
                 };
                 const conf = map[typeValue] || { color: 'default', icon: <KeyOutlined />, text: typeValue };
                 return <Tag color={conf.color} icon={conf.icon} className="rounded-full px-3">{conf.text}</Tag>;
             }
         },
         {
-            title: '关联账号',
+            title: t('credentialVault.columnUsername'),
             dataIndex: 'username',
             key: 'username',
             render: (val: string) => {
@@ -144,31 +146,31 @@ const CredentialVault: React.FC = () => {
             }
         },
         {
-            title: '更新记录',
+            title: t('credentialVault.columnUpdateTime'),
             dataIndex: 'update_time',
             key: 'update_time',
-            render: (t: string) => <Text type="secondary" className="text-xs dark:text-slate-500">{t ? new Date(t).toLocaleString() : '-'}</Text>
+            render: (timeStr: string) => <Text type="secondary" className="text-xs dark:text-slate-500">{timeStr ? new Date(timeStr).toLocaleString() : '-'}</Text>
         },
         {
-            title: '操作',
+            title: t('credentialVault.columnAction'),
             key: 'action',
             width: 160,
             render: (_: any, record: any) => (
                 <Space size="middle" className="pr-4">
                     {hasPermission('system:credential:edit') && (
-                    <Button 
-                        type="link" 
-                        size="small" 
-                        icon={<EditOutlined style={{ color: token.colorPrimary }} />} 
-                        onClick={() => handleOpenModal(record)} 
+                    <Button
+                        type="link"
+                        size="small"
+                        icon={<EditOutlined style={{ color: token.colorPrimary }} />}
+                        onClick={() => handleOpenModal(record)}
                         className="p-0 font-medium"
                         style={{ color: token.colorPrimary }}
                     >
-                        编辑
+                        {t('credentialVault.edit')}
                     </Button>
                     )}
                     {hasPermission('system:credential:delete') && (
-                    <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)} className="p-0 font-medium">销毁</Button>
+                    <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)} className="p-0 font-medium">{t('credentialVault.destroy')}</Button>
                     )}
                 </Space>
             )
@@ -179,41 +181,41 @@ const CredentialVault: React.FC = () => {
         <div style={{ background: token.colorBgLayout }} className="p-7 min-h-screen flex flex-col antialiased">
             <div className="flex items-center justify-between mb-8 px-1">
                 <Space size="large">
-                    <div 
-                      style={{ background: token.colorPrimary }} 
+                    <div
+                      style={{ background: token.colorPrimary }}
                       className="p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-500/20 items-center justify-center flex"
                     >
                         <LockOutlined className="text-2xl" />
                     </div>
                     <div>
-                        <Title level={4} style={{ margin: 0 }}>安全凭据核心</Title>
-                        <Text type="secondary" className="text-xs">基于加密信封的高安全级别身份资产管理</Text>
+                        <Title level={4} style={{ margin: 0 }}>{t('credentialVault.title')}</Title>
+                        <Text type="secondary" className="text-xs">{t('credentialVault.subtitle')}</Text>
                     </div>
                 </Space>
 
                 <Space size="middle">
-                    <Select 
+                    <Select
                         className="w-40 custom-select-premium"
                         value={filterAuthType}
                         onChange={setFilterAuthType}
                         options={[
-                            { label: '全部类型', value: 'all' },
-                            { label: 'SSH 密钥', value: 'ssh_key' },
-                            { label: '账号密码', value: 'login_pass' },
-                            { label: 'API Token', value: 'token' },
+                            { label: t('credentialVault.filterAll'), value: 'all' },
+                            { label: t('credentialVault.filterSshKey'), value: 'ssh_key' },
+                            { label: t('credentialVault.filterPassword'), value: 'login_pass' },
+                            { label: t('credentialVault.filterToken'), value: 'token' },
                         ]}
                         popupClassName="rounded-xl shadow-xl border-slate-100 dark:border-slate-700"
                     />
-                    <Button 
+                    <Button
                         icon={maskSensitiveData ? <EyeInvisibleOutlined /> : <EyeOutlined />}
                         onClick={() => setMaskSensitiveData(!maskSensitiveData)}
                         className="h-10 rounded-xl px-5 border-slate-200 transition-all font-medium"
                     >
-                        {maskSensitiveData ? '解开遮罩' : '应用遮罩'}
+                        {maskSensitiveData ? t('credentialVault.unmask') : t('credentialVault.applyMask')}
                     </Button>
                     {hasPermission('system:credential:add') && (
                     <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenModal()} className="h-10 px-6 rounded-xl shadow-lg shadow-indigo-500/30">
-                        新增凭据
+                        {t('credentialVault.addCredential')}
                     </Button>
                     )}
                 </Space>
@@ -235,7 +237,7 @@ const CredentialVault: React.FC = () => {
                 title={
                     <Space size="middle" className="pt-2">
                         <SafetyCertificateOutlined style={{ color: token.colorPrimary }} />
-                        <Text strong style={{ fontSize: '16px' }}>{editingRecord ? "敏感凭据重配置" : "存入全新敏感凭据"}</Text>
+                        <Text strong style={{ fontSize: '16px' }}>{editingRecord ? t('credentialVault.modalTitleEdit') : t('credentialVault.modalTitleCreate')}</Text>
                     </Space>
                 }
                 open={isModalVisible}
@@ -246,47 +248,47 @@ const CredentialVault: React.FC = () => {
                 bodyStyle={{ overflowX: 'auto' }}
                 centered
                 className="custom-modal-premium"
-                okText="安全入库"
+                okText={t('credentialVault.okText')}
             >
                 <Form form={form} layout="vertical" onFinish={(v) => mutation.mutate(v)} className="pt-6 px-1">
                     <Card size="small" style={{ background: token.colorBgLayout, borderColor: token.colorBorderSecondary }} className="rounded-xl mb-6 shadow-none">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Form.Item label={<Text strong type="secondary" style={{ fontSize: '12px' }}>凭据别名</Text>} name="name" rules={[{ required: true, message: '请输入标识名称' }]}>
-                                <Input placeholder="如: PROD-KEY" className="rounded-lg h-10" />
+                            <Form.Item label={<Text strong type="secondary" style={{ fontSize: '12px' }}>{t('credentialVault.fieldAlias')}</Text>} name="name" rules={[{ required: true, message: t('credentialVault.fieldAliasRequired') }]}>
+                                <Input placeholder={t('credentialVault.fieldAliasPlaceholder')} className="rounded-lg h-10" />
                             </Form.Item>
-                            <Form.Item label={<Text strong type="secondary" style={{ fontSize: '12px' }}>凭据类型</Text>} name="auth_type" rules={[{ required: true }]}>
+                            <Form.Item label={<Text strong type="secondary" style={{ fontSize: '12px' }}>{t('credentialVault.fieldType')}</Text>} name="auth_type" rules={[{ required: true }]}>
                                 <Select options={[
-                                    { label: 'SSH 私钥', value: 'key' },
-                                    { label: '用户名密码', value: 'password' },
-                                    { label: 'API Token', value: 'token' },
-                                    { label: '证书文件', value: 'file' },
+                                    { label: t('credentialVault.typeSshKey'), value: 'key' },
+                                    { label: t('credentialVault.typePassword'), value: 'password' },
+                                    { label: t('credentialVault.typeToken'), value: 'token' },
+                                    { label: t('credentialVault.typeFile'), value: 'file' },
                                 ]} className="h-10 custom-select-premium" />
                             </Form.Item>
                         </div>
                     </Card>
 
-                    <Form.Item label={<Text strong type="secondary" style={{ fontSize: '12px' }}>账号/Key ID</Text>} name="username">
-                        <Input placeholder="Username / Client ID" className="rounded-lg h-10" />
+                    <Form.Item label={<Text strong type="secondary" style={{ fontSize: '12px' }}>{t('credentialVault.fieldUsername')}</Text>} name="username">
+                        <Input placeholder={t('credentialVault.fieldUsernamePlaceholder')} className="rounded-lg h-10" />
                     </Form.Item>
 
-                    <Form.Item 
+                    <Form.Item
                         label={
                             <Space>
-                                <Text strong type="secondary" style={{ fontSize: '12px' }}>{editingRecord ? "更新密文" : "内容原文"}</Text>
-                                <Tooltip title="基于业界标准算法加密">
+                                <Text strong type="secondary" style={{ fontSize: '12px' }}>{editingRecord ? t('credentialVault.fieldSecretEdit') : t('credentialVault.fieldSecret')}</Text>
+                                <Tooltip title={t('credentialVault.fieldSecretTip')}>
                                     <InfoCircleOutlined className="text-slate-400" />
                                 </Tooltip>
                             </Space>
-                        } 
-                        name="secret_value" 
-                        rules={[{ required: !editingRecord, message: '录入凭据时必须填写原文' }]}
-                        extra={<Text type="secondary" style={{ fontSize: '10px' }} className="opacity-60 font-mono">加密层将对输入内容执行分片存储</Text>}
+                        }
+                        name="secret_value"
+                        rules={[{ required: !editingRecord, message: t('credentialVault.fieldSecretRequired') }]}
+                        extra={<Text type="secondary" style={{ fontSize: '10px' }} className="opacity-60 font-mono">{t('credentialVault.fieldSecretExtra')}</Text>}
                     >
                         <Input.TextArea rows={5} className="font-mono text-[11px] rounded-lg p-3" placeholder="Paste your secrets here..." />
                     </Form.Item>
 
-                    <Form.Item label={<Text strong type="secondary" style={{ fontSize: '12px' }}>用途备注</Text>} name="remark" className="mb-0">
-                        <Input placeholder="记录适用范围..." className="rounded-lg h-10" />
+                    <Form.Item label={<Text strong type="secondary" style={{ fontSize: '12px' }}>{t('credentialVault.fieldRemark')}</Text>} name="remark" className="mb-0">
+                        <Input placeholder={t('credentialVault.fieldRemarkPlaceholder')} className="rounded-lg h-10" />
                     </Form.Item>
                 </Form>
             </Modal>

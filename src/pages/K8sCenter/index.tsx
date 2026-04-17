@@ -17,6 +17,7 @@ import {
   theme,
   InputNumber,
 } from 'antd';
+import { useTranslation } from 'react-i18next';
 import {
   PlusOutlined,
   ReloadOutlined,
@@ -67,6 +68,7 @@ const { TextArea } = Input;
  * @description K8s 云原生中心主页面。提供多集群管理、资源（Pod/Node/Deploy/Svc）巡检、YAML 编辑、终端执行及日志审计功能。
  */
 const K8sCenter: React.FC = () => {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const { message, modal } = App.useApp();
   const { hasPermission } = useAppStore();
@@ -151,10 +153,10 @@ const K8sCenter: React.FC = () => {
     mutationFn: (data: { namespace: string; pod_name: string; command: string; container?: string }) =>
       execK8sPodCommand(activeClusterId!, data),
     onSuccess: (res) => {
-      setShellOutput((res as any).data?.output || (res as any).output || '命令已执行，但无回显内容');
+      setShellOutput((res as any).data?.output || (res as any).output || t('k8s.shellExecNoOutput'));
     },
     onError: (err: any) => {
-      message.error(`执行失败: ${err.response?.data?.error || err.message}`);
+      message.error(`${t('k8s.shellExecFailed')}: ${err.response?.data?.error || err.message}`);
     },
   });
 
@@ -166,7 +168,7 @@ const K8sCenter: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['k8s', activeClusterId, 'pods'] });
     },
     onError: (err: any) => {
-      message.error(`删除失败: ${err.response?.data?.error || err.message}`);
+      message.error(`${t('k8s.deletePodFailed')}: ${err.response?.data?.error || err.message}`);
     }
   });
 
@@ -174,7 +176,7 @@ const K8sCenter: React.FC = () => {
    * @section 数据拉取逻辑 (Fetch Functions)
    */
 
-  /** 
+  /**
    * @description 获取指定资源的 YAML 定义
    * @param type 资源类型 node|pod|deployment|service
    */
@@ -187,7 +189,7 @@ const K8sCenter: React.FC = () => {
       setYamlTarget({ type, name, namespace });
       setIsYamlModalVisible(true);
     } catch (err: any) {
-      message.error(`YAML 获取失败: ${err.response?.data?.error || err.message}`);
+      message.error(`${t('k8s.yamlFetchFailed')}: ${err.response?.data?.error || err.message}`);
     } finally {
       setYamlLoading(false);
     }
@@ -217,7 +219,7 @@ const K8sCenter: React.FC = () => {
       setLogPod(pod);
       setIsLogModalVisible(true);
     } catch (err: any) {
-      message.error(`日志获取失败: ${err.response?.data?.error || err.message}`);
+      message.error(`${t('k8s.logsFetchFailed')}: ${err.response?.data?.error || err.message}`);
     } finally {
       setLogsLoading(false);
     }
@@ -267,34 +269,34 @@ const K8sCenter: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: (data: any) => createK8sCluster(data),
     onSuccess: () => {
-      message.success('集群添加成功');
+      message.success(t('k8s.clusterAddSuccess'));
       setIsModalVisible(false);
       form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['k8s', 'clusters'] });
     },
     onError: (err: any) => {
-      message.error(`添加失败: ${err.message || '未知错误'}`);
+      message.error(`${t('k8s.clusterAddFailed')}: ${err.message || 'Unknown error'}`);
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number, data: any }) => request.put(`/k8s/${id}/`, data),
     onSuccess: () => {
-      message.success('集群更新成功');
+      message.success(t('k8s.clusterUpdateSuccess'));
       setIsModalVisible(false);
       setSelectedCluster(null);
       form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['k8s', 'clusters'] });
     },
     onError: (err: any) => {
-      message.error(`更新失败: ${err.message || '未知错误'}`);
+      message.error(`${t('k8s.clusterUpdateFailed')}: ${err.message || 'Unknown error'}`);
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteK8sCluster(id),
     onSuccess: () => {
-      message.success('集群已删除');
+      message.success(t('k8s.clusterDeleted'));
       queryClient.invalidateQueries({ queryKey: ['k8s', 'clusters'] });
     },
   });
@@ -302,11 +304,11 @@ const K8sCenter: React.FC = () => {
   const verifyMutation = useMutation({
     mutationFn: (id: number) => verifyK8sCluster(id),
     onSuccess: (data) => {
-      message.success(`连接验证成功! 版本: ${data.version}`);
+      message.success(t('k8s.connectionVerifySuccess', { version: data.version }));
       queryClient.invalidateQueries({ queryKey: ['k8s', 'clusters'] });
     },
     onError: (err: any) => {
-      message.error(`连接验证失败: ${err.response?.data?.error || err.message}`);
+      message.error(`${t('k8s.connectionVerifyFailed')}: ${err.response?.data?.error || err.message}`);
       queryClient.invalidateQueries({ queryKey: ['k8s', 'clusters'] });
     },
   });
@@ -339,7 +341,7 @@ const K8sCenter: React.FC = () => {
 
   const columns = [
     {
-      title: '集群名称',
+      title: t('k8s.clusterName'),
       dataIndex: 'name',
       key: 'name',
       render: (text: string) => (
@@ -350,7 +352,7 @@ const K8sCenter: React.FC = () => {
       ),
     },
     {
-      title: '认证方式',
+      title: t('k8s.authType'),
       dataIndex: 'auth_type',
       key: 'auth_type',
       render: (type: string) => (
@@ -360,33 +362,33 @@ const K8sCenter: React.FC = () => {
       ),
     },
     {
-      title: 'API Server',
+      title: t('k8s.apiServer'),
       dataIndex: 'api_server',
       key: 'api_server',
       render: (text: string) => text || '-',
     },
     {
-      title: '状态',
+      title: t('k8s.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => {
         let color = 'default';
-        let text = '未知';
+        let text = t('k8s.unknown');
         if (status === 'connected') {
           color = 'success';
-          text = '连接成功';
+          text = t('k8s.connected');
         } else if (status === 'failed') {
           color = 'error';
-          text = '连接失败';
+          text = t('k8s.connectionFailed');
         } else if (status === 'pending') {
           color = 'processing';
-          text = '待验证';
+          text = t('k8s.pendingVerify');
         }
         return <Badge status={color as any} text={text} />;
       },
     },
     {
-      title: 'K8s 版本',
+      title: t('k8s.k8sVersion'),
       dataIndex: 'version',
       key: 'version',
       render: (version: string) => <Tag icon={<ApiOutlined style={{ color: token.colorPrimary }} />}>{version || 'N/A'}</Tag>,
@@ -394,22 +396,22 @@ const K8sCenter: React.FC = () => {
   ];
 
   const nodeColumns = [
-    { title: '节点名称', dataIndex: 'name', key: 'name' },
+    { title: t('k8s.nodeName'), dataIndex: 'name', key: 'name' },
     {
-      title: '状态',
+      title: t('k8s.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => <Tag color={status === 'Ready' ? 'success' : 'error'}>{status}</Tag>,
     },
     {
-      title: '角色',
+      title: t('k8s.role'),
       dataIndex: 'roles',
       key: 'roles',
       render: (roles: string[]) => roles.map((r) => <Tag key={r}>{r}</Tag>),
     },
-    { title: 'IP 地址', dataIndex: 'internal_ip', key: 'internal_ip' },
+    { title: t('k8s.ipAddress'), dataIndex: 'internal_ip', key: 'internal_ip' },
     {
-      title: '操作',
+      title: t('k8s.action'),
       key: 'action',
       render: (_: any, record: any) => (
         <Button
@@ -419,17 +421,17 @@ const K8sCenter: React.FC = () => {
           onClick={() => fetchYaml('node', record.name)}
           loading={yamlLoading && yamlTarget?.name === record.name && yamlTarget?.type === 'node'}
         >
-          YAML
+          {t('k8s.yaml')}
         </Button>
       ),
     },
   ];
 
   const podColumns = [
-    { title: 'Pod 名称', dataIndex: 'name', key: 'name' },
-    { title: '命名空间', dataIndex: 'namespace', key: 'namespace' },
+    { title: t('k8s.podName'), dataIndex: 'name', key: 'name' },
+    { title: t('k8s.namespace'), dataIndex: 'namespace', key: 'namespace' },
     {
-      title: '状态',
+      title: t('k8s.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
@@ -438,9 +440,9 @@ const K8sCenter: React.FC = () => {
         </Tag>
       ),
     },
-    { title: '重启次数', dataIndex: 'restarts', key: 'restarts' },
+    { title: t('k8s.restartCount'), dataIndex: 'restarts', key: 'restarts' },
     {
-      title: '操作',
+      title: t('k8s.action'),
       key: 'action',
       render: (_: any, record: any) => (
         <Space size="small">
@@ -451,7 +453,7 @@ const K8sCenter: React.FC = () => {
             onClick={() => fetchLogs(record)}
             loading={logsLoading && logPod?.name === record.name}
           >
-            日志
+            {t('k8s.logs')}
           </Button>
 
           { hasPermission('k8s:cluster:pod_exec') && (
@@ -465,7 +467,7 @@ const K8sCenter: React.FC = () => {
               setIsShellModalVisible(true);
             }}
           >
-            终端
+            {t('k8s.terminal')}
           </Button>
           )}
 
@@ -477,7 +479,7 @@ const K8sCenter: React.FC = () => {
                 onClick={() => fetchYaml('pod', record.name, record.namespace)}
                 loading={yamlLoading && yamlTarget?.name === record.name && yamlTarget?.type === 'pod'}
               >
-                YAML
+                {t('k8s.yaml')}
               </Button>
           )}
 
@@ -489,16 +491,16 @@ const K8sCenter: React.FC = () => {
                 icon={<DeleteOutlined />}
                 onClick={() => {
                   modal.confirm({
-                    title: '确认删除 Pod',
-                    content: `确定要删除 Pod "${record.name}" 吗？如果是由 Deployment/StatefulSet 管理的，它将被自动重建。`,
-                    okText: '确认删除',
-                    cancelText: '取消',
+                    title: t('k8s.confirmDeletePod'),
+                    content: t('k8s.confirmDeletePodContent', { name: record.name }),
+                    okText: t('k8s.confirmDelete'),
+                    cancelText: t('k8s.cancel'),
                     onOk: () => deletePodMutation.mutate({ namespace: record.namespace, name: record.name }),
                   });
                 }}
                 loading={deletePodMutation.isPending && (deletePodMutation.variables as any)?.name === record.name}
               >
-                删除
+                {t('k8s.delete')}
               </Button>
           )}
         </Space>
@@ -507,11 +509,11 @@ const K8sCenter: React.FC = () => {
   ];
 
   const deploymentColumns = [
-    { title: '名称', dataIndex: 'name', key: 'name' },
-    { title: '命名空间', dataIndex: 'namespace', key: 'namespace' },
-    { title: '实例 (正在运行/总数)', dataIndex: 'replicas', key: 'replicas' },
+    { title: t('k8s.name'), dataIndex: 'name', key: 'name' },
+    { title: t('k8s.namespace'), dataIndex: 'namespace', key: 'namespace' },
+    { title: t('k8s.instances'), dataIndex: 'replicas', key: 'replicas' },
     {
-      title: '操作',
+      title: t('k8s.action'),
       key: 'action',
       render: (_: any, record: any) => (
         <Space size="small">
@@ -527,7 +529,7 @@ const K8sCenter: React.FC = () => {
               setIsScaleModalVisible(true);
             }}
           >
-            扩容
+            {t('k8s.scale')}
           </Button>
               )}
 
@@ -538,14 +540,14 @@ const K8sCenter: React.FC = () => {
             icon={<SyncOutlined />}
             onClick={() => {
               modal.confirm({
-                title: '重启确认',
-                content: `确认要触发 Deployment "${record.name}" 的滚动重启吗？`,
+                title: t('k8s.restartConfirm'),
+                content: t('k8s.restartConfirmContent', { name: record.name }),
                 onOk: () => restartMutation.mutate({ namespace: record.namespace, name: record.name }),
               });
             }}
             loading={restartMutation.isPending && restartMutation.variables?.name === record.name}
           >
-            重启
+            {t('k8s.restart')}
           </Button>
               )}
 
@@ -557,7 +559,7 @@ const K8sCenter: React.FC = () => {
             onClick={() => fetchYaml('deployment', record.name, record.namespace)}
             loading={yamlLoading && yamlTarget?.name === record.name && yamlTarget?.type === 'deployment'}
           >
-            YAML
+            {t('k8s.yaml')}
           </Button>
               )}
         </Space>
@@ -566,11 +568,11 @@ const K8sCenter: React.FC = () => {
   ];
 
   const serviceColumns = [
-    { title: '名称', dataIndex: 'name', key: 'name' },
-    { title: '命名空间', dataIndex: 'namespace', key: 'namespace' },
-    { title: '类型', dataIndex: 'type', key: 'type' },
+    { title: t('k8s.name'), dataIndex: 'name', key: 'name' },
+    { title: t('k8s.namespace'), dataIndex: 'namespace', key: 'namespace' },
+    { title: t('k8s.serviceType'), dataIndex: 'type', key: 'type' },
     {
-      title: '操作',
+      title: t('k8s.action'),
       key: 'action',
       render: (_: any, record: any) => (
         <Button
@@ -580,7 +582,7 @@ const K8sCenter: React.FC = () => {
           onClick={() => fetchYaml('service', record.name, record.namespace)}
           loading={yamlLoading && yamlTarget?.name === record.name && yamlTarget?.type === 'service'}
         >
-          YAML
+          {t('k8s.yaml')}
         </Button>
       ),
     },
@@ -594,7 +596,7 @@ const K8sCenter: React.FC = () => {
           <Space>
             <CloudServerOutlined style={{ color: token.colorPrimary }} />
             <Title level={4} style={{ margin: 0 }}>
-              Kubernetes 集群中心
+              {t('k8s.title')}
             </Title>
           </Space>
         }
@@ -605,7 +607,7 @@ const K8sCenter: React.FC = () => {
             form.resetFields();
             setIsModalVisible(true);
           }}>
-            连接集群
+            {t('k8s.connectCluster')}
           </Button>
             )
         }
@@ -620,41 +622,41 @@ const K8sCenter: React.FC = () => {
               render: (_: any, record: K8sResource) => (
                 <Space>
                   {hasPermission('k8s:cluster:verify') && (
-                  <Tooltip title="验证连接">
-                    <Button 
-                      type="link" 
-                      size="small" 
-                      icon={<PlayCircleOutlined />} 
-                      onClick={() => verifyMutation.mutate(record.id)} 
-                      loading={verifyMutation.isPending && verifyMutation.variables === record.id} 
+                  <Tooltip title={t('k8s.verifyConnection')}>
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<PlayCircleOutlined />}
+                      onClick={() => verifyMutation.mutate(record.id)}
+                      loading={verifyMutation.isPending && verifyMutation.variables === record.id}
                     />
                   </Tooltip>
                       )}
 
                   {hasPermission('k8s:cluster:resources_view') && (
-                  <Tooltip title="管理资源">
-                    <Button 
-                      type="link" 
-                      size="small" 
-                      icon={<AppstoreOutlined />} 
-                      onClick={() => showDetail(record)} 
+                  <Tooltip title={t('k8s.manageResources')}>
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<AppstoreOutlined />}
+                      onClick={() => showDetail(record)}
                     />
                   </Tooltip>
                       )}
 
                   {hasPermission('k8s:cluster:edit') && (
-                  <Tooltip title="修改配置">
-                    <Button 
-                      type="link" 
-                      size="small" 
-                      icon={<EditOutlined />} 
-                      onClick={() => showEdit(record)} 
+                  <Tooltip title={t('k8s.modifyConfig')}>
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<EditOutlined />}
+                      onClick={() => showEdit(record)}
                     />
                   </Tooltip>
                       )}
 
                   {hasPermission('k8s:cluster:delete') && (
-                  <Tooltip title="删除集群">
+                  <Tooltip title={t('k8s.deleteCluster')}>
                     <Button
                       type="link"
                       size="small"
@@ -662,8 +664,8 @@ const K8sCenter: React.FC = () => {
                       icon={<DeleteOutlined />}
                       onClick={() => {
                         modal.confirm({
-                          title: '确认删除',
-                          content: `确定要删除集群 "${record.name}" 吗？该操作仅从平台移除连接，不会删除实际集群。`,
+                          title: t('k8s.confirmDelete'),
+                          content: t('k8s.confirmDeleteClusterContent', { name: record.name }),
                           onOk: () => deleteMutation.mutate(record.id),
                         });
                       }}
@@ -685,7 +687,7 @@ const K8sCenter: React.FC = () => {
 
       {/* Add/Edit Cluster Modal */}
       <Modal
-        title={selectedCluster ? '修改集群认证' : '连接 Kubernetes 集群'}
+        title={selectedCluster ? t('k8s.modifyClusterAuth') : t('k8s.connectKubernetes')}
         open={isModalVisible}
         onCancel={() => {
           setIsModalVisible(false);
@@ -699,22 +701,22 @@ const K8sCenter: React.FC = () => {
         <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ auth_type: 'kubeconfig' }}>
           <Form.Item
             name="name"
-            label="集群名称"
-            rules={[{ required: true, message: '请输入集群名称' }]}
+            label={t('k8s.clusterNameLabel')}
+            rules={[{ required: true, message: t('k8s.enterClusterName') }]}
           >
-            <Input placeholder="例如: Production-Cluster" />
+            <Input placeholder={t('k8s.exampleProduction')} />
           </Form.Item>
 
           <Form.Item
             name="auth_type"
-            label="认证方式"
+            label={t('k8s.authTypeLabel')}
             rules={[{ required: true }]}
           >
-            <Select 
-              placeholder="请选择认证方式"
+            <Select
+              placeholder={t('k8s.selectAuthType')}
               options={[
-                { value: 'kubeconfig', label: 'Kubeconfig 文件内容' },
-                { value: 'token', label: 'API Server Token' },
+                { value: 'kubeconfig', label: t('k8s.kubeconfigFile') },
+                { value: 'token', label: t('k8s.apiServerToken') },
               ]}
             />
           </Form.Item>
@@ -729,11 +731,11 @@ const K8sCenter: React.FC = () => {
                 return (
                   <Form.Item
                     name="kubeconfig_content"
-                    label="Kubeconfig 内容"
-                    rules={[{ required: !selectedCluster, message: '请粘贴 Kubeconfig 内容' }]}
-                    extra={selectedCluster ? '留空表示保持当前配置不变' : '完整复制 ~/.kube/config 及其凭证内容'}
+                    label={t('k8s.kubeconfigContent')}
+                    rules={[{ required: !selectedCluster, message: t('k8s.pasteKubeconfig') }]}
+                    extra={selectedCluster ? t('k8s.keepCurrentConfig') : t('k8s.copyKubeconfig')}
                   >
-                    <TextArea rows={10} placeholder="请将 .kube/config 文件内容粘贴到此处" />
+                    <TextArea rows={10} placeholder={t('k8s.pasteKubeconfig')} />
                   </Form.Item>
                 );
               } else if (authType === 'token') {
@@ -741,18 +743,18 @@ const K8sCenter: React.FC = () => {
                   <>
                     <Form.Item
                       name="api_server"
-                      label="API Server 地址"
-                      rules={[{ required: true, message: '请输入 API Server 地址' }]}
+                      label={t('k8s.apiServerAddress')}
+                      rules={[{ required: true, message: t('k8s.enterApiServerAddress') }]}
                     >
                       <Input placeholder="https://1.2.3.4:6443" />
                     </Form.Item>
                     <Form.Item
                       name="token"
-                      label="认证 Token"
-                      rules={[{ required: !selectedCluster, message: '请输入 ServiceAccount Token' }]}
-                      extra={selectedCluster ? '留空表示保持当前 Token 不变' : '请输入具有集群管理权限的 ServiceAccount Token'}
+                      label={t('k8s.authToken')}
+                      rules={[{ required: !selectedCluster, message: t('k8s.enterServiceAccountToken') }]}
+                      extra={selectedCluster ? t('k8s.keepCurrentToken') : t('k8s.clusterAdminToken')}
                     >
-                      <TextArea rows={4} placeholder="请输入集群管理 Token" />
+                      <TextArea rows={4} placeholder={t('k8s.enterServiceAccountToken')} />
                     </Form.Item>
                   </>
                 );
@@ -761,15 +763,15 @@ const K8sCenter: React.FC = () => {
             }}
           </Form.Item>
 
-          <Form.Item name="remark" label="备注说明">
+          <Form.Item name="remark" label={t('k8s.remarkLabel')}>
             <TextArea rows={2} />
           </Form.Item>
 
           <Form.Item className="mb-0 text-right">
             <Space>
-              <Button onClick={() => setIsModalVisible(false)}>取消</Button>
+              <Button onClick={() => setIsModalVisible(false)}>{t('k8s.cancel')}</Button>
               <Button type="primary" htmlType="submit" loading={createMutation.isPending || updateMutation.isPending}>
-                {selectedCluster ? '确认修改' : '立即连接'}
+                {selectedCluster ? t('k8s.confirmModify') : t('k8s.connectNow')}
               </Button>
             </Space>
           </Form.Item>
@@ -781,7 +783,7 @@ const K8sCenter: React.FC = () => {
         title={
           <Space>
             <ClusterOutlined style={{ color: token.colorPrimary }} />
-            <Text strong style={{ fontSize: '16px' }}>集群管理: {selectedCluster?.name}</Text>
+            <Text strong style={{ fontSize: '16px' }}>{t('k8s.clusterManagement', { name: selectedCluster?.name })}</Text>
             <Tag color={token.colorPrimary}>{selectedCluster?.version}</Tag>
           </Space>
         }
@@ -793,18 +795,18 @@ const K8sCenter: React.FC = () => {
         className="top-5 custom-modal-premium"
       >
         <div className="flex flex-col gap-6 py-2">
-          <div 
+          <div
             style={{ background: token.colorBgLayout, borderColor: token.colorBorderSecondary }}
             className="flex items-center justify-between p-4 rounded-xl border border-solid"
           >
             <div className="flex items-center gap-4">
               <Text strong style={{ fontSize: '12px', color: token.colorTextTertiary }} className="uppercase tracking-wider">
-                命名空间选择
+                {t('k8s.namespaceSelect')}
               </Text>
               <Select
                 showSearch
                 className="w-80 custom-select-premium"
-                placeholder="全选命名空间 (Cluster Wide)"
+                placeholder={t('k8s.clusterWide')}
                 allowClear
                 onChange={(val) => setActiveNamespace(val)}
                 value={activeNamespace}
@@ -817,11 +819,10 @@ const K8sCenter: React.FC = () => {
               icon={<ReloadOutlined style={{ color: token.colorPrimary }} />}
               className="hover:scale-105 transition-transform rounded-xl h-10 px-6 font-medium border-slate-200"
               onClick={() => {
-                // 标准化后的全量刷新逻辑：失效当前集群下所有 k8s 资源缓存
                 queryClient.invalidateQueries({ queryKey: ['k8s', activeClusterId] });
               }}
             >
-              全量刷新资源
+              {t('k8s.refreshAllResources')}
             </Button>
           </div>
 
@@ -833,7 +834,7 @@ const K8sCenter: React.FC = () => {
                 label: (
                   <Space>
                     <DatabaseOutlined />
-                    <span>节点 (Nodes)</span>
+                    <span>{t('k8s.nodes')}</span>
                   </Space>
                 ),
                 children: <Table columns={nodeColumns} dataSource={nodesData} rowKey="name" loading={nodesLoading} pagination={{ pageSize: 5 }} />,
@@ -843,7 +844,7 @@ const K8sCenter: React.FC = () => {
                 label: (
                   <Space>
                     <PlayCircleOutlined />
-                    <span>容器组 (Pods)</span>
+                    <span>{t('k8s.pods')}</span>
                   </Space>
                 ),
                 children: <Table columns={podColumns} dataSource={podsData} rowKey="name" loading={podsLoading} pagination={{ pageSize: 10 }} />,
@@ -853,7 +854,7 @@ const K8sCenter: React.FC = () => {
                 label: (
                   <Space>
                     <AppstoreOutlined />
-                    <span>无状态服务 (Deployments)</span>
+                    <span>{t('k8s.deployments')}</span>
                   </Space>
                 ),
                 children: <Table columns={deploymentColumns} dataSource={deploymentsData} rowKey="name" loading={deploymentsLoading} pagination={{ pageSize: 10 }} />,
@@ -863,7 +864,7 @@ const K8sCenter: React.FC = () => {
                 label: (
                   <Space>
                     <ApiOutlined />
-                    <span>网络服务 (Services)</span>
+                    <span>{t('k8s.services')}</span>
                   </Space>
                 ),
                 children: <Table columns={serviceColumns} dataSource={servicesData} rowKey="name" loading={servicesLoading} pagination={{ pageSize: 10 }} />,
@@ -875,7 +876,7 @@ const K8sCenter: React.FC = () => {
 
       {/* Deployment Scale Modal */}
       <Modal
-        title={`扩缩容: ${scaleDeployment?.name}`}
+        title={t('k8s.scaleModalTitle', { name: scaleDeployment?.name })}
         open={isScaleModalVisible}
         onCancel={() => setIsScaleModalVisible(false)}
         onOk={() => scaleMutation.mutate({
@@ -883,11 +884,11 @@ const K8sCenter: React.FC = () => {
           name: scaleDeployment?.name,
           replicas: scaleReplicas
         })}
-        okText="确认调整"
+        okText={t('k8s.confirmAdjust')}
         confirmLoading={scaleMutation.isPending}
       >
         <div className="py-5 flex items-center gap-4">
-          <Text className="font-medium">调整副本数为:</Text>
+          <Text className="font-medium">{t('k8s.adjustReplicaCount')}</Text>
           <InputNumber
             min={0}
             max={100}
@@ -905,7 +906,7 @@ const K8sCenter: React.FC = () => {
           <div className="flex items-center justify-between pr-8">
             <Space>
               <FileTextOutlined style={{ color: token.colorPrimary }} />
-              <span>Pod 日志: {logPod?.name}</span>
+              <span>{t('k8s.podLogs', { name: logPod?.name })}</span>
             </Space>
             <Button
               size="small"
@@ -913,7 +914,7 @@ const K8sCenter: React.FC = () => {
               onClick={() => fetchLogs(logPod)}
               loading={logsLoading}
             >
-              刷新
+              {t('k8s.refresh')}
             </Button>
           </div>
         }
@@ -924,11 +925,11 @@ const K8sCenter: React.FC = () => {
         bodyStyle={{ overflowX: 'auto' }}
         className="top-5"
       >
-        <pre 
+        <pre
           style={{ background: token.colorBgLayout, borderColor: token.colorBorderSecondary, color: token.colorText }}
           className="p-4 rounded-lg border border-solid overflow-auto max-h-150 text-xs leading-relaxed font-mono"
         >
-          {podLogs || '暂无日志输出...'}
+          {podLogs || t('k8s.noLogsOutput')}
         </pre>
       </Modal>
 
@@ -937,14 +938,14 @@ const K8sCenter: React.FC = () => {
         title={
           <Space>
             <CodeOutlined style={{ color: token.colorPrimary }} />
-            <span>YAML {hasPermission('k8s:cluster:update_yaml') ? '编辑' : '查看'}: {yamlTarget?.name} ({yamlTarget?.type})</span>
+            <span>{t('k8s.yamlEditor', { action: hasPermission('k8s:cluster:update_yaml') ? t('k8s.edit') : t('k8s.view'), name: yamlTarget?.name, type: yamlTarget?.type })}</span>
           </Space>
         }
         open={isYamlModalVisible}
         onCancel={() => setIsYamlModalVisible(false)}
         onOk={() => yamlUpdateMutation.mutate({ yaml: yamlContent })}
-        okText="保存并应用"
-        cancelText={hasPermission('k8s:cluster:update_yaml') ? "取消" : "关闭"}
+        okText={t('k8s.saveAndApply')}
+        cancelText={hasPermission('k8s:cluster:update_yaml') ? t('k8s.cancel') : t('k8s.close')}
         okButtonProps={{
           style: hasPermission('k8s:cluster:update_yaml') ? {} : { display: 'none' }
         }}
@@ -968,7 +969,7 @@ const K8sCenter: React.FC = () => {
         title={
           <Space>
             <ConsoleSqlOutlined style={{ color: token.colorPrimary }} />
-            <span>容器终端: {shellTarget?.name}</span>
+            <span>{t('k8s.containerTerminal', { name: shellTarget?.name })}</span>
           </Space>
         }
         open={isShellModalVisible}
@@ -981,24 +982,23 @@ const K8sCenter: React.FC = () => {
         <div className="mb-4 mt-3">
           <Space.Compact className="w-full">
             <Input
-              // addonBefore="Command"
               value={shellCommand}
               onChange={(e) => setShellCommand(e.target.value)}
               onPressEnter={handleShellExec}
-              placeholder="请输入要在容器内执行的命令..."
+              placeholder={t('k8s.enterCommand')}
             />
             {hasPermission('k8s:cluster:pod_exec') && (
             <Button type="primary" onClick={handleShellExec} loading={shellExecMutation.isPending} icon={<PlayCircleOutlined />}>
-              执行
+              {t('k8s.execute')}
             </Button>
                 )}
           </Space.Compact>
         </div>
-        <div 
+        <div
           style={{ background: token.colorBgLayout, borderColor: token.colorBorderSecondary, color: token.colorText }}
           className="p-4 border border-solid rounded-lg font-mono text-xs min-h-100 max-h-125 overflow-auto whitespace-pre-wrap leading-relaxed shadow-inner"
         >
-          {shellExecMutation.isPending ? '正在执行命令并等待响应...' : shellOutput || '等待输入命令...'}
+          {shellExecMutation.isPending ? t('k8s.commandExecuting') : shellOutput || t('k8s.waitingForCommand')}
         </div>
       </Modal>
     </div>

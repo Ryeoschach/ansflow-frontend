@@ -3,6 +3,7 @@ import { Card, Table, Typography, Tag, Space, Input, Button, theme, Form, Select
 import { SyncOutlined, SearchOutlined, SafetyCertificateOutlined, CodeOutlined, ExceptionOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { getAuditLogs } from '../../api/system';
 import useAppStore from '../../store/useAppStore';
 
@@ -26,6 +27,7 @@ interface AuditLogRecord {
 }
 
 const AuditLog: React.FC = () => {
+    const { t } = useTranslation();
     const { token: authToken, hasPermission } = useAppStore();
     const { token: antdToken } = theme.useToken();
     const [queryParams, setQueryParams] = useState({ page: 1, page_size: 15, search: '', method: '' });
@@ -64,7 +66,7 @@ const AuditLog: React.FC = () => {
 
     const columns = [
         {
-            title: '操作人',
+            title: t('audit.columnOperator'),
             dataIndex: 'username',
             key: 'username',
             width: 120,
@@ -83,14 +85,14 @@ const AuditLog: React.FC = () => {
             )
         },
         {
-            title: '意图 / 资源',
+            title: t('audit.columnIntent'),
             key: 'intent',
             width: 250,
             render: (_: any, record: AuditLogRecord) => (
                 <div>
                     <div>
                         <Typography.Text strong style={{ fontSize: '14px' }}>
-                            {record.action_name || record.action || '操作'}
+                            {record.action_name || record.action || t('audit.action')}
                         </Typography.Text>
                         <span style={{ fontSize: '12px', color: antdToken.colorTextQuaternary, marginLeft: 6 }}>
                             ({record.resource_name || record.resource || '-'})
@@ -105,7 +107,7 @@ const AuditLog: React.FC = () => {
             )
         },
         {
-            title: '接口快照',
+            title: t('audit.columnApi'),
             key: 'api',
             width: 280,
             render: (_: any, record: AuditLogRecord) => (
@@ -131,7 +133,7 @@ const AuditLog: React.FC = () => {
             )
         },
         {
-            title: '请求耗时',
+            title: t('audit.columnDuration'),
             dataIndex: 'duration',
             key: 'duration',
             width: 120,
@@ -145,14 +147,14 @@ const AuditLog: React.FC = () => {
             }
         },
         {
-            title: 'IP 地址',
+            title: t('audit.columnIp'),
             dataIndex: 'ip_address',
             key: 'ip_address',
             width: 150,
             render: (ip: string) => <Typography.Text type="secondary" style={{ fontFamily: 'monospace' }}>{ip}</Typography.Text>
         },
         {
-            title: '操作时间',
+            title: t('audit.columnTime'),
             dataIndex: 'create_time',
             key: 'create_time',
             width: 180,
@@ -163,7 +165,7 @@ const AuditLog: React.FC = () => {
             )
         },
         {
-            title: '操作',
+            title: t('audit.columnAction'),
             key: 'action',
             width: 100,
             render: (_: any, record: AuditLogRecord) => (
@@ -176,7 +178,7 @@ const AuditLog: React.FC = () => {
                         setDetailVisible(true);
                     }}
                 >
-                    快照
+                    {t('audit.snapshot')}
                 </Button>
                 ) : null
             ),
@@ -187,9 +189,9 @@ const AuditLog: React.FC = () => {
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <Typography.Title level={3} style={{ margin: 0, fontWeight: 600 }}>环境审计 (Audit Logs)</Typography.Title>
+                    <Typography.Title level={3} style={{ margin: 0, fontWeight: 600 }}>{t('audit.title')}</Typography.Title>
                     <Typography.Text type="secondary" style={{ fontSize: '14px' }}>
-                        跟踪全站所有关键操作变更与接口调用耗时
+                        {t('audit.subtitle')}
                     </Typography.Text>
                 </div>
             </div>
@@ -197,12 +199,12 @@ const AuditLog: React.FC = () => {
             <Card variant={"outlined"} className="shadow-sm rounded-xl mb-4">
                 <Form layout="inline" form={form} onFinish={onSearch}>
                     <Form.Item name="username">
-                        <Input placeholder="检索操作人..." prefix={<SearchOutlined />} style={{ width: 220 }} />
+                        <Input placeholder={t('audit.searchPlaceholder')} prefix={<SearchOutlined />} style={{ width: 220 }} />
                     </Form.Item>
                     <Form.Item name="method">
-                        <Select 
-                            placeholder="请求类型" 
-                            allowClear 
+                        <Select
+                            placeholder={t('audit.methodPlaceholder')}
+                            allowClear
                             style={{ width: 120 }}
                             options={[
                                 { label: 'POST', value: 'POST' },
@@ -215,13 +217,13 @@ const AuditLog: React.FC = () => {
                     <Form.Item>
                         <Space>
                             {hasPermission('rbac:audit:view') && (
-                    <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>检索</Button>
+                    <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>{t('audit.search')}</Button>
                     )}
                     {hasPermission('rbac:audit:view') && (
-                    <Button onClick={() => { form.resetFields(); setQueryParams({ ...queryParams, page: 1, search: '', method: '' }); }}>重置</Button>
+                    <Button onClick={() => { form.resetFields(); setQueryParams({ ...queryParams, page: 1, search: '', method: '' }); }}>{t('audit.reset')}</Button>
                     )}
                     {hasPermission('rbac:audit:view') && (
-                    <Button icon={<SyncOutlined />} onClick={() => refetch()}>刷新</Button>
+                    <Button icon={<SyncOutlined />} onClick={() => refetch()}>{t('audit.refresh')}</Button>
                     )}
                         </Space>
                     </Form.Item>
@@ -241,7 +243,7 @@ const AuditLog: React.FC = () => {
                         total: total,
                         showSizeChanger: true,
                         onChange: (page, size) => setQueryParams({ ...queryParams, page, page_size: size }),
-                        showTotal: total => `共 ${total} 条历史足迹`
+                        showTotal: total => t('audit.paginationTotal', { total })
                     }}
                 />
             </Card>
@@ -250,7 +252,7 @@ const AuditLog: React.FC = () => {
                 title={
                     <div className="flex items-center gap-2">
                         <SafetyCertificateOutlined style={{ color: antdToken.colorPrimary }} />
-                        <span>操作快照详情</span>
+                        <span>{t('audit.drawerTitle')}</span>
                     </div>
                 }
                 placement="right"
@@ -262,8 +264,8 @@ const AuditLog: React.FC = () => {
                     <div className="space-y-6">
                         {currentRecord.response_status >= 400 && (
                             <Alert
-                                message={<span style={{ fontWeight: 600 }}>操作被驳回或执行失败 ({currentRecord.response_status})</span>}
-                                description="后方检测到此请求为异常拦截状态，具体原因请参考底部 'Response 摘要'"
+                                message={<span style={{ fontWeight: 600 }}>{t('audit.alertTitle', { status: currentRecord.response_status })}</span>}
+                                description={t('audit.alertContent')}
                                 type="error"
                                 showIcon
                                 icon={<ExceptionOutlined />}
@@ -271,40 +273,40 @@ const AuditLog: React.FC = () => {
                         )}
 
                         <Descriptions column={2} bordered size="small" labelStyle={{ width: '130px', background: antdToken.colorFillQuaternary }}>
-                            <Descriptions.Item label="操作人">
+                            <Descriptions.Item label={t('audit.descOperator')}>
                                 <Typography.Text strong>{currentRecord.username}</Typography.Text>
                             </Descriptions.Item>
-                            <Descriptions.Item label="客户端 IP">
+                            <Descriptions.Item label={t('audit.descClientIp')}>
                                 <Typography.Text code>{currentRecord.ip_address}</Typography.Text>
                             </Descriptions.Item>
-                            <Descriptions.Item label="意图动作">
+                            <Descriptions.Item label={t('audit.descIntentAction')}>
                                 {currentRecord.action_name || '-'} ({currentRecord.action || '-'})
                             </Descriptions.Item>
-                            <Descriptions.Item label="目标资源">
+                            <Descriptions.Item label={t('audit.descTargetResource')}>
                                 {currentRecord.resource_name || '-'} ({currentRecord.resource || '-'})
                             </Descriptions.Item>
-                            <Descriptions.Item label="对象主键 (PK)">
-                                <Typography.Text copyable>{currentRecord.object_id || '未识别'}</Typography.Text>
+                            <Descriptions.Item label={t('audit.descObjectPk')}>
+                                <Typography.Text copyable>{currentRecord.object_id || t('audit.unidentified')}</Typography.Text>
                             </Descriptions.Item>
-                            <Descriptions.Item label="耗时分析">
+                            <Descriptions.Item label={t('audit.descDuration')}>
                                 {currentRecord.duration ? `${currentRecord.duration} 秒` : '-'}
                             </Descriptions.Item>
-                            <Descriptions.Item label="接口路径" span={2}>
+                            <Descriptions.Item label={t('audit.descApiPath')} span={2}>
                                 <Typography.Text code>{currentRecord.method}</Typography.Text> {currentRecord.path}
                             </Descriptions.Item>
                         </Descriptions>
 
                         {(currentRecord.method === 'PUT' || currentRecord.method === 'PATCH' || currentRecord.method === 'DELETE') && currentRecord.old_data ? (
                             <div>
-                                <Typography.Title level={5}>数据快照比对 (Diff)</Typography.Title>
+                                <Typography.Title level={5}>{t('audit.diffTitle')}</Typography.Title>
                                 <div className="flex flex-col md:flex-row gap-4">
                                     <div className="flex-1">
                                         <div style={{ padding: '4px 8px', background: antdToken.colorErrorBg, color: antdToken.colorErrorText, fontWeight: 'bold', borderTopLeftRadius: '8px', borderTopRightRadius: '8px', fontSize: '12px' }}>
-                                            修改前 (Old Data)
+                                            {t('audit.diffOldData')}
                                         </div>
                                         <div style={{
-                                            background: '#1e1e1e', color: '#d4d4d4', padding: '16px', 
-                                            borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px', 
+                                            background: '#1e1e1e', color: '#d4d4d4', padding: '16px',
+                                            borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px',
                                             overflow: 'auto', maxHeight: '400px', fontSize: '13px', fontFamily: 'monospace'
                                         }}>
                                             <pre style={{ margin: 0 }}>
@@ -314,11 +316,11 @@ const AuditLog: React.FC = () => {
                                     </div>
                                     <div className="flex-1">
                                         <div style={{ padding: '4px 8px', background: antdToken.colorSuccessBg, color: antdToken.colorSuccessText, fontWeight: 'bold', borderTopLeftRadius: '8px', borderTopRightRadius: '8px', fontSize: '12px' }}>
-                                            拦截 / 更新的载荷 (New Request)
+                                            {t('audit.diffNewRequest')}
                                         </div>
                                         <div style={{
-                                            background: '#1e1e1e', color: '#d4d4d4', padding: '16px', 
-                                            borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px', 
+                                            background: '#1e1e1e', color: '#d4d4d4', padding: '16px',
+                                            borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px',
                                             overflow: 'auto', maxHeight: '400px', fontSize: '13px', fontFamily: 'monospace'
                                         }}>
                                             <pre style={{ margin: 0 }}>
@@ -330,11 +332,11 @@ const AuditLog: React.FC = () => {
                             </div>
                         ) : (
                             <div>
-                                <Typography.Title level={5}>Request 报文</Typography.Title>
+                                <Typography.Title level={5}>{t('audit.requestTitle')}</Typography.Title>
                                 <div style={{
-                                    background: '#1e1e1e', color: '#d4d4d4', 
-                                    padding: '16px', borderRadius: '8px', 
-                                    overflow: 'auto', maxHeight: '400px', 
+                                    background: '#1e1e1e', color: '#d4d4d4',
+                                    padding: '16px', borderRadius: '8px',
+                                    overflow: 'auto', maxHeight: '400px',
                                     fontSize: '13px', fontFamily: 'monospace'
                                 }}>
                                     <pre style={{ margin: 0 }}>
@@ -347,7 +349,7 @@ const AuditLog: React.FC = () => {
                         {(currentRecord.response_data && Object.keys(currentRecord.response_data).length > 0) && (
                             <div>
                                 <Typography.Title level={5} style={{ color: currentRecord.response_status >= 400 ? antdToken.colorError : antdToken.colorPrimary }}>
-                                    Response 简短摘要
+                                    {t('audit.responseTitle')}
                                 </Typography.Title>
                                 <div style={{
                                     background: currentRecord.response_status >= 400 ? antdToken.colorErrorBg : antdToken.colorFillTertiary,

@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import './locales/i18n'  // i18n 初始化
 import App from './App.tsx'
 import { StyleProvider } from '@ant-design/cssinjs'
 

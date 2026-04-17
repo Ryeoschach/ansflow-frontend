@@ -6,8 +6,10 @@ import useAppStore from "../../store/useAppStore.ts";
 import {DeleteOutlined, EditOutlined, PlusOutlined} from "@ant-design/icons";
 import {Environments} from "../../types";
 import {TableSkeleton} from "../../components/Skeletons";
+import { useTranslation } from 'react-i18next';
 
 const Environment: React.FC = () => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const {token, hasPermission} = useAppStore();
     const [params, setParams] = useState({ page: 1, size: 10, search: '' });
@@ -16,49 +18,46 @@ const Environment: React.FC = () => {
     const [form] = Form.useForm();
     const {message} = App.useApp();
 
-    // 获取所有环境
     const { data: envData, isLoading: listLoading } = useQuery({
         queryKey: ["environment", params],
         queryFn: () => getEnvironments(params),
         enabled: !!token
     })
 
-    // 创建/更新环境信息
     const saveMutation = useMutation({
         mutationFn: (values) =>  editingRecord? updateEnvironment(editingRecord.id, values) : createEnvironment(values),
         onSuccess: () => {
-            message.success(editingRecord? "环境更新完成": "新环境创建成功");
+            message.success(editingRecord? t('environment.envUpdated') : t('environment.envCreated'));
             setIsModalOpen(false);
             queryClient.invalidateQueries({queryKey: ['environment']});
         }
     })
 
-    // 删除环境
     const deleteMutation = useMutation({
         mutationFn: deleteEnvironment,
         onSuccess: () => {
-            message.success("环境删除成功");
+            message.success(t('environment.envDeleted'));
             queryClient.invalidateQueries({queryKey: ['environment']});
         }
     })
 
     const typeMap: Record<string, { text: string, color: string }> = {
-        'dev': { text: '开发环境', color: 'blue' },
-        'prd': { text: '生产环境', color: 'red' },
+        'dev': { text: t('environment.typeDev'), color: 'blue' },
+        'prd': { text: t('environment.typePrd'), color: 'red' },
         'uat': { text: 'UAT', color: 'orange' },
-        'test': { text: '测试', color: 'green' },
+        'test': { text: t('environment.typeTest'), color: 'green' },
         'others': { text: 'others', color: 'default' }
     };
 
     const columns = [
         {
-            title: '环境名称',
+            title: t('environment.envName'),
             dataIndex: 'name',
             key: 'name',
             render: (text: string) => <span className="font-semibold">{text}</span>
         },
         {
-            title: '环境标签',
+            title: t('environment.envLabel'),
             dataIndex: 'code',
             key: 'code',
             render: (val: string) => {
@@ -67,19 +66,18 @@ const Environment: React.FC = () => {
             },
         },
         {
-            title: '描述',
+            title: t('environment.description'),
             dataIndex: 'remark',
             key: 'remark',
             render: (text: string) => <span className="font-semibold">{text}</span>
         },
         {
-            title: '操作',
+            title: t('environment.action'),
             key: 'action',
             render: (_: any, record: any) => (
                 <Space size="middle">
                     {(hasPermission('*') || hasPermission('resource:environments:edit')) && (
-                        <Tooltip title="编辑">
-                            {/* 点编辑时：把当前行数据存起来 -> 填充表单 -> 弹窗打开 */}
+                        <Tooltip title={t('environment.edit')}>
                             <Button type="text" icon={<EditOutlined />} onClick={() => {
                                 setEditingRecord(record);
                                 form.setFieldsValue(record);
@@ -89,8 +87,8 @@ const Environment: React.FC = () => {
                     )}
 
                     {(hasPermission('*') || hasPermission('resource:environments:delete')) && (
-                        <Popconfirm title="确定删除吗？" onConfirm={() => deleteMutation.mutate(record.id)}>
-                            <Tooltip title="删除">
+                        <Popconfirm title={t('environment.confirmDelete')} onConfirm={() => deleteMutation.mutate(record.id)}>
+                            <Tooltip title={t('environment.delete')}>
                                 <Button type="text" danger icon={<DeleteOutlined />} />
                             </Tooltip>
                         </Popconfirm>
@@ -102,7 +100,7 @@ const Environment: React.FC = () => {
 
     return (
         <Card
-            title="环境管理"
+            title={t('environment.title')}
             className="m-4 shadow-sm"
             extra={
                 (hasPermission('*') || hasPermission('resource:environments:add')) && (
@@ -115,13 +113,13 @@ const Environment: React.FC = () => {
                             setIsModalOpen(true);
                         }}
                     >
-                        新增环境
+                        {t('environment.addEnv')}
                     </Button>
                 )
             }
         >
             { listLoading? (
-                <TableSkeleton /> // 加载时显示骨架
+                <TableSkeleton />
             ) : (
             <Table
                 dataSource={envData?.data}
@@ -139,7 +137,7 @@ const Environment: React.FC = () => {
                 )}
 
             <Modal
-                title={editingRecord? "更新环境": "创建新环境"}
+                title={editingRecord? t('environment.updateEnv') : t('environment.createEnv')}
                 open={isModalOpen}
                 onOk={() => form.submit()}
                 onCancel={() => setIsModalOpen(false)}
@@ -151,18 +149,18 @@ const Environment: React.FC = () => {
                     className="mt-4"
                     onFinish={(values) => saveMutation.mutate(values)}
                 >
-                    <Form.Item label="环境名称" name="name" rules={[{ required: true, message: '请输入名称' }]}>
-                        <Input placeholder="例如: 测试" />
+                    <Form.Item label={t('environment.envName')} name="name" rules={[{ required: true, message: t('environment.nameRequired') }]}>
+                        <Input placeholder={t('environment.namePlaceholder')} />
                     </Form.Item>
 
-                    <Form.Item label="环境标签" name="code" rules={[{ required: true, message: '请选择环境类型' }]}>
+                    <Form.Item label={t('environment.envLabel')} name="code" rules={[{ required: true, message: t('environment.codeRequired') }]}>
                         <Select options={Object.entries(typeMap).map(([key, val]) => ({
                             label: val.text, value: key
                         }))} />
                     </Form.Item>
 
-                    <Form.Item label="备注说明" name="remark">
-                        <Input.TextArea placeholder="补充说明信息..." rows={3} />
+                    <Form.Item label={t('environment.remarkLabel')} name="remark">
+                        <Input.TextArea placeholder={t('environment.remarkPlaceholder')} rows={3} />
                     </Form.Item>
                 </Form>
             </Modal>

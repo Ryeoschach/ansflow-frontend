@@ -11,15 +11,16 @@ import useAppStore from '../../store/useAppStore';
 import dayjs from 'dayjs';
 import { ColumnType } from 'antd/es/table';
 import { PaginatedResponse, User } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 const { Title } = Typography;
 
 const UserManagement: React.FC = () => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const { message, modal } = App.useApp();
     const { hasPermission, token } = useAppStore();
-    
-    // 统一管理分页与搜索参数
+
     const [params, setParams] = useState({
         page: 1,
         size: 10,
@@ -32,7 +33,6 @@ const UserManagement: React.FC = () => {
     const [form] = Form.useForm();
     const [roleForm] = Form.useForm();
 
-    // 节流搜索：当搜索框输入变化时，延迟更新 params.search 并回到第一页
     const [inputValue, setInputValue] = useState('');
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -41,22 +41,18 @@ const UserManagement: React.FC = () => {
         return () => clearTimeout(timer);
     }, [inputValue]);
 
-    // 获取用户列表
     const { data, isLoading } = useQuery<PaginatedResponse<User>>({
         queryKey: ['users', params],
         queryFn: () => getUsers(params.page, params.size, params.search),
-        // 只有拥有查看权限才发起请求
         enabled: !!token && (hasPermission('rbac:user:view') || hasPermission('*')),
     });
 
-    // 获取所有角色（用于下拉选择）
     const { data: allRoles } = useQuery({
         queryKey: ['roles'],
         queryFn: () => getRoles(),
         enabled: !!token && (hasPermission('rbac:user:edit') || hasPermission('*')),
     });
 
-    // 创建/更新用户
     const saveMutation = useMutation({
         mutationFn: (values: any) => {
             if (editingUser) {
@@ -65,7 +61,7 @@ const UserManagement: React.FC = () => {
             return createUser(values);
         },
         onSuccess: () => {
-            message.success(editingUser ? '用户更新成功' : '用户创建成功');
+            message.success(editingUser ? t('user.userUpdated') : t('user.userCreated'));
             queryClient.invalidateQueries({ queryKey: ['users'] });
             setIsModalOpen(false);
             setEditingUser(null);
@@ -73,20 +69,18 @@ const UserManagement: React.FC = () => {
         },
     });
 
-    // 删除用户
     const deleteMutation = useMutation({
         mutationFn: deleteUser,
         onSuccess: () => {
-            message.success('用户删除成功');
+            message.success(t('user.userDeleted'));
             queryClient.invalidateQueries({ queryKey: ['users'] });
         },
     });
 
-    // 分配角色
     const assignRolesMutation = useMutation({
         mutationFn: (roleIds: number[]) => assignRoles(editingUser.id, roleIds),
         onSuccess: () => {
-            message.success('角色分配成功');
+            message.success(t('user.roleAssigned'));
             queryClient.invalidateQueries({ queryKey: ['users'] });
             setIsRoleModalOpen(false);
             setEditingUser(null);
@@ -101,8 +95,8 @@ const UserManagement: React.FC = () => {
 
     const handleDelete = (id: number) => {
         modal.confirm({
-            title: '确定删除该用户吗？',
-            content: '删除后将无法恢复。',
+            title: t('user.confirmDelete'),
+            content: t('user.confirmDeleteContent'),
             onOk: () => deleteMutation.mutate(id),
         });
     };
@@ -114,60 +108,59 @@ const UserManagement: React.FC = () => {
     };
 
     const columns: ColumnType<User>[] = [
-        { title: '用户名', dataIndex: 'username', key: 'username' },
-        { title: '邮箱', dataIndex: 'email', key: 'email' },
+        { title: t('user.username'), dataIndex: 'username', key: 'username' },
+        { title: t('user.email'), dataIndex: 'email', key: 'email' },
         {
-            title: '所属角色',
+            title: t('user.role'),
             dataIndex: 'roles_info',
             key: 'roles_info',
             render: (roles: any[]) => (
                 <Space wrap>
                     {roles?.map(role => <Tag color="blue" key={role.id}>{role.name}</Tag>)}
-                    {(!roles || roles.length === 0) && <span className="text-gray-400">未分配</span>}
+                    {(!roles || roles.length === 0) && <span className="text-gray-400">{t('user.unassigned')}</span>}
                 </Space>
             )
         },
         {
-            title: '管理员',
+            title: t('user.admin'),
             dataIndex: 'is_staff',
             key: 'is_staff',
             render: (isStaff: boolean) => (
-                <Tag color={isStaff ? 'red' : 'default'}>{isStaff ? '是' : '否'}</Tag>
+                <Tag color={isStaff ? 'red' : 'default'}>{isStaff ? t('user.isAdmin') : t('user.notAdmin')}</Tag>
             ),
         },
         {
-            title: '状态',
+            title: t('user.status'),
             dataIndex: 'is_active',
             key: 'is_active',
             render: (isActive: boolean) => (
-                <Tag color={isActive ? 'success' : 'error'}>{isActive ? '正常' : '禁用'}</Tag>
+                <Tag color={isActive ? 'success' : 'error'}>{isActive ? t('user.statusActive') : t('user.statusDisabled')}</Tag>
             ),
         },
         {
-            title: '创建时间',
+            title: t('user.createTime'),
             dataIndex: 'date_joined',
             key: 'date_joined',
             render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm'),
         },
         {
-            title: '操作',
+            title: t('user.action'),
             key: 'action',
             width: 180,
             render: (_: any, record: User) => (
                 <Space size="middle">
                     {hasPermission('rbac:user:edit') && (
-                        <Tooltip title="编辑">
+                        <Tooltip title={t('user.edit')}>
                             <Button type="text" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
                         </Tooltip>
                     )}
-                    {/*{hasPermission('user:assign_role') && (*/}
                     {hasPermission('rbac:user:edit') && (
-                        <Tooltip title="角色分配">
+                        <Tooltip title={t('user.assignRole')}>
                             <Button type="text" icon={<SafetyCertificateOutlined />} onClick={() => handleAssignRoles(record)} />
                         </Tooltip>
                     )}
                     {hasPermission('rbac:user:delete') && (
-                        <Tooltip title="删除">
+                        <Tooltip title={t('user.delete')}>
                             <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />
                         </Tooltip>
                     )}
@@ -179,7 +172,7 @@ const UserManagement: React.FC = () => {
     return (
         <div className="p-4">
             <div className="flex justify-between items-center mb-4">
-                <Title level={4}>用户管理</Title>
+                <Title level={4}>{t('user.title')}</Title>
                 {(hasPermission('rbac:user:add') || hasPermission('*')) && (
                     <Button
                         type="primary"
@@ -189,7 +182,7 @@ const UserManagement: React.FC = () => {
                             form.resetFields();
                             setIsModalOpen(true);
                         }}
-                    >新增用户</Button>
+                    >{t('user.addUser')}</Button>
                 )}
             </div>
 
@@ -197,13 +190,13 @@ const UserManagement: React.FC = () => {
                 <div className="mb-4 flex justify-between">
                     <Space>
                         <Input
-                            placeholder="搜索用户名/邮箱"
+                            placeholder={t('user.searchPlaceholder')}
                             prefix={<SearchOutlined />}
                             className="w-64"
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
                         />
-                        <Button icon={<ReloadOutlined />} onClick={() => setInputValue('')}>重置</Button>
+                        <Button icon={<ReloadOutlined />} onClick={() => setInputValue('')}>{t('user.reset')}</Button>
                     </Space>
                 </div>
 
@@ -224,7 +217,7 @@ const UserManagement: React.FC = () => {
             </Card>
 
             <Modal
-                title={editingUser ? '编辑用户' : '新增用户'}
+                title={editingUser ? t('user.editUser') : t('user.createUser')}
                 open={isModalOpen}
                 onOk={() => form.submit()}
                 onCancel={() => setIsModalOpen(false)}
@@ -236,34 +229,34 @@ const UserManagement: React.FC = () => {
                     onFinish={(values) => saveMutation.mutate(values)}
                     className="mt-4"
                 >
-                    <Form.Item label="用户名" name="username" rules={[{ required: true, message: '请输入用户名' }]}>
-                        <Input placeholder="请输入用户名" disabled={!!editingUser} />
+                    <Form.Item label={t('user.username')} name="username" rules={[{ required: true, message: t('user.usernameRequired') }]}>
+                        <Input placeholder={t('user.username')} disabled={!!editingUser} />
                     </Form.Item>
-                    <Form.Item label="邮箱" name="email" rules={[{ required: true, type: 'email' }]}>
+                    <Form.Item label={t('user.email')} name="email" rules={[{ required: true, type: 'email', message: t('user.emailRequired') }]}>
                         <Input placeholder="example@ansflow.com" />
                     </Form.Item>
                     {!editingUser && (
-                        <Form.Item label="初始密码" name="password" rules={[{ required: true, min: 6 }]}>
-                            <Input.Password placeholder="请输入密码" />
+                        <Form.Item label={t('user.passwordLabel')} name="password" rules={[{ required: true, min: 6, message: t('user.passwordRequired') }]}>
+                            <Input.Password placeholder={t('user.passwordRequired')} />
                         </Form.Item>
                     )}
-                    <Form.Item label="状态" name="is_active" valuePropName="checked" initialValue={true}>
+                    <Form.Item label={t('user.status')} name="is_active" valuePropName="checked" initialValue={true}>
                         <Select options={[
-                            { label: '正常', value: true },
-                            { label: '禁用', value: false },
+                            { label: t('user.statusActive'), value: true },
+                            { label: t('user.statusDisabled'), value: false },
                         ]} />
                     </Form.Item>
-                    <Form.Item label="管理员权限" name="is_staff" valuePropName="checked" initialValue={false}>
+                    <Form.Item label={t('user.admin')} name="is_staff" valuePropName="checked" initialValue={false}>
                         <Select options={[
-                            { label: '是', value: true },
-                            { label: '否', value: false },
+                            { label: t('user.isAdmin'), value: true },
+                            { label: t('user.notAdmin'), value: false },
                         ]} />
                     </Form.Item>
                 </Form>
             </Modal>
 
             <Modal
-                title={`分配角色 - ${editingUser?.username}`}
+                title={`${t('user.assignRoleTitle')} - ${editingUser?.username}`}
                 open={isRoleModalOpen}
                 onOk={() => roleForm.submit()}
                 onCancel={() => setIsRoleModalOpen(false)}
@@ -275,10 +268,10 @@ const UserManagement: React.FC = () => {
                     onFinish={(values) => assignRolesMutation.mutate(values.role_ids)}
                     className="mt-4"
                 >
-                    <Form.Item label="选择角色" name="role_ids">
+                    <Form.Item label={t('user.selectRole')} name="role_ids">
                         <Select
                             mode="multiple"
-                            placeholder="请选择角色"
+                            placeholder={t('user.selectRolePlaceholder')}
                             style={{ width: '100%' }}
                             options={allRoles?.data?.map((r: any) => ({ label: r.name, value: r.id }))}
                         />

@@ -8,6 +8,7 @@ import { getMyMenus } from '../../api/rbac';
 import { getK8sClusters, getHelmLocalCharts } from '../../api/k8s';
 import IconMapper from '../IconMapper';
 import { ApiOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 
 
 const { Sider } = Layout;
@@ -30,6 +31,7 @@ interface MenuItemData {
  * - Mobile (< 768px): Drawer 抽屉，通过 Header 触发
  */
 const Sidebar: React.FC = () => {
+    const { t } = useTranslation();
     const { collapsed, isDark, token, mobileSidebarOpen, setMobileSidebarOpen } = useAppStore();
     const { isMobile } = useBreakpoint();
     const navigate = useNavigate();
@@ -177,7 +179,7 @@ const Sidebar: React.FC = () => {
                 onClick={() => window.open('/api/docs/', '_blank')}>
                 <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
                     <ApiOutlined />
-                    {!collapsed && <span>接口文档</span>}
+                    {!collapsed && <span>{t('menu.apiDocs')}</span>}
                 </div>
             </div>
 

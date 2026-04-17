@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, Table, Tag, Skeleton, Button } from 'antd';
 import { RightOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface RecentTasksTableProps {
     data: any;
@@ -9,10 +10,10 @@ interface RecentTasksTableProps {
 }
 
 const RecentTasksTable: React.FC<RecentTasksTableProps> = ({ data, isLoading }) => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
-    // const { token } = theme.useToken();
     const dataSource = data?.recentTasks || [];
-    
+
     const handleNavigate = (record: any) => {
         if (record.type === 'pipeline') {
             navigate(`/v1/pipeline/runs/${record.raw_id}`);
@@ -23,18 +24,18 @@ const RecentTasksTable: React.FC<RecentTasksTableProps> = ({ data, isLoading }) 
 
     const columns = [
         {
-            title: '任务名称',
+            title: t('dashboard.taskName'),
             dataIndex: 'name',
             key: 'name',
             ellipsis: true,
             render: (text: string, record: any) => (
-                <div 
+                <div
                     className="flex flex-col cursor-pointer hover:text-indigo-500 transition-colors"
                     onClick={() => handleNavigate(record)}
                 >
                     <div className="flex items-center gap-2">
                         <Tag color={record.type === 'pipeline' ? 'blue' : 'orange'} className="text-[10px] px-1 py-0 leading-none h-4 border-0 m-0">
-                            {record.type === 'pipeline' ? '流水线' : '任务'}
+                            {record.type === 'pipeline' ? t('dashboard.pipeline') : t('dashboard.task')}
                         </Tag>
                         <span className="font-medium">{text}</span>
                     </div>
@@ -43,7 +44,7 @@ const RecentTasksTable: React.FC<RecentTasksTableProps> = ({ data, isLoading }) 
             )
         },
         {
-            title: '状态',
+            title: t('dashboard.status'),
             dataIndex: 'status',
             key: 'status',
             width: 80,
@@ -54,21 +55,21 @@ const RecentTasksTable: React.FC<RecentTasksTableProps> = ({ data, isLoading }) 
             ),
         },
         {
-            title: '耗时',
+            title: t('dashboard.duration'),
             dataIndex: 'time_label',
             key: 'time_label',
             width: 100,
             render: (time: string) => <span className="text-gray-400 text-sm">{time}</span>,
         },
         {
-            title: '操作',
+            title: t('dashboard.action'),
             key: 'action',
             width: 60,
             render: (_: any, record: any) => (
-                <Button 
-                    type="text" 
-                    size="small" 
-                    icon={<RightOutlined />} 
+                <Button
+                    type="text"
+                    size="small"
+                    icon={<RightOutlined />}
                     onClick={() => handleNavigate(record)}
                 />
             ),
@@ -76,8 +77,8 @@ const RecentTasksTable: React.FC<RecentTasksTableProps> = ({ data, isLoading }) 
     ];
 
     return (
-        <Card 
-            title={<span className="font-bold text-base">最近执行流水</span>} 
+        <Card
+            title={<span className="font-bold text-base">{t('dashboard.recentPipelineRuns')}</span>}
             className="shadow-sm border-0 h-full"
             styles={{ body: { padding: '0 12px 12px 12px' } }}
         >

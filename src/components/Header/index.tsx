@@ -1,9 +1,10 @@
 import React from 'react';
-import { Layout, Button, theme, Space, Avatar, Dropdown, Switch } from 'antd';
+import { Layout, Button, theme, Space, Avatar, Dropdown, Switch, Select } from 'antd';
 import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, LogoutOutlined, SunOutlined, MoonOutlined, MenuOutlined } from '@ant-design/icons';
 import useAppStore from '../../store/useAppStore';
 import { useNavigate } from 'react-router-dom';
 import { useBreakpoint } from '@/utils/useBreakpoint';
+import { useTranslation } from 'react-i18next';
 
 const { Header: AntHeader } = Layout;
 
@@ -11,9 +12,11 @@ const { Header: AntHeader } = Layout;
  * 顶部导航栏组件 - 响应式版本
  */
 const Header: React.FC = () => {
-    const { collapsed, toggleCollapsed, isDark, setIsDark, setToken, setCurrentUser, currentUser } = useAppStore();
+    const { collapsed, toggleCollapsed, isDark, setIsDark, setToken, setCurrentUser, currentUser, language, setLanguage } = useAppStore();
     const { toggleMobileSidebar } = useAppStore();
     const { isMobile } = useBreakpoint();
+    const { i18n } = useTranslation();
+
     const {
         token: { colorText },
     } = theme.useToken();
@@ -82,6 +85,20 @@ const Header: React.FC = () => {
                         unCheckedChildren={<SunOutlined />}
                         onChange={(checked) => setIsDark(checked)} />
                 </div>
+
+                <Select
+                    value={language}
+                    onChange={(l) => {
+                        i18n.changeLanguage(l);
+                        setLanguage(l);
+                    }}
+                    size="small"
+                    options={[
+                        { value: 'zh-CN', label: '中文' },
+                        { value: 'en-US', label: 'English' },
+                    ]}
+                    style={{ width: 90 }}
+                />
                 <Space size={16}>
                     <Dropdown menu={userMenuItems}>
                         <Space className="cursor-pointer hover:bg-fill-hover px-2 rounded-lg transition-colors">

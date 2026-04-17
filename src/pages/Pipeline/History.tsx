@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {Table, Space, Tag, Button, Typography, Input, App} from 'antd';
-import { 
-  SearchOutlined, 
+import {
+  SearchOutlined,
   RedoOutlined,
   EyeOutlined,
   CheckCircleOutlined,
@@ -17,6 +17,7 @@ import { getPipelineRuns, stopPipelineRun } from '../../api/pipeline';
 import dayjs from 'dayjs';
 import useWebSocket from 'react-use-websocket';
 import useAppStore from '../../store/useAppStore';
+import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
 
@@ -26,6 +27,7 @@ const { Text } = Typography;
  * 支持：WebSocket 实时状态补丁、多维搜索、强制中止、耗时统计渲染。
  */
 export default function PipelineHistory() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -86,20 +88,20 @@ export default function PipelineHistory() {
   const stopRunMutation = useMutation({
     mutationFn: (id: number) => stopPipelineRun(id),
     onSuccess: () => {
-        message.success('SIGKILL 指令已广播至任务 Workload');
+        message.success(t('pipeline.stopSuccess'));
         queryClient.invalidateQueries({ queryKey: ['pipelineRuns'] });
     },
-    onError: (err: any) => message.error(`指令被拒绝: ${err.message}`)
+    onError: (err: any) => message.error(`${t('pipeline.stopError')}: ${err.message}`)
   });
 
   /** @description 状态标识美化渲染 */
   const getStatusTag = (status: string) => {
     const config: any = {
-      success: { color: 'success', icon: <CheckCircleOutlined />, text: '成功' },
-      failed: { color: 'error', icon: <CloseCircleOutlined />, text: '失败' },
-      running: { color: 'processing', icon: <SyncOutlined spin />, text: '执行中' },
-      cancelled: { color: 'default', icon: <StopOutlined />, text: '已取消' },
-      pending: { color: 'warning', icon: <ClockCircleOutlined />, text: '队列中' },
+      success: { color: 'success', icon: <CheckCircleOutlined />, text: t('pipeline.statusSuccess') },
+      failed: { color: 'error', icon: <CloseCircleOutlined />, text: t('pipeline.statusFailed') },
+      running: { color: 'processing', icon: <SyncOutlined spin />, text: t('pipeline.statusRunning') },
+      cancelled: { color: 'default', icon: <StopOutlined />, text: t('pipeline.statusCancelled') },
+      pending: { color: 'warning', icon: <ClockCircleOutlined />, text: t('pipeline.statusPending') },
     };
     const c = config[status] || config.pending;
     return <Tag icon={c.icon} color={c.color} className="rounded-full px-3">{c.text}</Tag>;
@@ -107,14 +109,14 @@ export default function PipelineHistory() {
 
   const columns = [
     {
-      title: '运行 ID',
+      title: t('pipeline.runId'),
       dataIndex: 'id',
       key: 'id',
       width: 100,
       render: (id: number) => <Text code className="text-blue-600 font-mono">#{id}</Text>
     },
     {
-      title: '所属蓝图',
+      title: t('pipeline.blueprint'),
       dataIndex: 'pipeline_name',
       key: 'pipeline_name',
       render: (text: string, record: any) => (
@@ -127,14 +129,14 @@ export default function PipelineHistory() {
       )
     },
     {
-      title: '当前状态',
+      title: t('pipeline.currentStatus'),
       dataIndex: 'status',
       key: 'status',
       width: 140,
       render: (status: string) => getStatusTag(status)
     },
     {
-        title: '执行源',
+        title: t('pipeline.triggerSource'),
         dataIndex: 'trigger_user_name',
         key: 'trigger_user_name',
         width: 140,
@@ -146,7 +148,7 @@ export default function PipelineHistory() {
         )
     },
     {
-      title: '时间轴 (Start/Duration)',
+      title: t('pipeline.timeline'),
       dataIndex: 'start_time',
       key: 'start_time',
       width: 200,
@@ -159,14 +161,14 @@ export default function PipelineHistory() {
               <div className="flex flex-col">
                   <Text className="text-xs">{start.format('YYYY-MM-DD HH:mm')}</Text>
                   <Text type="secondary" className="text-[10px] text-blue-500 font-medium">
-                    耗时: {diffSec > 60 ? `${Math.floor(diffSec/60)}m ${diffSec%60}s` : `${diffSec}s`}
+                    {t('dashboard.duration')}: {diffSec > 60 ? `${Math.floor(diffSec/60)}m ${diffSec%60}s` : `${diffSec}s`}
                   </Text>
               </div>
           );
       }
     },
     {
-      title: '操作中心',
+      title: t('pipeline.actionCenter'),
       key: 'action',
       width: 160,
       render: (_: any, record: any) => (
@@ -179,7 +181,7 @@ export default function PipelineHistory() {
             onClick={() => navigate(`/v1/pipeline/runs/${record.id}`)}
             className="p-0"
           >
-            详情
+            {t('pipeline.detail')}
           </Button>
           )}
           {hasPermission('pipeline:run:stop') && (record.status === 'running' || record.status === 'pending') && (
@@ -190,9 +192,9 @@ export default function PipelineHistory() {
                 icon={<StopOutlined />}
                 onClick={() => {
                    modal.confirm({
-                     title: '确认强制中止运行？',
-                     content: '此操作将立即回收 Worker 负载并杀死进程。',
-                     okText: '确认中止',
+                     title: t('pipeline.confirmStopTitle'),
+                     content: t('pipeline.confirmStopContent'),
+                     okText: t('pipeline.confirmStop'),
                      okButtonProps: { danger: true },
                      onOk: () => stopRunMutation.mutate(record.id),
                    });
@@ -200,7 +202,7 @@ export default function PipelineHistory() {
                 loading={stopRunMutation.isPending && (stopRunMutation.variables as any) === record.id}
                 className="p-0"
               >
-                停止
+                {t('pipeline.stop')}
               </Button>
           )}
         </Space>
@@ -213,7 +215,7 @@ export default function PipelineHistory() {
       <div className="mb-4 flex justify-between items-center px-1">
             <Space size="middle">
                 <Input
-                    placeholder="按流水线名称搜索历史..."
+                    placeholder={t('pipeline.searchHistoryPlaceholder')}
                     prefix={<SearchOutlined />}
                     value={searchText}
                     onChange={e => setSearchText(e.target.value)}
@@ -226,7 +228,7 @@ export default function PipelineHistory() {
                 onClick={() => refetch()}
                 className="rounded-lg"
             >
-                手动刷新
+                {t('pipeline.manualRefresh')}
             </Button>
       </div>
 

@@ -20,10 +20,12 @@ import useAppStore from "../../store/useAppStore.ts";
 import { DeleteOutlined, EditOutlined, PlusOutlined, LockOutlined, UserOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import {TableSkeleton} from "../../components/Skeletons";
 import { useBreakpoint } from '@/utils/useBreakpoint';
+import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
 
 const CredentialManagement: React.FC = () => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const { message } = App.useApp();
     const { hasPermission } = useAppStore();
@@ -36,42 +38,37 @@ const CredentialManagement: React.FC = () => {
     const [testingId, setTestingId] = useState<number | null>(null);
     const [authType, setAuthType] = useState<'password' | 'key'>('password');
 
-    // 1. 获取凭据列表
     const { data: credData, isLoading } = useQuery({
         queryKey: ['ssh-credentials'],
         queryFn: () => getCredentials({ page: 1, size: 100 }),
     });
 
-    // 2. 创建凭据
     const createMutation = useMutation({
         mutationFn: createCredential,
         onSuccess: () => {
-            message.success("凭据创建成功");
+            message.success(t('credential.createSuccess'));
             setIsModalOpen(false);
             queryClient.invalidateQueries({ queryKey: ['ssh-credentials'] });
         },
     });
 
-    // 3. 更新凭据
     const updateMutation = useMutation({
         mutationFn: (vars: { id: number, data: any }) => updateCredential(vars.id, vars.data),
         onSuccess: () => {
-            message.success("凭据更新成功");
+            message.success(t('credential.updateSuccess'));
             setIsModalOpen(false);
             queryClient.invalidateQueries({ queryKey: ['ssh-credentials'] });
         },
     });
 
-    // 4. 删除凭据
     const deleteMutation = useMutation({
         mutationFn: deleteCredential,
         onSuccess: () => {
-            message.success("凭据已删除");
+            message.success(t('credential.deleteSuccess'));
             queryClient.invalidateQueries({ queryKey: ['ssh-credentials'] });
         },
     });
 
-    // 5. 验证凭据
     const verifyMutation = useMutation({
         mutationFn: (vars: { id: number, data: any }) => verifyCredential(vars.id, vars.data),
         onSuccess: (res: any) => {
@@ -83,7 +80,7 @@ const CredentialManagement: React.FC = () => {
             }
         },
         onError: (err: any) => {
-            message.error("请求失败: " + (err.response?.data?.error || err.message));
+            message.error(t('credential.verifyFailed') + ": " + (err.response?.data?.error || err.message));
         }
     });
 
@@ -109,36 +106,36 @@ const CredentialManagement: React.FC = () => {
 
     const columns = [
         {
-            title: '凭据名称',
+            title: t('credential.name'),
             dataIndex: 'name',
             key: 'name',
             render: (text: string) => <Text strong>{text}</Text>,
         },
         {
-            title: '用户名',
+            title: t('credential.username'),
             dataIndex: 'username',
             key: 'username',
         },
         {
-            title: '认证方式',
+            title: t('credential.authType'),
             dataIndex: 'auth_type',
             key: 'auth_type',
             render: (val: string) => (
-                val === 'password' ? <Tag color="blue">账号密码</Tag> : <Tag color="purple">SSH 密钥</Tag>
+                val === 'password' ? <Tag color="blue">{t('credential.password')}</Tag> : <Tag color="purple">{t('credential.sshKey')}</Tag>
             ),
         },
         {
-            title: '创建时间',
+            title: t('dashboard.createTime'),
             dataIndex: 'create_time',
             key: 'create_time',
             render: (val: string) => new Date(val).toLocaleString(),
         },
         {
-            title: '操作',
+            title: t('pipeline.action'),
             key: 'action',
             render: (_: any, record: any) => (
                 <Space size="middle">
-                    <Tooltip title="测试连通性">
+                    <Tooltip title={t('credential.testConnectivity')}>
                         <Button
                             type="text"
                             icon={<CheckCircleOutlined />}
@@ -150,10 +147,10 @@ const CredentialManagement: React.FC = () => {
                     )}
                     {(hasPermission('*') || hasPermission('resource:ssh_credentials:delete')) && (
                         <Popconfirm
-                            title="确定要删除该凭据吗？"
+                            title={t('credential.confirmDeleteCredential')}
                             onConfirm={() => deleteMutation.mutate(record.id)}
-                            okText="确定"
-                            cancelText="取消"
+                            okText={t('credential.confirmDelete')}
+                            cancelText={t('credential.cancel')}
                         >
                             <Button type="text" danger icon={<DeleteOutlined />} />
                         </Popconfirm>
@@ -164,13 +161,13 @@ const CredentialManagement: React.FC = () => {
     ];
 
     return (
-        <Card title="SSH 登录凭据管理" extra={
+        <Card title={t('credential.title')} extra={
             (hasPermission('*') || hasPermission('resource:ssh_credentials:add')) && (
-                <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增凭据</Button>
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>{t('credential.createCredential')}</Button>
             )
         }>
             {isLoading ? (
-                <TableSkeleton /> // 加载时显示骨架
+                <TableSkeleton />
             ) : (
             <Table
                 dataSource={credData?.data}
@@ -183,7 +180,7 @@ const CredentialManagement: React.FC = () => {
                 )}
 
             <Modal
-                title="验证凭据连通性"
+                title={t('credential.verifyCredential')}
                 open={isTestModalOpen}
                 forceRender
                 onCancel={() => setIsTestModalOpen(false)}
@@ -202,18 +199,18 @@ const CredentialManagement: React.FC = () => {
                         }
                     }}
                 >
-                    <Form.Item label="测试目标主机 IP" name="host" rules={[{ required: true, message: '请输入目标主机 IP' }]}>
-                        <Input placeholder="例如: 127.0.0.1" />
+                    <Form.Item label={t('credential.testHostIp')} name="host" rules={[{ required: true, message: t('credential.testHostIpPlaceholder') }]}>
+                        <Input placeholder={t('credential.testHostIpPlaceholder')} />
                     </Form.Item>
-                    <Form.Item label="端口" name="port">
+                    <Form.Item label={t('credential.port')} name="port">
                         <Input placeholder="22" />
                     </Form.Item>
-                    <Text type="secondary">我们将尝试使用当前凭据通过 SSH 连接到该主机以验证其有效性。</Text>
+                    <Text type="secondary">{t('credential.testDescription')}</Text>
                 </Form>
             </Modal>
 
             <Modal
-                title={editingCredential ? "编辑凭据" : "新增凭据"}
+                title={editingCredential ? t('credential.editCredential') : t('credential.createCredential')}
                 open={isModalOpen}
                 forceRender
                 onCancel={() => setIsModalOpen(false)}
@@ -235,19 +232,19 @@ const CredentialManagement: React.FC = () => {
                     }}
                     initialValues={{ auth_type: 'password', username: 'root' }}
                 >
-                    <Form.Item label="凭据名称" name="name" rules={[{ required: true, message: '请输入凭据名称' }]}>
-                        <Input placeholder="例: Aliyun-Root-Password" />
+                    <Form.Item label={t('credential.name')} name="name" rules={[{ required: true, message: t('credential.nameRequired') }]}>
+                        <Input placeholder={t('credential.namePlaceholder')} />
                     </Form.Item>
 
                     <div className="flex flex-col md:flex-row gap-4">
-                        <Form.Item label="用户名" name="username" className="flex-1" rules={[{ required: true, message: '请输入用户名' }]}>
+                        <Form.Item label={t('credential.username')} name="username" className="flex-1" rules={[{ required: true, message: t('credential.usernameRequired') }]}>
                             <Input prefix={<UserOutlined />} />
                         </Form.Item>
-                        <Form.Item label="认证方式" name="auth_type" className="flex-1" rules={[{ required: true }]}>
+                        <Form.Item label={t('credential.authType')} name="auth_type" className="flex-1" rules={[{ required: true }]}>
                             <Select
                                 options={[
-                                    { label: '账号密码', value: 'password' },
-                                    { label: 'SSH 密钥', value: 'key' },
+                                    { label: t('credential.password'), value: 'password' },
+                                    { label: t('credential.sshKey'), value: 'key' },
                                 ]}
                                 onChange={(val) => setAuthType(val)}
                             />
@@ -255,24 +252,24 @@ const CredentialManagement: React.FC = () => {
                     </div>
 
                     {authType === 'password' ? (
-                        <Form.Item label="密码" name="password" rules={[{ required: !editingCredential, message: '请输入密码' }]}>
-                            <Input.Password prefix={<LockOutlined />} placeholder="请输入 SSH 登录密码" />
+                        <Form.Item label={t('credential.password')} name="password" rules={[{ required: !editingCredential, message: t('credential.passwordRequired') }]}>
+                            <Input.Password prefix={<LockOutlined />} placeholder={t('credential.passwordPlaceholder')} />
                         </Form.Item>
                     ) : (
                         <>
-                            <Form.Item label="私钥内容" name="private_key" rules={[{ required: !editingCredential, message: '请输入私钥内容' }]}>
+                            <Form.Item label={t('credential.privateKey')} name="private_key" rules={[{ required: !editingCredential, message: t('credential.privateKeyRequired') }]}>
                                 <Input.TextArea
                                     rows={8}
-                                    placeholder="-----BEGIN RSA PRIVATE KEY-----"
+                                    placeholder={t('credential.privateKeyPlaceholder')}
                                     className="font-mono text-xs"
                                 />
                             </Form.Item>
-                            <Form.Item label="私钥密码 (Passphrase)" name="passphrase">
-                                <Input.Password placeholder="如果没有则不填" />
+                            <Form.Item label={t('credential.passphrase')} name="passphrase">
+                                <Input.Password placeholder={t('credential.passphrasePlaceholder')} />
                             </Form.Item>
                         </>
                     )}
-                    <Form.Item label="备注" name="remark">
+                    <Form.Item label={t('credential.remark')} name="remark">
                         <Input.TextArea />
                     </Form.Item>
                 </Form>

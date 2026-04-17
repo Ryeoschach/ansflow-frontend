@@ -12,6 +12,7 @@ import {
     App,
 } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { getRegistries, createRegistry, updateRegistry, deleteRegistry } from "../../api/registry";
 import { DeleteOutlined, EditOutlined, PlusOutlined, LockOutlined, UserOutlined, GlobalOutlined } from "@ant-design/icons";
 import { TableSkeleton } from "../../components/Skeletons";
@@ -22,6 +23,7 @@ import { useBreakpoint } from '@/utils/useBreakpoint';
 const { Text } = Typography;
 
 const ImageRegistries: React.FC = () => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const { message } = App.useApp();
     const { token, hasPermission } = useAppStore();
@@ -39,7 +41,7 @@ const ImageRegistries: React.FC = () => {
     const createMutation = useMutation({
         mutationFn: createRegistry,
         onSuccess: () => {
-            message.success("镜像仓库配置创建成功");
+            message.success(t('imageRegistry.createSuccess'));
             setIsModalOpen(false);
             queryClient.invalidateQueries({ queryKey: ['image-registries'] });
         },
@@ -48,7 +50,7 @@ const ImageRegistries: React.FC = () => {
     const updateMutation = useMutation({
         mutationFn: (vars: { id: number, data: any }) => updateRegistry(vars.id, vars.data),
         onSuccess: () => {
-            message.success("镜像仓库配置更新成功");
+            message.success(t('imageRegistry.updateSuccess'));
             setIsModalOpen(false);
             queryClient.invalidateQueries({ queryKey: ['image-registries'] });
         },
@@ -57,7 +59,7 @@ const ImageRegistries: React.FC = () => {
     const deleteMutation = useMutation({
         mutationFn: deleteRegistry,
         onSuccess: () => {
-            message.success("镜像仓库配置已删除");
+            message.success(t('imageRegistry.deleteSuccess'));
             queryClient.invalidateQueries({ queryKey: ['image-registries'] });
         },
     });
@@ -76,34 +78,34 @@ const ImageRegistries: React.FC = () => {
 
     const columns = [
         {
-            title: '仓库名称',
+            title: t('imageRegistry.registryName'),
             dataIndex: 'name',
             key: 'name',
             render: (text: string) => <Text strong>{text}</Text>,
         },
         {
-            title: '仓库地址 (URL)',
+            title: t('imageRegistry.registryUrl'),
             dataIndex: 'url',
             key: 'url',
         },
         {
-            title: '默认 Namespace',
+            title: t('imageRegistry.defaultNamespace'),
             dataIndex: 'namespace',
             key: 'namespace',
         },
         {
-            title: '拥有者/用户名',
+            title: t('imageRegistry.ownerUsername'),
             dataIndex: 'username',
             key: 'username',
         },
         {
-            title: '创建时间',
+            title: t('imageRegistry.createTime'),
             dataIndex: 'create_time',
             key: 'create_time',
             render: (val: string) => new Date(val).toLocaleString(),
         },
         {
-            title: '操作',
+            title: t('imageRegistry.action'),
             key: 'action',
             render: (_: any, record: any) => (
                 <Space size="middle">
@@ -112,10 +114,10 @@ const ImageRegistries: React.FC = () => {
                     )}
                     {hasPermission('registry:docker:delete') && (
                     <Popconfirm
-                        title="确定要删除该仓库配置吗？"
+                        title={t('imageRegistry.confirmDeleteRegistry')}
                         onConfirm={() => deleteMutation.mutate(record.id)}
-                        okText="确定"
-                        cancelText="取消"
+                        okText={t('imageRegistry.confirm')}
+                        cancelText={t('imageRegistry.cancel')}
                     >
                         <Button type="text" danger icon={<DeleteOutlined />} />
                     </Popconfirm>
@@ -126,9 +128,9 @@ const ImageRegistries: React.FC = () => {
     ];
 
     return (
-        <Card title="全局镜像仓库管理" extra={
+        <Card title={t('imageRegistry.title')} extra={
             hasPermission('registry:docker:add') ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增仓库</Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>{t('imageRegistry.addNewRegistry')}</Button>
             ) : null
         }>
             {isLoading ? (
@@ -145,7 +147,7 @@ const ImageRegistries: React.FC = () => {
             )}
 
             <Modal
-                title={editingRegistry ? "编辑镜像仓库" : "新增镜像仓库"}
+                title={editingRegistry ? t('imageRegistry.editRegistry') : t('imageRegistry.addRegistry')}
                 open={isModalOpen}
                 forceRender
                 onCancel={() => setIsModalOpen(false)}
@@ -166,26 +168,26 @@ const ImageRegistries: React.FC = () => {
                         }
                     }}
                 >
-                    <Form.Item label="标识名称" name="name" rules={[{ required: true, message: '请输入前端展示名称' }]}>
-                        <Input placeholder="例: Harbor-Production" />
+                    <Form.Item label={t('imageRegistry.identifierName')} name="name" rules={[{ required: true, message: t('imageRegistry.enterDisplayName') }]}>
+                        <Input placeholder={t('imageRegistry.exampleHarborProduction')} />
                     </Form.Item>
-                    <Form.Item label="仓库 URL" name="url" rules={[{ required: true, message: '请输入仓库URL' }]}>
-                        <Input prefix={<GlobalOutlined />} placeholder="例如: harbor.demo.com 或 https://harbor.demo.com" />
+                    <Form.Item label={t('imageRegistry.registryUrlLabel')} name="url" rules={[{ required: true, message: t('imageRegistry.enterRegistryUrl') }]}>
+                        <Input prefix={<GlobalOutlined />} placeholder={t('imageRegistry.exampleHarborDemo')} />
                     </Form.Item>
-                    <Form.Item label="默认命名空间 (可选)" name="namespace">
-                        <Input placeholder="例如: library 或 ops" />
+                    <Form.Item label={t('imageRegistry.defaultNamespaceOptional')} name="namespace">
+                        <Input placeholder={t('imageRegistry.exampleLibrary')} />
                     </Form.Item>
 
                     <div className="flex flex-col md:flex-row gap-4">
-                        <Form.Item label="用户名" name="username" className="flex-1" rules={[{ required: true, message: '请输入用户名' }]}>
+                        <Form.Item label={t('imageRegistry.username')} name="username" className="flex-1" rules={[{ required: true, message: t('imageRegistry.enterUsername') }]}>
                             <Input prefix={<UserOutlined />} />
                         </Form.Item>
-                        <Form.Item label="密码/Token" name="password" className="flex-1" rules={[{ required: !editingRegistry, message: '请输入认证密钥' }]}>
-                            <Input.Password prefix={<LockOutlined />} placeholder="输入密码或访问 Token" />
+                        <Form.Item label={t('imageRegistry.passwordToken')} name="password" className="flex-1" rules={[{ required: !editingRegistry, message: t('imageRegistry.enterAuthKey') }]}>
+                            <Input.Password prefix={<LockOutlined />} placeholder={t('imageRegistry.enterPasswordOrToken')} />
                         </Form.Item>
                     </div>
 
-                    <Form.Item label="备注描述" name="description">
+                    <Form.Item label={t('imageRegistry.remarkDescription')} name="description">
                         <Input.TextArea />
                     </Form.Item>
                 </Form>

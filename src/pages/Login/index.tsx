@@ -5,10 +5,12 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { login } from '../../api/auth';
 import useAppStore from '../../store/useAppStore';
+import { useTranslation } from 'react-i18next';
 
 const { Title, Text } = Typography;
 
 const LoginPage: React.FC = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { message } = App.useApp();
     const { setToken, isDark, setCurrentUser, setIsDark } = useAppStore();
@@ -17,16 +19,16 @@ const LoginPage: React.FC = () => {
     const loginMutation = useMutation({
         mutationFn: login,
         onSuccess: (data: any) => {
-            const username = data.username || '用户';
-            message.success(`登录成功！欢迎回来 ${username}`);
-            setToken(data.access); // 存储 Token
-            setCurrentUser(username); // 存储用户信息
-            navigate('/v1/dashboard'); // 登录成功后跳转
+            const username = data.username || 'User';
+            message.success(`${t('auth.loginSuccess')} ${username}`);
+            setToken(data.access);
+            setCurrentUser(username);
+            navigate('/v1/dashboard');
         },
         onError: (error: any) => {
-            const errorMsg = error.response?.data?.detail || error.response?.data?.non_field_errors?.[0] || '用户名或密码错误';
+            const errorMsg = error.response?.data?.detail || error.response?.data?.non_field_errors?.[0] || t('auth.loginError');
             message.error(errorMsg);
-        }   
+        }
     });
 
     const onFinish = (values: any) => {
@@ -57,7 +59,7 @@ const LoginPage: React.FC = () => {
                 styles={{ body: { padding: '40px 32px' } }}>
                 <div className="text-center mb-10">
                     <Title level={2} className="mb-2">AnsFlow</Title>
-                    <Text type="secondary">基于 Django & React 的自动化运维平台</Text>
+                    <Text type="secondary">{t('auth.subtitle')}</Text>
                 </div>
 
                 <Form
@@ -69,22 +71,22 @@ const LoginPage: React.FC = () => {
                 >
                     <Form.Item
                         name="username"
-                        rules={[{ required: true, message: '请输入用户名' }]}
+                        rules={[{ required: true, message: t('auth.username') + ' ' + t('common.required') }]}
                     >
                         <Input
                             prefix={<UserOutlined className="text-gray-400" />}
-                            placeholder="用户名"
+                            placeholder={t('auth.username')}
                             className="rounded-lg"
                         />
                     </Form.Item>
 
                     <Form.Item
                         name="password"
-                        rules={[{ required: true, message: '请输入密码' }]}
+                        rules={[{ required: true, message: t('auth.password') + ' ' + t('common.required') }]}
                     >
                         <Input.Password
                             prefix={<LockOutlined className="text-gray-400" />}
-                            placeholder="密码"
+                            placeholder={t('auth.password')}
                             className="rounded-lg"
                         />
                     </Form.Item>
@@ -97,14 +99,14 @@ const LoginPage: React.FC = () => {
                             className="h-12 rounded-lg font-bold"
                             loading={loginMutation.isPending}
                         >
-                            登录
+                            {t('auth.login')}
                         </Button>
                     </Form.Item>
                 </Form>
 
                 <div className="text-center mt-6">
                     <Text type="secondary" className="text-xs">
-                        ©2024 AnsFlow Intelligent System. All Rights Reserved.
+                        {t('auth.footer')}
                     </Text>
                 </div>
             </Card>
