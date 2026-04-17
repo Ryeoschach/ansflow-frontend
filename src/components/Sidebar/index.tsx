@@ -90,7 +90,6 @@ const Sidebar: React.FC = () => {
                 }
 
                 const menuLabel = (language === 'en-US' && item.title_en) ? item.title_en : item.title;
-                console.log('[DEBUG] language:', language, 'item.title_en:', item.title_en, 'item.title:', item.title);
                 return {
                     key: finalKey,
                     label: menuLabel,

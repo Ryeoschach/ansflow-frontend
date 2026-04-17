@@ -289,7 +289,7 @@ const AuditLog: React.FC = () => {
                                 <Typography.Text copyable>{currentRecord.object_id || t('audit.unidentified')}</Typography.Text>
                             </Descriptions.Item>
                             <Descriptions.Item label={t('audit.descDuration')}>
-                                {currentRecord.duration ? `${currentRecord.duration} 秒` : '-'}
+                                {currentRecord.duration ? `${currentRecord.duration} ${t('common.seconds')}` : '-'}
                             </Descriptions.Item>
                             <Descriptions.Item label={t('audit.descApiPath')} span={2}>
                                 <Typography.Text code>{currentRecord.method}</Typography.Text> {currentRecord.path}
