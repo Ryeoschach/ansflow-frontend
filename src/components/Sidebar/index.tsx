@@ -19,6 +19,7 @@ const { Sider } = Layout;
 interface MenuItemData {
     id: number;
     title: string;
+    title_en?: string;
     key: string;
     path: string;
     icon?: string;
