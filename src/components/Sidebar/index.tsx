@@ -89,6 +89,7 @@ const Sidebar: React.FC = () => {
                 }
 
                 const menuLabel = (language === 'en-US' && item.title_en) ? item.title_en : item.title;
+                console.log('[DEBUG] language:', language, 'item.title_en:', item.title_en, 'item.title:', item.title);
                 return {
                     key: finalKey,
                     label: menuLabel,
@@ -105,7 +106,7 @@ const Sidebar: React.FC = () => {
             items: renderItems(menuData),
             rootSubmenuKeys: rootKeys
         };
-    }, [menuData]);
+    }, [menuData, language]);
 
     // 3. 初始进入/路由变化时，自动展开当前路径所在的父菜单
     React.useEffect(() => {
