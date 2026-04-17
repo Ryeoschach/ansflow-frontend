@@ -27,11 +27,11 @@ import {
     InputNumber,
     Flex
 } from 'antd';
-import { 
-  PlayCircleOutlined, 
-  CodeOutlined, 
-  CloudServerOutlined, 
-  ApiOutlined, 
+import {
+  PlayCircleOutlined,
+  CodeOutlined,
+  CloudServerOutlined,
+  ApiOutlined,
   SaveOutlined,
   GithubOutlined,
   ContainerOutlined,
@@ -40,6 +40,7 @@ import {
 } from '@ant-design/icons';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import { getAnsibleTasks } from '../../api/tasks';
 import { getK8sClusters, getHelmLocalCharts } from '../../api/k8s';
@@ -79,12 +80,13 @@ const getId = () => `dndnode_${id++}`;
  * @description 流水线设计器核心逻辑层，支持 DnD 拖拽、DAG 连线、节点参数表单化配置
  */
 const DesignerCore = () => {
+  const { t } = useTranslation();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  
+
   const { nodes, setNodes, edges, setEdges } = useDesignerStore();
   const [nodesState, setNodesState, onNodesChange] = useNodesState([]);
   const [edgesState, setEdgesState, onEdgesChange] = useEdgesState([]);
-  
+
   useEffect(() => {
     setNodesState(nodes);
   }, [nodes, setNodesState]);
@@ -216,33 +218,33 @@ const DesignerCore = () => {
       setNodesState(updatedNodes);
       setNodes(updatedNodes);
       setDrawerVisible(false);
-      message.success('节点参数已暂存');
+      message.success(t('pipelineDesigner.nodeParamsSaved'));
     });
   };
 
   const handleSave = async () => {
     modal.confirm({
-        title: '流水线设置',
+        title: t('pipelineDesigner.title'),
         width: 500,
         content: (
             <div className="mt-4 flex flex-col gap-4">
                 <div>
-                   <Text type="secondary" className="text-xs mb-1 block">流水线唯一标识名称 (Blueprint Name)</Text>
-                   <Input id="pipeline-name-input" defaultValue={pipelineInfo?.name} placeholder="例如: 生产环境自动化部署" className="rounded-lg h-10" />
+                   <Text type="secondary" className="text-xs mb-1 block">{t('pipelineDesigner.pipelineUniqueName')}</Text>
+                   <Input id="pipeline-name-input" defaultValue={pipelineInfo?.name} placeholder={t('pipelineDesigner.enterPipelineName')} className="rounded-lg h-10" />
                 </div>
                 <div>
-                   <Text type="secondary" className="text-xs mb-1 block">定时调度表达式 (Cron Expression, 可选)</Text>
-                   <Input id="pipeline-cron-input" defaultValue={pipelineInfo?.schedule_cron} placeholder="如: 0 0 * * * (每天零点)" className="font-mono rounded-lg h-10" />
+                   <Text type="secondary" className="text-xs mb-1 block">{t('pipelineDesigner.cronExpressionOptional')}</Text>
+                   <Input id="pipeline-cron-input" defaultValue={pipelineInfo?.schedule_cron} placeholder={t('pipelineDesigner.enterCronExpression')} className="font-mono rounded-lg h-10" />
                 </div>
                 <div className="bg-slate-50 dark:bg-white/5 p-3 rounded-lg border border-dashed border-slate-200 dark:border-slate-700">
-                    <Text type="secondary" className="text-[11px] block">💡 Cron 格式参考: 分 时 日 月 周。留空则表示仅手动触发。</Text>
+                    <Text type="secondary" className="text-[11px] block">{t('pipelineDesigner.cronFormatTip')}</Text>
                 </div>
             </div>
         ),
         onOk: () => {
             const nameInput = document.getElementById('pipeline-name-input') as HTMLInputElement;
             const cronInput = document.getElementById('pipeline-cron-input') as HTMLInputElement;
-            if (!nameInput.value) { message.warning('必须输入名称'); return Promise.reject(); }
+            if (!nameInput.value) { message.warning(t('pipelineDesigner.mustEnterName')); return Promise.reject(); }
             submitPipeline(nameInput.value, cronInput.value);
         }
     });
@@ -254,11 +256,11 @@ const DesignerCore = () => {
         edges: edgesState,
         viewport: reactFlowInstance.getViewport(),
     };
-    const payload = { 
-        name, 
+    const payload = {
+        name,
         schedule_cron: schedule_cron || null,
         graph_data: graphData,
-        is_active: true // 默认激活
+        is_active: true
     };
     try {
         if (pipelineId) await updatePipeline(Number(pipelineId), payload);
@@ -267,23 +269,23 @@ const DesignerCore = () => {
             const newId = res.id || res.data?.id;
             navigate(`/v1/pipeline/designer?id=${newId}`);
         }
-        message.success('流水线与调度策略已成功同步至引擎');
+        message.success(t('pipelineDesigner.pipelineScheduleSyncSuccess'));
     } catch(e: any) { message.error(e.message); }
   };
 
   const handleRun = async () => {
-      if (!pipelineId) { message.warning('请先保存流水线'); return; }
+      if (!pipelineId) { message.warning(t('pipelineDesigner.saveFirstBeforeRun')); return; }
       try {
           const res = await executePipeline(Number(pipelineId));
           if (res.code === 202 || res.status === 'pending_approval') {
                 modal.warning({
-                    title: '操作需要审批',
+                    title: t('pipelineDesigner.operationRequiresApproval'),
                     content: (
                         <div className="mt-2">
-                            <p>{res.message || '系统安全策略保护中。'}</p>
+                            <p>{res.message || t('pipelineDesigner.systemSecurityProtection')}</p>
                         </div>
                     ),
-                    okText: '好的'
+                    okText: t('pipelineDesigner.ok')
                 });
                 return;
           }
@@ -293,12 +295,12 @@ const DesignerCore = () => {
   };
 
   const nodeTemplates = useMemo(() => [
-          { type: 'ansible', label: 'Ansible 任务', icon: <CodeOutlined />, description: '执行 Ansible Playbook' },
-          { type: 'git_clone', label: 'Git 源码克隆', icon: <GithubOutlined />, description: '代码拉取' },
-          { type: 'docker_build', label: 'Docker 构建', icon: <ContainerOutlined />, description: '容器镜像编译' },
-          { type: 'kaniko_build', label: 'Kaniko 构建', icon: <ContainerOutlined />, description: 'K8s 内部镜像构建' },
-          { type: 'k8s_deploy', label: 'K8s 交付', icon: <CloudServerOutlined />, description: '集群部署' },
-          { type: 'http_webhook', label: 'HTTP 外部调用', icon: <ApiOutlined />, description: 'Webhook 触发' },
+          { type: 'ansible', label: t('pipelineDesigner.ansibleTaskNode'), icon: <CodeOutlined />, description: t('pipelineDesigner.executeAnsiblePlaybook') },
+          { type: 'git_clone', label: t('pipelineDesigner.gitSourceClone'), icon: <GithubOutlined />, description: t('pipelineDesigner.codePull') },
+          { type: 'docker_build', label: t('pipelineDesigner.dockerBuildNode'), icon: <ContainerOutlined />, description: t('pipelineDesigner.containerImageCompile') },
+          { type: 'kaniko_build', label: t('pipelineDesigner.kanikoBuildNode'), icon: <ContainerOutlined />, description: t('pipelineDesigner.k8sInternalImageBuild') },
+          { type: 'k8s_deploy', label: t('pipelineDesigner.k8sDeliveryNode'), icon: <CloudServerOutlined />, description: t('pipelineDesigner.clusterDeployment') },
+          { type: 'http_webhook', label: t('pipelineDesigner.httpExternalCall'), icon: <ApiOutlined />, description: t('pipelineDesigner.webhookTrigger') },
       ], []
   );
 
@@ -321,16 +323,16 @@ const DesignerCore = () => {
             onClick={() => navigate('/v1/pipeline/list')} 
           />
           <div className="flex flex-col">
-            <Title level={5} className="m-0!">{pipelineInfo?.name || '新流水线编辑器'}</Title>
+            <Title level={5} className="m-0!">{pipelineInfo?.name || t('pipelineDesigner.newPipelineEditor')}</Title>
             {/*<Text type="secondary" className="text-[10px] uppercase tracking-widest font-bold">*/}
             {/*  {pipelineId ? `BLUEPRINT ID: ${pipelineId}` : 'NEW BLUEPRINT DRAFT'}*/}
             {/*</Text>*/}
           </div>
         </Space>
         <Space>
-          {hasPermission('pipeline:template:execute') && <Button icon={<PlayCircleOutlined />} type="primary" onClick={handleRun} disabled={!pipelineId} className="shadow-blue-200">执行</Button>}
-          {hasPermission('pipeline:template:edit') && <Button icon={<SaveOutlined />} onClick={handleSave}>保存</Button>}
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/v1/pipeline/list')}>返回</Button>
+          {hasPermission('pipeline:template:execute') && <Button icon={<PlayCircleOutlined />} type="primary" onClick={handleRun} disabled={!pipelineId} className="shadow-blue-200">{t('pipelineDesigner.execute')}</Button>}
+          {hasPermission('pipeline:template:edit') && <Button icon={<SaveOutlined />} onClick={handleSave}>{t('pipelineDesigner.save')}</Button>}
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/v1/pipeline/list')}>{t('pipelineDesigner.return')}</Button>
         </Space>
       </header>
 
@@ -343,10 +345,10 @@ const DesignerCore = () => {
             <div className="p-5 flex flex-col gap-4">
                 <Flex vertical gap={2}>
                     <Text strong className="text-[16px] uppercase tracking-widest">
-                        组件列表
+                        {t('pipelineDesigner.componentList')}
                     </Text>
                     <Text type="secondary" className="text-[12px] uppercase tracking-widest">
-                        拖拽组件到画布进行编辑
+                        {t('pipelineDesigner.dragComponentToCanvas')}
                     </Text>
                 </Flex>
 
@@ -426,36 +428,36 @@ const DesignerCore = () => {
       </Layout>
 
       <Drawer
-        title={<Space><SettingOutlined className="text-blue-500" /><span>配置节点: {selectedNode?.type}</span></Space>}
+        title={<Space><SettingOutlined className="text-blue-500" /><span>{t('pipelineDesigner.configNode', { type: selectedNode?.type })}</span></Space>}
         placement="right"
         onClose={() => setDrawerVisible(false)}
         open={drawerVisible}
         size={450}
-        extra={hasPermission('pipeline:template:edit') ? <Button type="primary" size="small" onClick={onDrawerSave}>保存配置</Button> : null}
+        extra={hasPermission('pipeline:template:edit') ? <Button type="primary" size="small" onClick={onDrawerSave}>{t('pipelineDesigner.saveConfig')}</Button> : null}
         className="custom-drawer"
       >
         <Form form={form} layout="vertical" className="px-1 pt-4">
-          <Card size="small" title="基础属性" className="mb-5 border-none shadow-sm">
-            <Form.Item label="节点标识" name="label">
-              <Input placeholder="输入显示在节点上的名称" className="rounded-lg h-10" />
+          <Card size="small" title={t('pipelineDesigner.basicProperties')} className="mb-5 border-none shadow-sm">
+            <Form.Item label={t('pipelineDesigner.nodeIdentifier')} name="label">
+              <Input placeholder={t('pipelineDesigner.enterNodeDisplayName')} className="rounded-lg h-10" />
             </Form.Item>
             <Space className="w-full justify-between">
-              <Form.Item label="最大重试次数" name="max_retries" initialValue={0} className="w-32 mb-0">
+              <Form.Item label={t('pipelineDesigner.maxRetryCount')} name="max_retries" initialValue={0} className="w-32 mb-0">
                 <InputNumber min={0} max={10} className="w-full h-9 flex items-center" />
               </Form.Item>
-              <Form.Item label="重试间隔 (秒)" name="retry_delay" initialValue={10} className="w-32 mb-0">
+              <Form.Item label={t('pipelineDesigner.retryIntervalSeconds')} name="retry_delay" initialValue={10} className="w-32 mb-0">
                 <InputNumber min={1} className="w-full h-9 flex items-center" />
               </Form.Item>
             </Space>
           </Card>
 
           {selectedNode?.type === 'git_clone' && (
-            <Card size="small" title="源码配置" className="mb-5 border-none shadow-sm">
-              <Form.Item label="仓库地址" name="git_repo" rules={[{ required: true }]}><Input placeholder="https://github.com/..." /></Form.Item>
-              <Form.Item label="分支名称" name="git_branch" initialValue="main"><Input /></Form.Item>
-              <Form.Item label="身份认证 (SSH 凭据)" name="credential_id">
+            <Card size="small" title={t('pipelineDesigner.sourceCodeConfig')} className="mb-5 border-none shadow-sm">
+              <Form.Item label={t('pipelineDesigner.repoAddress')} name="git_repo" rules={[{ required: true }]}><Input placeholder="https://github.com/..." /></Form.Item>
+              <Form.Item label={t('pipelineDesigner.branchName')} name="git_branch" initialValue="main"><Input /></Form.Item>
+              <Form.Item label={t('pipelineDesigner.identityAuthSshCredential')} name="credential_id">
                 <Select
-                  placeholder="选择认证凭据 (可选)"
+                  placeholder={t('pipelineDesigner.selectAuthCredentialOptional')}
                   allowClear
                   options={credentialsData?.results || credentialsData?.data || []}
                   fieldNames={{ label: 'name', value: 'id' }}
@@ -465,40 +467,40 @@ const DesignerCore = () => {
           )}
 
           {selectedNode?.type === 'docker_build' && (
-            <Card size="small" title="编译环境" className="mb-5 border-none shadow-sm">
-              <Form.Item label="执行沙箱" name="ci_env_id" rules={[{ required: true }]}>
+            <Card size="small" title={t('pipelineDesigner.compileEnvironment')} className="mb-5 border-none shadow-sm">
+              <Form.Item label={t('pipelineDesigner.executionSandbox')} name="ci_env_id" rules={[{ required: true }]}>
                 <Select
-                  placeholder="选择构建环境"
+                  placeholder={t('pipelineDesigner.selectBuildEnvironment')}
                   options={ciEnvsData?.data || []}
                   fieldNames={{ label: 'name', value: 'id' }}
                 />
               </Form.Item>
-              <Form.Item label="编译指令" name="build_script" rules={[{ required: true }]}>
+              <Form.Item label={t('pipelineDesigner.compileCommand')} name="build_script" rules={[{ required: true }]}>
                 <Input.TextArea rows={4} className="font-mono text-xs" />
               </Form.Item>
             </Card>
           )}
 
           {selectedNode?.type === 'kaniko_build' && (
-            <Card size="small" title="镜像推送" className="mb-5 border-none shadow-sm">
-              <Form.Item label="目标仓库" name="registry_id" rules={[{ required: true }]}>
+            <Card size="small" title={t('pipelineDesigner.imagePush')} className="mb-5 border-none shadow-sm">
+              <Form.Item label={t('pipelineDesigner.targetRegistry')} name="registry_id" rules={[{ required: true }]}>
                 <Select
-                  placeholder="选择仓库"
+                  placeholder={t('pipelineDesigner.selectRegistry')}
                   options={registriesData?.data || (registriesData as any)?.results || []}
                   fieldNames={{ label: 'name', value: 'id' }}
                 />
               </Form.Item>
-              <Form.Item label="镜像名称" name="image_name" rules={[{ required: true }]}><Input placeholder="例如: my-service" /></Form.Item>
-              <Form.Item label="镜像标签 (Tag)" name="image_tag" initialValue="latest"><Input placeholder="例如: v1.0.0" /></Form.Item>
-              <Form.Item label="Dockerfile" name="dockerfile_path" initialValue="Dockerfile"><Input /></Form.Item>
+              <Form.Item label={t('pipelineDesigner.imageName')} name="image_name" rules={[{ required: true }]}><Input placeholder={t('pipelineDesigner.enterImageName')} /></Form.Item>
+              <Form.Item label={t('pipelineDesigner.imageTag')} name="image_tag" initialValue="latest"><Input placeholder={t('pipelineDesigner.enterImageTag')} /></Form.Item>
+              <Form.Item label={t('pipelineDesigner.dockerfile')} name="dockerfile_path" initialValue="Dockerfile"><Input /></Form.Item>
             </Card>
           )}
 
           {selectedNode?.type === 'ansible' && (
-            <Card size="small" title="Ansible 关联" className="mb-5 border-none shadow-sm">
-              <Form.Item label="任务模板" name="ansible_task_id" rules={[{ required: true }]}>
+            <Card size="small" title={t('pipelineDesigner.ansibleAssociation')} className="mb-5 border-none shadow-sm">
+              <Form.Item label={t('pipelineDesigner.taskTemplate')} name="ansible_task_id" rules={[{ required: true }]}>
                 <Select
-                  placeholder="选择任务"
+                  placeholder={t('pipelineDesigner.selectTask')}
                   options={ansibleTasksData?.data || []}
                   fieldNames={{ label: 'name', value: 'id' }}
                 />
@@ -508,50 +510,50 @@ const DesignerCore = () => {
 
           {selectedNode?.type === 'k8s_deploy' && (
              <>
-               <Card size="small" title="K8s 交付" className="mb-5 border-none shadow-sm">
-                  <Form.Item label="目标集群" name="k8s_cluster_id" rules={[{required: true}]}>
-                    <Select 
-                      placeholder="选择集群"
-                      options={clustersData?.data || []} 
-                      fieldNames={{ label: 'name', value: 'id' }} 
+               <Card size="small" title={t('pipelineDesigner.k8sDelivery')} className="mb-5 border-none shadow-sm">
+                  <Form.Item label={t('pipelineDesigner.targetCluster')} name="k8s_cluster_id" rules={[{required: true}]}>
+                    <Select
+                      placeholder={t('pipelineDesigner.selectCluster')}
+                      options={clustersData?.data || []}
+                      fieldNames={{ label: 'name', value: 'id' }}
                       showSearch
                     />
                   </Form.Item>
-                  <Form.Item label="Release 名称" name="k8s_release_name" rules={[{required: true}]}>
-                      <Input placeholder="例如: my-test" />
+                  <Form.Item label={t('pipelineDesigner.releaseName')} name="k8s_release_name" rules={[{required: true}]}>
+                      <Input placeholder={t('pipelineDesigner.enterReleaseName')} />
                   </Form.Item>
-                  <Form.Item label="命名空间" name="k8s_namespace" initialValue="default">
+                  <Form.Item label={t('pipelineDesigner.namespace')} name="k8s_namespace" initialValue="default">
                       <Input placeholder="default" />
                   </Form.Item>
                </Card>
-               <Card size="small" title="Helm 配置" className="mb-5 border-none shadow-sm">
-                  <Form.Item label="本地 Chart" name="k8s_chart_name">
+               <Card size="small" title={t('pipelineDesigner.helmConfig')} className="mb-5 border-none shadow-sm">
+                  <Form.Item label={t('pipelineDesigner.localChart')} name="k8s_chart_name">
                       <Select
-                         placeholder="选择本地 Chart"
+                         placeholder={t('pipelineDesigner.selectLocalChart')}
                          options={localChartsData || []}
                          fieldNames={{ label: 'name', value: 'id' }}
                          showSearch
                          allowClear
                       />
                   </Form.Item>
-                  <Form.Item label="强制执行 (--force)" name="k8s_force" initialValue={false} tooltip="当发生资源冲突时（如 replicas 被其他控制器占用），开启此项将强制覆盖冲突并更新。">
-                      <Select options={[{ label: '关闭 (推荐)', value: false }, { label: '开启 (解决冲突)', value: true }]} />
+                  <Form.Item label={t('pipelineDesigner.forceExecute')} name="k8s_force" initialValue={false} tooltip={t('pipelineDesigner.forceExecuteTooltip')}>
+                      <Select options={[{ label: t('pipelineDesigner.closeRecommended'), value: false }, { label: t('pipelineDesigner.enableConflictResolution'), value: true }]} />
                   </Form.Item>
                </Card>
                <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-dashed border-amber-200 dark:border-amber-700 mb-5">
                    <Text className="text-[11px] text-amber-700 dark:text-amber-500 block leading-relaxed">
-                       💡 提示：如果遇到 "conflict occurred" 错误（例如 OpenAPI-Generator 冲突），请开启【强制执行】策略来解决。
+                       {t('pipelineDesigner.tipConflictError')}
                    </Text>
                </div>
              </>
           )}
 
           {selectedNode?.type === 'http_webhook' && (
-             <Card size="small" title="Webhook 配置" className="mb-5 border-none shadow-sm">
-                <Form.Item label="URL" name="webhook_url" rules={[{required:true}]}>
+             <Card size="small" title={t('pipelineDesigner.webhookConfig')} className="mb-5 border-none shadow-sm">
+                <Form.Item label={t('pipelineDesigner.url')} name="webhook_url" rules={[{required:true}]}>
                    <Input placeholder="https://..." />
                 </Form.Item>
-                <Form.Item label="Method" name="webhook_method" initialValue="POST">
+                <Form.Item label={t('pipelineDesigner.method')} name="webhook_method" initialValue="POST">
                    <Select options={[{label:'POST', value:'POST'}, {label:'GET', value:'GET'}]} />
                 </Form.Item>
              </Card>
