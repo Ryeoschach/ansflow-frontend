@@ -266,7 +266,7 @@ const ConfigCenter: React.FC = () => {
     <div className="p-4">
       <Title level={4}>{t('configCenter.title')}</Title>
 
-      <Card className="mt-4 shadow-sm">
+      <Card className="mt-4 shadow-sm overflow-hidden">
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
@@ -275,9 +275,9 @@ const ConfigCenter: React.FC = () => {
               key: 'categories',
               label: t('configCenter.categories'),
               children: (
-                <div className="flex gap-4">
+                <div className="flex gap-4 overflow-x-auto">
                   {/* 左侧：分类列表 */}
-                  <div className="w-1/3">
+                  <div className="w-1/3 min-w-[300px]">
                     <div className="flex justify-between items-center mb-3">
                       <Text strong>{t('configCenter.categories')}</Text>
                       {hasPermission('config:category:add') && (
@@ -298,12 +298,13 @@ const ConfigCenter: React.FC = () => {
                         onClick: () => handleSelectCategory(record),
                         style: { cursor: 'pointer' },
                       })}
+                      scroll={{ x: 'max-content' }}
                     />
                   </div>
 
                   {/* 右侧：选中分类的配置项列表 */}
                   <Divider type="vertical" className="h-auto" />
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-[400px]">
                     {selectedCategory ? (
                       <>
                         <div className="flex justify-between items-center mb-3">
@@ -325,6 +326,7 @@ const ConfigCenter: React.FC = () => {
                           rowKey="id"
                           loading={!categoryDetail}
                           pagination={false}
+                          scroll={{ x: 'max-content' }}
                         />
                       </>
                     ) : (
@@ -347,6 +349,7 @@ const ConfigCenter: React.FC = () => {
                   rowKey="id"
                   loading={logsLoading}
                   pagination={{ pageSize: 20 }}
+                  scroll={{ x: 'max-content' }}
                 />
               ),
             },

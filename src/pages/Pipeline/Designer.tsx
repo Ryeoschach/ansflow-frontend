@@ -49,6 +49,7 @@ import { getRegistries } from '../../api/registry';
 import { getCredentials } from '../../api/credential';
 import useDesignerStore from '../../store/useDesignerStore';
 import useAppStore from '../../store/useAppStore';
+import { useBreakpoint } from '@/utils/useBreakpoint';
 
 import AnsibleNode from './nodes/AnsibleNode';
 import K8sNode from './nodes/K8sNode';
@@ -565,6 +566,21 @@ const DesignerCore = () => {
 };
 
 export default function PipelineDesigner() {
+  const { isMobile } = useBreakpoint();
+  const { t } = useTranslation();
+
+  if (isMobile) {
+    return (
+      <div className="h-full w-full flex items-center justify-center p-6">
+        <div className="text-center">
+          <div className="text-5xl mb-4">💻</div>
+          <h2 className="text-lg font-semibold mb-2">{t('pipelineDesigner.mobileBlockedTitle')}</h2>
+          <p className="text-gray-500 text-sm">{t('pipelineDesigner.mobileBlockedDesc')}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full w-full antialiased">
       <ReactFlowProvider>

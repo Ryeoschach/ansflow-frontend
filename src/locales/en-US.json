@@ -1075,7 +1075,9 @@
     "k8sDeliveryNode": "K8s Delivery",
     "clusterDeployment": "Cluster Deployment",
     "httpExternalCall": "HTTP External Call",
-    "webhookTrigger": "Webhook Trigger"
+    "webhookTrigger": "Webhook Trigger",
+    "mobileBlockedTitle": "Please Use Desktop for Pipeline Design",
+    "mobileBlockedDesc": "Pipeline design requires a desktop browser. Mobile devices are not supported."
   },
   "runViewer": {
     "title": "Node Execution Trace",

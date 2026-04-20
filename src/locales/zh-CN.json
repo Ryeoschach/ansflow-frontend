@@ -1074,7 +1074,9 @@
     "k8sDeliveryNode": "K8s 交付",
     "clusterDeployment": "集群部署",
     "httpExternalCall": "HTTP 外部调用",
-    "webhookTrigger": "Webhook 触发"
+    "webhookTrigger": "Webhook 触发",
+    "mobileBlockedTitle": "请使用桌面版编排流水线",
+    "mobileBlockedDesc": "流水线编排功能需要在桌面端进行，移动设备暂不支持。"
   },
   "runViewer": {
     "title": "节点执行轨迹",

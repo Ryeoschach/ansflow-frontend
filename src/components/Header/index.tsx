@@ -49,10 +49,10 @@ const Header: React.FC = () => {
 
     return (
         <AntHeader
-            className="p-0 flex items-center justify-between glass-effect sticky top-0 z-50 shadow-sm"
+            className="p-0 flex items-center justify-between glass-effect sticky top-0 z-50 shadow-sm overflow-hidden"
             style={{ color: colorText }}
         >
-            <div className="flex items-center">
+            <div className="flex items-center flex-shrink-0 min-w-0">
                 {/* 移动端：hamburger 按钮；桌面端：原有的折叠按钮 */}
                 {isMobile ? (
                     <Button
@@ -69,16 +69,14 @@ const Header: React.FC = () => {
                         className="w-12 h-12 text-lg ml-2"
                     />
                 )}
-                <h2 className="m-0 text-lg font-semibold ml-2">{t('header.platformTitle')}</h2>
+                <h2 className="m-0 text-lg font-semibold ml-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-[160px] sm:max-w-none">{t('header.platformTitle')}</h2>
             </div>
 
-            <div className="px-6 flex items-center gap-2">
-                <div className="flex items-center gap-2"
-                    style={{
-                        color: colorText,
-                    }}
+            <div className="px-2 sm:px-6 flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                <div className="flex items-center gap-1"
+                    style={{ color: colorText }}
                 >
-                                        <Switch
+                    <Switch
                         checked={isDark}
                         checkedChildren={<MoonOutlined />}
                         unCheckedChildren={<SunOutlined />}
@@ -96,13 +94,13 @@ const Header: React.FC = () => {
                         { value: 'zh-CN', label: '中文' },
                         { value: 'en-US', label: 'English' },
                     ]}
-                    style={{ width: 90 }}
+                    style={{ width: 80 }}
                 />
-                <Space size={16}>
+                <Space size={8}>
                     <Dropdown menu={userMenuItems}>
-                        <Space className="cursor-pointer hover:bg-fill-hover px-2 rounded-lg transition-colors">
-                            <Avatar icon={<UserOutlined />} className="bg-amber-500" />
-                            <span className="font-medium" style={{ color: colorText }}>{currentUser}</span>
+                        <Space className="cursor-pointer hover:bg-fill-hover px-2 rounded-lg transition-colors min-w-0">
+                            <Avatar icon={<UserOutlined />} className="bg-amber-500 flex-shrink-0" />
+                            <span className="font-medium hidden sm:inline whitespace-nowrap overflow-hidden text-ellipsis max-w-[80px]" style={{ color: colorText }}>{currentUser}</span>
                         </Space>
                     </Dropdown>
                 </Space>
