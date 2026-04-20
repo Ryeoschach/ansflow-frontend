@@ -1096,6 +1096,14 @@
     "adjustFontSize": "Adjust font size",
     "waitingForStdioBuffer": "WAITING FOR STDIO BUFFER...",
     "sigtermBroadcast": "SIGTERM signal broadcast",
-    "controlCommandRejected": "Control command rejected"
+    "controlCommandRejected": "Control command rejected",
+    "retryFromBeginning": "Retry from Beginning",
+    "retryFromNode": "Retry from {node}",
+    "retryFromThisNode": "Retry from This Node",
+    "confirmRetryFromNode": "Confirm Retry from Node",
+    "confirmRetryFromNodeTip": "Will skip all predecessor nodes of \"{node}\", preserving their previous results",
+    "retryStarted": "Retry started",
+    "skipped": "Skipped",
+    "selectRetryNode": "Select Retry Start Node"
   }
 }

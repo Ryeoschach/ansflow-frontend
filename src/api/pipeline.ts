@@ -39,6 +39,10 @@ export const getPipelineRunDetail = (id: number | string): Promise<any> =>
 export const stopPipelineRun = (id: number | string): Promise<any> =>
   request.post(`/pipeline_runs/${id}/stop/`) as any;
 
+// 从指定节点重试流水线
+export const retryPipelineRun = (runId: number | string, startNodeId: string): Promise<any> =>
+  request.post(`/pipeline_runs/${runId}/retry/`, { start_node_id: startNodeId }) as any;
+
 // --- CI Environments (构建镜像管理) ---
 
 // 获取所有 CI 环境
