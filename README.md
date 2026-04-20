@@ -2,7 +2,7 @@
 
 企业级 DevOps 流水线平台前端，基于 React 18 + TypeScript + Vite 构建。
 
-**当前版本：1.1.0**
+**当前版本：1.2.1**
 
 demo: https://ansflow.cyfee.com:10443
 admin/ansflow
@@ -63,6 +63,9 @@ src/
 │   ├── System/              # 系统管理
 │   │   ├── ApprovalCenter.tsx   # 审批中心
 │   │   ├── AuditLog.tsx         # 审计日志
+│   │   ├── BackupManagement.tsx  # 系统备份与恢复
+│   │   ├── ConfigCenter/         # 配置中心
+│   │   │   └── index.tsx         # 配置分类/配置项管理
 │   │   ├── CredentialVault.tsx  # 凭据保险库
 │   │   ├── MenuManagement.tsx   # 菜单管理
 │   │   ├── Monitor.tsx          # 系统监控
