@@ -215,7 +215,7 @@
     "blueprint": "所属蓝图",
     "currentStatus": "当前状态",
     "triggerSource": "执行源",
-    "timeline": "时间轴 (Start/Duration)",
+    "timeline": "时间轴",
     "actionCenter": "操作中心",
     "detail": "详情",
     "stop": "停止",
