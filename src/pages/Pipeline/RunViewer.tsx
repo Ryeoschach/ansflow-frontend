@@ -8,7 +8,7 @@ import ReactFlow, {
   Edge
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Layout, Typography, Space, Button, theme, Tag, Drawer, Spin, Card, App, Tooltip } from 'antd';
+import { Layout, Typography, Space, Button, theme, Tag, Drawer, Spin, Card, App, Tooltip, Dropdown } from 'antd';
 import {
   ArrowLeftOutlined,
   LoadingOutlined,
@@ -18,10 +18,13 @@ import {
   ClockCircleOutlined,
   HistoryOutlined,
   VerticalAlignBottomOutlined,
-  LineHeightOutlined
+  LineHeightOutlined,
+  ForkOutlined,
+  DownOutlined,
+  MinusCircleOutlined
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPipelineRunDetail, stopPipelineRun } from '../../api/pipeline';
+import { getPipelineRunDetail, stopPipelineRun, retryPipelineRun } from '../../api/pipeline';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useWebSocket from 'react-use-websocket';
 import { useTranslation } from 'react-i18next';
@@ -161,6 +164,61 @@ const ViewerCore = () => {
     onError: (err: any) => message.error(`${t('runViewer.controlCommandRejected')}: ${err.message}`)
   });
 
+  /** @description 从指定节点重试流水线 */
+  const retryRunMutation = useMutation({
+    mutationFn: (startNodeId: string) => retryPipelineRun(Number(runId), startNodeId),
+    onSuccess: (res: any) => {
+      message.success(t('runViewer.retryStarted'));
+      navigate(`/v1/pipeline/runs/${res.run_id || res.id}`);
+    },
+    onError: (err: any) => message.error(`${t('runViewer.controlCommandRejected')}: ${err.message}`)
+  });
+
+  /**
+   * @description 获取 nodeId 的所有前置节点（通过边反向遍历）
+   */
+  const getAncestors = (nodeId: string, edgeList: Edge[]): string[] => {
+    const ancestors: string[] = [];
+    const visited = new Set<string>();
+    const queue = [nodeId];
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      if (visited.has(current)) continue;
+      visited.add(current);
+
+      const parents = edgeList.filter(e => e.target === current).map(e => e.source);
+      parents.forEach(p => {
+        if (!visited.has(p)) {
+          ancestors.push(p);
+          queue.push(p);
+        }
+      });
+    }
+    return ancestors;
+  };
+
+  /**
+   * @description 获取所有可作为起点的候选节点
+   */
+  const getViableStartNodes = (nodeList: Node[], edgeList: Edge[], lastRunNodes: any[]): Node[] => {
+    const failedNodeIds = new Set(lastRunNodes.filter((n: any) => n.status === 'failed').map((n: any) => n.node_id));
+    return nodeList.filter(n => {
+      // 必须与失败节点有关联（是失败节点或其下游）
+      const ancestors = getAncestors(n.id, edgeList);
+      const hasFailedAncestor = ancestors.some(a => failedNodeIds.has(a)) || failedNodeIds.has(n.id);
+      if (!hasFailedAncestor) return false;
+
+      // 所有直接上游必须都已成功或跳过（或者是入口节点）
+      const immediateParents = edgeList.filter(e => e.target === n.id).map(e => e.source);
+      const allParentsDone = immediateParents.every(pid => {
+        const parentNode = lastRunNodes.find((r: any) => r.node_id === pid);
+        return parentNode?.status === 'success' || parentNode?.status === 'skipped' || parentNode === undefined;
+      });
+      return allParentsDone || immediateParents.length === 0;
+    });
+  };
+
   /**
    * @description 节点状态装饰器 (State Decorator)
    * 将后端打平的执行进度 (nodes[]) 映射回前端的 DAG 坐标点 (graph_data)
@@ -221,6 +279,7 @@ const ViewerCore = () => {
           case 'success': return <Tag color="success" className="rounded-full px-3">{t('runViewer.success')}</Tag>;
           case 'failed': return <Tag color="error" className="rounded-full px-3">{t('runViewer.failed')}</Tag>;
           case 'cancelled': return <Tag icon={<StopOutlined />} color="default" className="rounded-full px-3">{t('runViewer.cancelled')}</Tag>;
+          case 'skipped': return <Tag icon={<MinusCircleOutlined />} color="default" className="rounded-full px-3">{t('runViewer.skipped')}</Tag>;
           default: return <Tag color="default" className="rounded-full px-3">{t('runViewer.queued')}</Tag>;
       }
   };
@@ -272,6 +331,26 @@ const ViewerCore = () => {
                 {t('runViewer.abortPipeline')}
               </Button>
           )}
+          {hasPermission('pipeline:run:retry') && payload?.status === 'failed' && (
+            <Dropdown
+              menu={{
+                items: [
+                  { key: 'full', label: t('runViewer.retryFromBeginning'), onClick: () => retryRunMutation.mutate('') },
+                  { type: 'divider' },
+                  ...getViableStartNodes(nodes, edges, (payload?.nodes || [])).map(n => ({
+                    key: n.id,
+                    label: t('runViewer.retryFromNode', { node: n.data?.label || n.id }),
+                    onClick: () => retryRunMutation.mutate(n.id)
+                  }))
+                ]
+              }}
+              disabled={retryRunMutation.isPending}
+            >
+              <Button icon={<ForkOutlined />} loading={retryRunMutation.isPending} className="rounded-xl">
+                {t('runViewer.retryFromThisNode')} <DownOutlined />
+              </Button>
+            </Dropdown>
+          )}
         </Space>
       </Header>
       
@@ -304,6 +383,7 @@ const ViewerCore = () => {
                     if (s === 'success') return '#22c55e';
                     if (s === 'failed') return '#ef4444';
                     if (s === 'running') return '#3b82f6';
+                    if (s === 'skipped') return '#94a3b8';
                     return '#94a3b8';
                 }}
             />
@@ -360,6 +440,27 @@ const ViewerCore = () => {
                 </div>
             </Card>
           </div>
+
+          {selectedNodeData?.runStatus === 'failed' && (
+            <div className="px-6 pb-4">
+              <Button
+                type="primary"
+                icon={<ForkOutlined />}
+                onClick={() => {
+                  modal.confirm({
+                    title: t('runViewer.confirmRetryFromNode'),
+                    content: t('runViewer.confirmRetryFromNodeTip', { node: selectedNodeData?.label }),
+                    okText: t('common.confirm'),
+                    onOk: () => retryRunMutation.mutate(selectedNodeData.id)
+                  });
+                }}
+                loading={retryRunMutation.isPending}
+                className="rounded-xl w-full"
+              >
+                {t('runViewer.retryFromThisNode')}
+              </Button>
+            </div>
+          )}
 
           <div className="flex-1 px-6 pb-6 flex flex-col min-h-0">
              <div className="flex items-center justify-between mb-3 px-2">

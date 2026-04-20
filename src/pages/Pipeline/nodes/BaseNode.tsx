@@ -1,7 +1,7 @@
 import React, { memo, ReactNode } from 'react';
 import { Handle, Position } from 'reactflow';
 import { theme } from 'antd';
-import { CheckCircleFilled, CloseCircleFilled, SyncOutlined } from '@ant-design/icons';
+import { CheckCircleFilled, CloseCircleFilled, SyncOutlined, MinusCircleFilled } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
 interface BaseNodeProps {
@@ -29,6 +29,7 @@ const BaseNode: React.FC<BaseNodeProps> = ({
   const isRunning = data.runStatus === 'running';
   const isSuccess = data.runStatus === 'success';
   const isFailed = data.runStatus === 'failed';
+  const isSkipped = data.runStatus === 'skipped';
 
   // 颜色优先级：运行状态 > 品牌色 (defaultColor) > 默认主题色
   let primaryColor = defaultColor || token.colorPrimary;
@@ -48,6 +49,10 @@ const BaseNode: React.FC<BaseNodeProps> = ({
   } else if (isFailed) {
     primaryColor = token.colorError;
     headerBg = token.colorError;
+    textColor = '#ffffff';
+  } else if (isSkipped) {
+    primaryColor = '#94a3b8';
+    headerBg = '#94a3b8';
     textColor = '#ffffff';
   }
 
@@ -99,17 +104,30 @@ const BaseNode: React.FC<BaseNodeProps> = ({
         />
       )}
       {isRunning && (
-        <SyncOutlined 
+        <SyncOutlined
            spin
-           style={{ 
-            position: 'absolute', 
-            right: '8px', 
-            top: '8px', 
-            fontSize: '14px', 
+           style={{
+            position: 'absolute',
+            right: '8px',
+            top: '8px',
+            fontSize: '14px',
             color: token.colorWarning,
             fontWeight: 'bold',
             zIndex: 10
-          }} 
+          }}
+        />
+      )}
+      {isSkipped && (
+        <MinusCircleFilled
+          style={{
+            position: 'absolute',
+            right: '-10px',
+            bottom: '-10px',
+            fontSize: '80px',
+            color: '#94a3b8',
+            opacity: 0.15,
+            pointerEvents: 'none'
+          }}
         />
       )}
 
