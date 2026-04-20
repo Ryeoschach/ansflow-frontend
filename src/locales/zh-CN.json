@@ -1097,10 +1097,10 @@
     "sigtermBroadcast": "SIGTERM 信号已广播",
     "controlCommandRejected": "控制指令拒绝",
     "retryFromBeginning": "从头重试",
-    "retryFromNode": "从 {node} 开始",
+    "retryFromNode": "重新执行: {{node}}",
     "retryFromThisNode": "以此节点为起点重试",
     "confirmRetryFromNode": "确认从节点重试",
-    "confirmRetryFromNodeTip": "将跳过「{node}」的所有前置节点，保留上次执行结果",
+    "confirmRetryFromNodeTip": "将跳过「{{node}}」的所有前置节点，保留上次执行结果",
     "retryStarted": "重试任务已启动",
     "skipped": "已跳过",
     "selectRetryNode": "选择重试起点节点"
