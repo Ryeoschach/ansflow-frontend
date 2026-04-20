@@ -9,15 +9,26 @@ const resources = {
   'en-US': { translation: enUS },
 };
 
-// 默认语言
-const DEFAULT_LANG = 'zh-CN';
+// 从 localStorage 读取保存的语言，与 Zustand persist 的 key 一致
+const getSavedLang = (): string => {
+  try {
+    const raw = localStorage.getItem('ansflow-app');
+    if (raw) {
+      const state = JSON.parse(raw);
+      if (state.state?.language) return state.state.language;
+    }
+  } catch {}
+  return 'zh-CN';
+};
+
+const savedLang = getSavedLang();
 
 i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: DEFAULT_LANG,
-    fallbackLng: DEFAULT_LANG,
+    lng: savedLang,
+    fallbackLng: savedLang,
     interpolation: {
       escapeValue: false,
     },
