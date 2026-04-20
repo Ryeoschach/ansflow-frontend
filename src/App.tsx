@@ -117,6 +117,7 @@ const PipelineRunViewer = lazy(() => import("./pages/Pipeline/RunViewer"));
 const CIEnvironments = lazy(() => import("./pages/Pipeline/CIEnvironments"));
 const ImageRegistries = lazy(() => import("./pages/Pipeline/ImageRegistries"));
 const MonitorCenter = lazy(() => import("./pages/System/Monitor"));
+const ConfigCenter = lazy(() => import("./pages/ConfigCenter"));
 
 // const PageLoader = () => (
 //     <div className={`h-full w-full flex flex-col items-center justify-center`}>
@@ -335,6 +336,7 @@ function App() {
                 <Route path="v1/system/monitor" element={<MonitorCenter />} />
                 <Route path="v1/system/audit-logs" element={<AuditLog />} />
                 <Route path="v1/system/approvals" element={<ApprovalCenter />} />
+                <Route path="v1/system/config" element={<ConfigCenter />} />
                 <Route path="v1/system/vault" element={<CredentialVault />} />
                 {/*404*/}
                 <Route path="*" element={<div>^^如果uri不是你手动输入的或者你确定输入的uri是正确的，那就是该页面功能正在开发中^^</div>} />
