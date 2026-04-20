@@ -55,7 +55,7 @@ const MainLayout: React.FC<{ isLoading?: boolean }> = ({ isLoading }) => {
                         </AppErrorBoundary>
                     )}
                 </Content>
-                <Footer style={{ textAlign: 'center' }}>
+                <Footer style={{ textAlign: 'center', paddingTop: '2px' }}>
                     Ansflow ©{new Date().getFullYear()} Created by Creed · v{__APP_VERSION__} ({__GIT_HASH__})
                 </Footer>
             </Layout>

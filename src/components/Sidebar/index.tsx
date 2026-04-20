@@ -177,12 +177,22 @@ const Sidebar: React.FC = () => {
             </div>
 
             {/* 底部链接 */}
-            <div className="shrink-0 px-3 py-3 border-t cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                onClick={() => window.open('/api/docs/', '_blank')}>
-                <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                    <ApiOutlined />
-                    {!collapsed && <span>{t('menu.apiDocs')}</span>}
+            <div className="shrink-0 mx-2">
+              <div
+                className="h-px my-3"
+                style={{
+                  backgroundColor: 'rgba(128,128,128,0.5)',
+                }}
+              />
+              <div
+                className="px-3 pb-3 cursor-pointer transition-all"
+                onClick={() => window.open('/api/docs/', '_blank')}
+              >
+                <div className="flex items-center gap-2 text-sm text-neutral-400 dark:text-neutral-500">
+                  <ApiOutlined />
+                  {!collapsed && <span>{t('menu.apiDocs')}</span>}
                 </div>
+              </div>
             </div>
 
             <div className="h-4 shrink-0" />
