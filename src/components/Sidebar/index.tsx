@@ -9,6 +9,7 @@ import { getK8sClusters, getHelmLocalCharts } from '../../api/k8s';
 import IconMapper from '../IconMapper';
 import { ApiOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { getSystemHealth } from '../../api/system';
 
 
 const { Sider } = Layout;
@@ -63,6 +64,15 @@ const Sidebar: React.FC = () => {
     };
 
     // 1. 从后端获取动态菜单树
+    const { data: healthData } = useQuery({
+        queryKey: ['systemHealth'],
+        queryFn: () => getSystemHealth(),
+        staleTime: 1000 * 60 * 60,
+        enabled: !!token,
+    });
+    const apiVersion = healthData?.version;
+
+    // 2. 从后端获取动态菜单树
     const { data: menuData, isLoading } = useQuery<MenuItemData[], Error>({
         queryKey: ['my_menus', token],
         queryFn: async () => {
@@ -73,7 +83,7 @@ const Sidebar: React.FC = () => {
         enabled: !!token,
     });
 
-    // 2. 递归获取菜单项并处理 Accordion 逻辑所需的数据
+    // 3. 递归获取菜单项并处理 Accordion 逻辑所需的数据
     const { items, rootSubmenuKeys } = useMemo(() => {
         if (!menuData || !Array.isArray(menuData)) return { items: [], rootSubmenuKeys: [] };
 
@@ -108,7 +118,7 @@ const Sidebar: React.FC = () => {
         };
     }, [menuData, language]);
 
-    // 3. 初始进入/路由变化时，自动展开当前路径所在的父菜单
+    // 4. 初始进入/路由变化时，自动展开当前路径所在的父菜单
     React.useEffect(() => {
         if (location.pathname) {
             // 找到包含当前路径的 root 菜单
@@ -119,7 +129,7 @@ const Sidebar: React.FC = () => {
         }
     }, [location.pathname, rootSubmenuKeys]);
 
-    // 4. 手风琴逻辑：点击新的二级菜单时，关闭其他已打开的
+    // 5. 手风琴逻辑：点击新的二级菜单时，关闭其他已打开的
     const onOpenChange = (keys: string[]) => {
         const latestOpenKey = keys.find((key) => openKeys.indexOf(key) === -1);
         if (latestOpenKey && rootSubmenuKeys.indexOf(latestOpenKey) === -1) {
@@ -191,6 +201,9 @@ const Sidebar: React.FC = () => {
                 <div className="flex items-center gap-2 text-sm text-neutral-400 dark:text-neutral-500">
                   <ApiOutlined />
                   {!collapsed && <span>{t('menu.apiDocs')}</span>}
+                  {!collapsed && apiVersion && (
+                    <span className="text-xs text-neutral-500 dark:text-neutral-600 ml-1">v{apiVersion}</span>
+                  )}
                 </div>
               </div>
             </div>

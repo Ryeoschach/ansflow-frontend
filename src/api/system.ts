@@ -14,6 +14,7 @@ export interface HealthStatusResponse {
     status: 'healthy' | 'warning' | 'critical';
     components: HealthComponent[];
     timestamp: string;
+    version?: string;
 }
 
 export const getSystemHealth = (): Promise<HealthStatusResponse> =>
