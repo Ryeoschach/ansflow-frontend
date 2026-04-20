@@ -1,6 +1,9 @@
 # AnsFlow Frontend
 
 企业级 DevOps 流水线平台前端，基于 React 18 + TypeScript + Vite 构建。
+
+**当前版本：1.1.0**
+
 demo: https://ansflow.cyfee.com:10443
 admin/ansflow
 
@@ -17,6 +20,8 @@ admin/ansflow
 | 路由 | React Router 6 |
 | 流水线可视化 | ReactFlow |
 | 包管理 | pnpm |
+| 国际化 | react-i18next（中文/English）|
+| 菜单多语言 | 支持 `title_en` 字段，管理员可配置菜单英文名 |
 
 ## 项目结构
 
@@ -89,6 +94,7 @@ src/
 - **节点类型**：Ansible、GIT、Build（Kaniko）、HTTP、K8s 部署
 - **定时调度**：支持 Cron 表达式配置
 - **执行历史**：查看每次运行详情、步骤日志、状态
+- **失败重试**：支持从指定节点重试，前置节点自动跳过
 - **CI 环境**：管理构建代理节点
 - **镜像仓库**：Docker Registry 管理
 
@@ -140,7 +146,7 @@ const { data } = useQuery({
 | 资源 | 动作 | 权限码 |
 |------|------|--------|
 | 流水线模板 | 查看/新建/编辑/删除/执行 | `pipeline:template:view/add/edit/delete/execute` |
-| 流水线运行 | 查看/停止 | `pipeline:run:view/stop` |
+| 流水线运行 | 查看/停止/重试 | `pipeline:run:view/stop/retry` |
 | CI 环境 | CRUD | `pipeline:ci_env:view/add/edit/delete` |
 | 镜像仓库 | CRUD | `registry:docker:view/add/edit/delete` |
 | 审批工单 | 查看/审批 | `system:approval_ticket:view/approve` |
