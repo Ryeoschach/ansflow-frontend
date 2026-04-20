@@ -31,6 +31,9 @@
     "permissions": "Permission Management",
     "apiDocs": "API Docs"
   },
+  "header": {
+    "platformTitle": "DevOps Automation Platform"
+  },
   "auth": {
     "login": "Login",
     "logout": "Logout",

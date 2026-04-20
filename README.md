@@ -2,7 +2,7 @@
 
 企业级 DevOps 流水线平台前端，基于 React 18 + TypeScript + Vite 构建。
 
-**当前版本：1.2.1**
+**当前版本：1.3.1**
 
 demo: https://ansflow.cyfee.com:10443
 admin/ansflow

@@ -40,6 +40,7 @@ interface PersistedState {
   currentUser: string | null;
   permissions: string[];
   pipelineActiveTab: string;
+  language: string;
 }
 
 /**
@@ -80,6 +81,7 @@ const useAppStore = create<AppState>()(
       currentUser: state.currentUser,
       permissions: state.permissions,
       pipelineActiveTab: state.pipelineActiveTab,
+      language: state.language,
     }),
   })
 );

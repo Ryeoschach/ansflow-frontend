@@ -31,6 +31,9 @@
     "permissions": "权限管理",
     "apiDocs": "接口文档"
   },
+  "header": {
+    "platformTitle": "运维自动化平台"
+  },
   "auth": {
     "login": "登录",
     "logout": "退出登录",

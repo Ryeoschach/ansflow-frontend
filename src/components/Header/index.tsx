@@ -15,7 +15,7 @@ const Header: React.FC = () => {
     const { collapsed, toggleCollapsed, isDark, setIsDark, setToken, setCurrentUser, currentUser, language, setLanguage } = useAppStore();
     const { toggleMobileSidebar } = useAppStore();
     const { isMobile } = useBreakpoint();
-    const { i18n } = useTranslation();
+    const { i18n, t } = useTranslation();
 
     const {
         token: { colorText },
@@ -69,7 +69,7 @@ const Header: React.FC = () => {
                         className="w-12 h-12 text-lg ml-2"
                     />
                 )}
-                <h2 className="m-0 text-lg font-semibold ml-2">运维自动化平台</h2>
+                <h2 className="m-0 text-lg font-semibold ml-2">{t('header.platformTitle')}</h2>
             </div>
 
             <div className="px-6 flex items-center gap-2">
@@ -78,8 +78,7 @@ const Header: React.FC = () => {
                         color: colorText,
                     }}
                 >
-                    <span className="hidden md:inline">主题切换</span>
-                    <Switch
+                                        <Switch
                         checked={isDark}
                         checkedChildren={<MoonOutlined />}
                         unCheckedChildren={<SunOutlined />}
