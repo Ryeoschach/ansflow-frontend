@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Select, Tag, Space, Typography, App, Tooltip, Popconfirm, Drawer, Switch, Collapse, CodeRunner } from 'antd';
-import { PlusOutlined, DeleteOutlined, EditOutlined, EyeOutlined, GlobalOutlined, CopyOutlined, GithubOutlined, LockOutlined } from '@ant-design/icons';
+import { Card, Table, Button, Modal, Form, Input, Select, Tag, Space, Typography, App, Tooltip, Popconfirm, Drawer, Switch, Divider } from 'antd';
+import { PlusOutlined, DeleteOutlined, EditOutlined, EyeOutlined, GlobalOutlined, CopyOutlined, ThunderboltOutlined, KeyOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getPipelineWebhooks, createPipelineWebhook, updatePipelineWebhook, deletePipelineWebhook, type PipelineWebhook } from '../../../api/pipeline';
@@ -9,7 +9,14 @@ import useAppStore from '../../../store/useAppStore';
 import dayjs from 'dayjs';
 
 const { Text, Paragraph } = Typography;
-const { Panel } = Collapse;
+
+// 生成随机密钥
+const generateSecret = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return Array.from(array, b => chars[b % chars.length]).join('');
+};
 
 const PipelineWebhooks: React.FC = () => {
     const { t } = useTranslation();
@@ -35,9 +42,16 @@ const PipelineWebhooks: React.FC = () => {
     });
 
     const saveMutation = useMutation({
-        mutationFn: (values: any) => editingWebhook
-            ? updatePipelineWebhook(editingWebhook.id, values)
-            : createPipelineWebhook(values),
+        mutationFn: (values: any) => {
+            // 如果密钥字段为空或为 placeholder，则不传
+            const data = { ...values };
+            if (!data.secret_key || data.secret_key === '********') {
+                delete data.secret_key;
+            }
+            return editingWebhook
+                ? updatePipelineWebhook(editingWebhook.id, data)
+                : createPipelineWebhook(data);
+        },
         onSuccess: () => {
             antdMessage.success(editingWebhook ? t('webhook.updateSuccess') : t('webhook.createSuccess'));
             setIsModalOpen(false);
@@ -72,6 +86,28 @@ const PipelineWebhooks: React.FC = () => {
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
         antdMessage.success(t('webhook.copied'));
+    };
+
+    const handleCreate = () => {
+        setEditingWebhook(null);
+        form.resetFields();
+        // 自动生成密钥
+        form.setFieldsValue({ secret_key: generateSecret() });
+        setIsModalOpen(true);
+    };
+
+    const handleEdit = (record: PipelineWebhook) => {
+        setEditingWebhook(record);
+        form.setFieldsValue({
+            ...record,
+            secret_key: record.secret_key ? '********' : '',
+        });
+        setIsModalOpen(true);
+    };
+
+    const regenerateSecret = () => {
+        form.setFieldsValue({ secret_key: generateSecret() });
+        antdMessage.info(t('webhook.secretRegenerated'));
     };
 
     const eventTypeMap: Record<string, { text: string; color: string }> = {
@@ -128,6 +164,13 @@ const PipelineWebhooks: React.FC = () => {
             render: (text: string) => text ? <Tag>{text}</Tag> : <Text type="secondary">-</Text>,
         },
         {
+            title: t('webhook.secretKey'),
+            dataIndex: 'secret_key',
+            key: 'secret_key',
+            width: 100,
+            render: (hasKey: string) => hasKey ? <Tag icon={<KeyOutlined />} color="green">{t('webhook.configured')}</Tag> : <Tag color="orange">{t('webhook.notConfigured')}</Tag>,
+        },
+        {
             title: t('webhook.triggerCount'),
             dataIndex: 'trigger_count',
             key: 'trigger_count',
@@ -165,14 +208,7 @@ const PipelineWebhooks: React.FC = () => {
                     </Tooltip>
                     {hasPermission('pipeline:webhook:edit') && (
                         <Tooltip title={t('common.edit')}>
-                            <Button type="text" size="small" icon={<EditOutlined />} onClick={() => {
-                                setEditingWebhook(record);
-                                form.setFieldsValue({
-                                    ...record,
-                                    secret_key: record.secret_key ? '********' : '',
-                                });
-                                setIsModalOpen(true);
-                            }} />
+                            <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
                         </Tooltip>
                     )}
                     {hasPermission('pipeline:webhook:delete') && (
@@ -187,82 +223,6 @@ const PipelineWebhooks: React.FC = () => {
         },
     ];
 
-    const renderGithubGuide = (webhook: PipelineWebhook) => {
-        if (!webhook) return null;
-
-        const webhookUrl = webhook.webhook_url;
-        const secretKey = webhook.secret_key || '';
-        const timestamp = Math.floor(Date.now() / 1000).toString();
-
-        // Signature generation example
-        const signatureExample = secretKey ? `echo -n "${timestamp}.{\\"ref\\":\\"refs/heads/main\\"}" | openssl dgst -sha256 -hmac "${secretKey}" | sed 's/^.* //'` : '(未配置密钥，跳过签名)';
-
-        return (
-            <Collapse defaultActiveKey={['url', 'github']} className="mt-4">
-                <Panel header={<Space><GithubOutlined /> GitHub Webhook 配置指南</Space>} key="github">
-                    <div className="flex flex-col gap-4">
-                        <div>
-                            <Text strong>{t('webhook.step1')}</Text>
-                            <Paragraph className="mt-2 mb-1 text-sm">
-                                {t('webhook.step1Desc')}
-                            </Paragraph>
-                            <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg flex items-center justify-between">
-                                <Text code className="text-xs break-all">{webhookUrl}</Text>
-                                <Button type="text" size="small" icon={<CopyOutlined />} onClick={() => copyToClipboard(webhookUrl)} />
-                            </div>
-                        </div>
-
-                        <div>
-                            <Text strong>{t('webhook.step2')}</Text>
-                            <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                <div className="mb-2">{t('webhook.step2Desc')}</div>
-                                <table className="w-full text-xs border-collapse">
-                                    <thead>
-                                        <tr className="border-b">
-                                            <th className="text-left py-1 pr-4">{t('webhook.headerName')}</th>
-                                            <th className="text-left py-1">{t('webhook.headerValue')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="text-gray-600 dark:text-gray-400">
-                                        <tr className="border-b"><td className="py-1 pr-4">Content-Type</td><td className="py-1">application/json</td></tr>
-                                        <tr><td className="py-1 pr-4">X-AnsFlow-Timestamp</td><td className="py-1 font-mono">{timestamp}</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        {secretKey && (
-                            <div>
-                                <Text strong>{t('webhook.step3')}</Text>
-                                <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                    <div className="mb-2">{t('webhook.step3Desc')}</div>
-                                    <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
-                                        <div className="text-xs font-mono break-all">
-                                            <div className="text-gray-500 mb-1"># {t('webhook.signatureCommand')}</div>
-                                            <div>{signatureExample}</div>
-                                        </div>
-                                    </div>
-                                    <div className="mt-2 text-xs text-gray-500">
-                                        {t('webhook.signatureTip')}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                            <Text strong className="text-blue-600 dark:text-blue-400">
-                                {t('webhook.note')}
-                            </Text>
-                            <div className="mt-1 text-xs text-blue-600 dark:text-blue-400/80">
-                                {secretKey ? t('webhook.noteWithSecret') : t('webhook.noteWithoutSecret')}
-                            </div>
-                        </div>
-                    </div>
-                </Panel>
-            </Collapse>
-        );
-    };
-
     return (
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
@@ -273,11 +233,7 @@ const PipelineWebhooks: React.FC = () => {
                     <Text type="secondary">{t('webhook.subtitle')}</Text>
                 </div>
                 {hasPermission('pipeline:webhook:add') && (
-                    <Button type="primary" icon={<PlusOutlined />} onClick={() => {
-                        setEditingWebhook(null);
-                        form.resetFields();
-                        setIsModalOpen(true);
-                    }}>
+                    <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
                         {t('webhook.create')}
                     </Button>
                 )}
@@ -333,8 +289,23 @@ const PipelineWebhooks: React.FC = () => {
                     <Form.Item label={t('webhook.branchFilter')} name="branch_filter" extra={t('webhook.branchFilterTip')}>
                         <Input placeholder="main, release/*" />
                     </Form.Item>
-                    <Form.Item label={t('webhook.secretKey')} name="secret_key" extra={<Space><LockOutlined /> {t('webhook.secretKeyExtra')}</Space>}>
-                        <Input.Password placeholder={t('webhook.secretKeyPlaceholder')} />
+                    <Form.Item
+                        label={
+                            <Space>
+                                <KeyOutlined />
+                                {t('webhook.secretKey')}
+                                {!editingWebhook && <Tag color="blue">{t('webhook.autoGenerated')}</Tag>}
+                            </Space>
+                        }
+                        name="secret_key"
+                        extra={t('webhook.secretKeyTip')}
+                    >
+                        <Input.Search
+                            type="password"
+                            placeholder={t('webhook.secretKeyPlaceholder')}
+                            enterButton={editingWebhook ? t('webhook.updateSecret') : t('webhook.regenerate')}
+                            onSearch={regenerateSecret}
+                        />
                     </Form.Item>
                     <Form.Item label={t('webhook.description')} name="description">
                         <Input.TextArea rows={2} />
@@ -343,9 +314,9 @@ const PipelineWebhooks: React.FC = () => {
             </Modal>
 
             <Drawer
-                title={t('webhook.webhookDetail', { name: detailWebhook?.name })}
+                title={<Space><ThunderboltOutlined /> {t('webhook.webhookDetail', { name: detailWebhook?.name })}</Space>}
                 placement="right"
-                width={650}
+                width={600}
                 open={detailVisible}
                 onClose={() => { setDetailVisible(false); setDetailWebhook(null); }}
             >
@@ -359,19 +330,60 @@ const PipelineWebhooks: React.FC = () => {
                                 <div><Text type="secondary">{t('webhook.branchFilter')}:</Text> {detailWebhook.branch_filter || '-'}</div>
                                 <div><Text type="secondary">{t('webhook.triggerCount')}:</Text> {detailWebhook.trigger_count}</div>
                                 <div><Text type="secondary">{t('webhook.lastTrigger')}:</Text> {detailWebhook.last_trigger_time ? dayjs(detailWebhook.last_trigger_time).format('YYYY-MM-DD HH:mm:ss') : '-'}</div>
-                                <div><Text type="secondary">{t('webhook.createTime')}:</Text> {dayjs(detailWebhook.create_time).format('YYYY-MM-DD HH:mm:ss')}</div>
-                                <div><Text type="secondary">{t('webhook.secretKey')}:</Text> {detailWebhook.secret_key ? <Tag color="green">{t('webhook.configured')}</Tag> : <Tag color="orange">{t('webhook.notConfigured')}</Tag>}</div>
                             </div>
                         </Card>
 
-                        <Card size="small" title={<Space><LockOutlined /> {t('webhook.triggerUrl')}</Space>}>
+                        <Card size="small" title={<Space><CopyOutlined /> {t('webhook.triggerUrl')}</Space>}>
                             <Paragraph copyable className="mb-2">
                                 <Text code className="text-sm break-all">{detailWebhook.webhook_url}</Text>
                             </Paragraph>
                             <Text type="secondary" className="text-xs">{t('webhook.triggerUrlTip')}</Text>
                         </Card>
 
-                        {renderGithubGuide(detailWebhook)}
+                        {detailWebhook.secret_key && (
+                            <Card size="small" title={<Space><KeyOutlined /> {t('webhook.secretKey')}</Space>}>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Tag color="green">{t('webhook.configured')}</Tag>
+                                    <Text type="secondary" className="text-xs">{t('webhook.secretConfiguredTip')}</Text>
+                                </div>
+                                <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
+                                    <Text code className="text-xs break-all">{detailWebhook.secret_key}</Text>
+                                </div>
+                                <Text type="secondary" className="text-xs mt-2 block">{t('webhook.secretKeyInGithub')}</Text>
+                            </Card>
+                        )}
+
+                        <Card size="small" title={t('webhook.howToUse')} className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+                            <div className="flex flex-col gap-3 text-sm">
+                                <div className="flex items-start gap-2">
+                                    <Tag color="blue">1</Tag>
+                                    <div>
+                                        <Text strong>{t('webhook.step1Title')}</Text>
+                                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                            {t('webhook.step1Desc')}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                    <Tag color="blue">2</Tag>
+                                    <div>
+                                        <Text strong>{t('webhook.step2Title')}</Text>
+                                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                            {t('webhook.step2Desc')}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                    <Tag color="blue">3</Tag>
+                                    <div>
+                                        <Text strong>{t('webhook.step3Title')}</Text>
+                                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                            {t('webhook.step3Desc')}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
 
                         {detailWebhook.description && (
                             <Card size="small" title={t('webhook.description')}>
