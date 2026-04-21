@@ -60,3 +60,68 @@ export const updateCIEnvironment = (id: number | string, data: any): Promise<any
 // 删除 CI 环境
 export const deleteCIEnvironment = (id: number | string): Promise<any> =>
   request.delete(`/ci_environments/${id}/`) as any;
+
+// --- Pipeline Webhooks ---
+
+export interface PipelineWebhook {
+  id: number;
+  pipeline: number;
+  pipeline_name: string;
+  name: string;
+  event_type: string;
+  repository_url: string | null;
+  branch_filter: string | null;
+  secret_key: string | null;
+  is_active: boolean;
+  description: string | null;
+  last_trigger_time: string | null;
+  trigger_count: number;
+  webhook_url: string;
+  create_time: string;
+  update_time: string;
+}
+
+export const getPipelineWebhooks = (params?: any): Promise<PaginatedResponse<PipelineWebhook>> =>
+  request.get('/pipeline/webhooks/', { params }) as any;
+
+export const getPipelineWebhook = (id: number): Promise<PipelineWebhook> =>
+  request.get(`/pipeline/webhooks/${id}/`) as any;
+
+export const createPipelineWebhook = (data: Partial<PipelineWebhook>): Promise<any> =>
+  request.post('/pipeline/webhooks/', data) as any;
+
+export const updatePipelineWebhook = (id: number, data: Partial<PipelineWebhook>): Promise<any> =>
+  request.put(`/pipeline/webhooks/${id}/`, data) as any;
+
+export const deletePipelineWebhook = (id: number): Promise<any> =>
+  request.delete(`/pipeline/webhooks/${id}/`) as any;
+
+export const triggerPipelineWebhook = (id: number, secret?: string): Promise<any> =>
+  request.post(`/pipeline/webhooks/${id}/trigger/`, { secret }) as any;
+
+// --- Pipeline Versions ---
+
+export interface PipelineVersion {
+  id: number;
+  pipeline: number;
+  pipeline_name: string;
+  version_number: number;
+  name: string;
+  desc: string | null;
+  graph_data: any;
+  creator: number | null;
+  creator_name: string | null;
+  change_summary: string | null;
+  is_current: boolean;
+  create_time: string;
+  update_time: string;
+}
+
+export const getPipelineVersions = (params?: any): Promise<PaginatedResponse<PipelineVersion>> =>
+  request.get('/pipeline/versions/', { params }) as any;
+
+export const getPipelineVersion = (id: number): Promise<PipelineVersion> =>
+  request.get(`/pipeline/versions/${id}/`) as any;
+
+export const rollbackPipeline = (pipelineId: number, versionId: number): Promise<any> =>
+  request.post(`/pipelines/${pipelineId}/rollback/`, { version_id: versionId }) as any;
