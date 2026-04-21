@@ -385,7 +385,8 @@ const HelmCenter: React.FC = () => {
               loading={helmLoading}
               pagination={{ pageSize: 10 }}
               className="w-full resizable-table"
-              scroll={{ x: 1400 }}
+              scroll={{ x: 'max-content' }}
+             
             />
           )}
         </div>

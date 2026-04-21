@@ -85,6 +85,7 @@ const HostManagement: React.FC = () => {
             title: t('host.hostname'),
             dataIndex: 'hostname',
             key: 'hostname',
+            ellipsis: true,
             render: (text: string) => <span className="font-semibold"><DesktopOutlined className="mr-2 opacity-50"/>{text}</span>
         },
         {
@@ -192,7 +193,8 @@ const HostManagement: React.FC = () => {
                 columns={columns}
                 loading={isLoading}
                 rowKey="id"
-                scroll={{ x: 1200 }}
+                scroll={{ x: 'max-content' }}
+               
                 pagination={{
                     total: data?.total,
                     current: params.page,

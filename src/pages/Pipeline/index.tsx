@@ -88,7 +88,6 @@ const TemplateList = () => {
       title: t('pipeline.name'),
       dataIndex: 'name',
       key: 'name',
-      width: 280,
       render: (text: string, record: any) => (
         <Space size="middle">
             <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center shadow-sm">
@@ -114,7 +113,6 @@ const TemplateList = () => {
         title: t('pipeline.status'),
         dataIndex: 'is_active',
         key: 'is_active',
-        width: 120,
         render: (active: boolean) => active ? (
             <Tag color="success" className="rounded-full px-3">{t('pipeline.active')}</Tag>
         ) : (
@@ -125,13 +123,11 @@ const TemplateList = () => {
       title: t('pipeline.updateTime'),
       dataIndex: 'update_time',
       key: 'update_time',
-      width: 170,
       render: (val: string) => <Text type="secondary" className="text-xs">{dayjs(val).format('YYYY/MM/DD HH:mm')}</Text>
     },
     {
       title: t('pipeline.action'),
       key: 'action',
-      width: 320,
       render: (_: any, record: any) => (
         <Space size="small">
           {hasPermission('pipeline:template:execute') && (
@@ -218,7 +214,8 @@ const TemplateList = () => {
                     className: "pt-4"
                 }}
                 className="custom-table-modern"
-                scroll={{ x: 1000 }}
+                scroll={{ x: 'max-content' }}
+               
             />
         </div>
     </div>

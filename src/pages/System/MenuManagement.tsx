@@ -80,11 +80,11 @@ const MenuManagement: React.FC = () => {
     };
 
     const columns = [
-        { title: t('menuManagement.columnName'), dataIndex: 'title', key: 'title' },
-        { title: t('menuManagement.columnIcon'), dataIndex: 'icon', key: 'icon', render: (icon: string) => <IconMapper iconName={icon} /> },
-        { title: t('menuManagement.columnKey'), dataIndex: 'key', key: 'key' },
-        { title: t('menuManagement.columnPath'), dataIndex: 'path', key: 'path' },
-        { title: t('menuManagement.columnOrder'), dataIndex: 'order', key: 'order' },
+        { title: t('menuManagement.columnName'), dataIndex: 'title', key: 'title', width: 180, ellipsis: true },
+        { title: t('menuManagement.columnIcon'), dataIndex: 'icon', key: 'icon', width: 80, render: (icon: string) => <IconMapper iconName={icon} /> },
+        { title: t('menuManagement.columnKey'), dataIndex: 'key', key: 'key', width: 180, ellipsis: true },
+        { title: t('menuManagement.columnPath'), dataIndex: 'path', key: 'path', width: 200, ellipsis: true },
+        { title: t('menuManagement.columnOrder'), dataIndex: 'order', key: 'order', width: 80 },
         {
             title: t('menuManagement.columnAction'),
             key: 'action',
@@ -113,7 +113,7 @@ const MenuManagement: React.FC = () => {
                 <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>{t('menuManagement.addMenu')}</Button>
             )
         }>
-            <Table loading={isLoading} columns={columns} dataSource={menuTree} rowKey="id" scroll={{ x: 1200 }} pagination={false} expandable={{ defaultExpandAllRows: true }} />
+            <Table loading={isLoading} columns={columns} dataSource={menuTree} rowKey="id" scroll={{ x: 'max-content' }} pagination={false} expandable={{ defaultExpandAllRows: true }} />
 
             <Modal title={editingMenu ? t('menuManagement.editMenu') : t('menuManagement.createMenu')} open={isModalOpen} onCancel={() => setIsModalOpen(false)} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={isMobile ? '95vw' : 600} bodyStyle={{ overflowX: 'auto' }}>
                 <Form form={form} layout="vertical" onFinish={(values) => mutation.mutate({...values, parent: values.parent || null})} initialValues={{ order: 0 }}>

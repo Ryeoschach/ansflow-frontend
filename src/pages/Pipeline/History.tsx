@@ -112,13 +112,13 @@ export default function PipelineHistory() {
       title: t('pipeline.runId'),
       dataIndex: 'id',
       key: 'id',
-      width: 100,
       render: (id: number) => <Text code className="text-blue-600 font-mono">#{id}</Text>
     },
     {
       title: t('pipeline.blueprint'),
       dataIndex: 'pipeline_name',
       key: 'pipeline_name',
+      ellipsis: true,
       render: (text: string, record: any) => (
           <div className="flex flex-col">
               <Text strong className="text-sm">{text || record.pipeline?.name}</Text>
@@ -132,14 +132,12 @@ export default function PipelineHistory() {
       title: t('pipeline.currentStatus'),
       dataIndex: 'status',
       key: 'status',
-      width: 140,
       render: (status: string) => getStatusTag(status)
     },
     {
         title: t('pipeline.triggerSource'),
         dataIndex: 'trigger_user_name',
         key: 'trigger_user_name',
-        width: 140,
         render: (text: string) => (
             <Space className="text-xs text-slate-500">
                 <UserOutlined className="text-[10px]" />
@@ -151,7 +149,6 @@ export default function PipelineHistory() {
       title: t('pipeline.timeline'),
       dataIndex: 'start_time',
       key: 'start_time',
-      width: 200,
       render: (time: string, record: any) => {
           if (!time) return '-';
           const start = dayjs(time);
@@ -170,7 +167,6 @@ export default function PipelineHistory() {
     {
       title: t('pipeline.actionCenter'),
       key: 'action',
-      width: 160,
       render: (_: any, record: any) => (
         <Space size="middle">
           {hasPermission('pipeline:run:view') && (
@@ -245,7 +241,8 @@ export default function PipelineHistory() {
               className: "pt-4 px-2"
           }}
           className="custom-table-modern"
-          scroll={{ x: 1000, y: 'calc(100vh - 420px)' }}
+          scroll={{ x: 'max-content', y: 'calc(100vh - 420px)' }}
+         
         />
       </div>
     </div>

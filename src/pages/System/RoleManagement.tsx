@@ -205,8 +205,8 @@ const RoleManagement: React.FC = () => {
     };
 
     const columns = [
-        { title: t('role.columnName'), dataIndex: 'name', key: 'name' },
-        { title: t('role.columnCode'), dataIndex: 'code', key: 'code', render: (code: string) => <Tag color="blue">{code}</Tag> },
+        { title: t('role.columnName'), dataIndex: 'name', key: 'name', width: 150, ellipsis: true },
+        { title: t('role.columnCode'), dataIndex: 'code', key: 'code', width: 150, render: (code: string) => <Tag color="blue">{code}</Tag> },
         {
             title: t('role.columnParents'),
             dataIndex: 'parents',
@@ -265,7 +265,8 @@ const RoleManagement: React.FC = () => {
                 columns={columns}
                 dataSource={roles?.data}
                 rowKey="id"
-                scroll={{ x: 1200 }}
+                scroll={{ x: 'max-content' }}
+               
                 pagination={{
                     total: roles?.total,
                     current: params.page,

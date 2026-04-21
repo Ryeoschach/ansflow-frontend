@@ -127,6 +127,7 @@ const ScheduleList: React.FC = () => {
       title: t('pipeline.pipelineName'),
       dataIndex: 'name',
       key: 'name',
+      ellipsis: true,
       render: (text: string) => (
         <Space>
             <SettingOutlined style={{ color: antdToken.colorTextDescription }} />
@@ -151,7 +152,6 @@ const ScheduleList: React.FC = () => {
     {
       title: t('pipeline.activeStatus'),
       key: 'status',
-      width: 150,
       render: (_: any, record: any) => (
         hasPermission('pipeline:template:edit') ? (
         <Switch
@@ -168,7 +168,6 @@ const ScheduleList: React.FC = () => {
     {
       title: t('pipeline.cronAction'),
       key: 'action',
-      width: 200,
       render: (_: any, record: any) => (
         <Space size="middle">
           {hasPermission('pipeline:template:edit') && (
@@ -220,7 +219,8 @@ const ScheduleList: React.FC = () => {
             dataSource={tableData} 
             rowKey="id"
             loading={isLoading}
-            scroll={{ x: 1200 }}
+            scroll={{ x: 'max-content' }}
+           
             pagination={false}
             className="custom-table-modern"
         />

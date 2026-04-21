@@ -113,18 +113,19 @@ const ExecutionHistory: React.FC = () => {
             title: t('executionHistory.executionId'),
             dataIndex: 'id',
             key: 'id',
-            width: 80,
         },
         {
             title: t('executionHistory.taskTemplate'),
             dataIndex: 'task_name',
             key: 'task_name',
+            ellipsis: true,
             render: (text: string) => <Text>{text}</Text>
         },
         {
             title: t('executionHistory.targetResourcePool'),
             dataIndex: 'resource_pool_name',
             key: 'resource_pool_name',
+            ellipsis: true,
         },
         {
             title: t('executionHistory.status'),
@@ -225,7 +226,8 @@ const ExecutionHistory: React.FC = () => {
                 columns={columns}
                 rowKey="id"
                 loading={listLoading}
-                scroll={{ x: 1200 }}
+                scroll={{ x: 'max-content' }}
+               
                 pagination={{
                     total: executionData?.total,
                     pageSize: params.size,

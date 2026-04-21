@@ -81,7 +81,6 @@ const ApprovalCenter: React.FC = () => {
             title: t('approval.columnIdResource'),
             dataIndex: 'id',
             key: 'id',
-            width: 150,
             render: (id: number, record: ApprovalTicket) => (
                 <Space orientation="vertical" size={2}>
                     <Typography.Text strong>#APP-{id}</Typography.Text>
@@ -94,7 +93,6 @@ const ApprovalCenter: React.FC = () => {
         {
             title: t('approval.columnIntent'),
             key: 'intent',
-            width: 250,
             render: (_: any, record: ApprovalTicket) => (
                 <div>
                     <div>
@@ -115,12 +113,10 @@ const ApprovalCenter: React.FC = () => {
             title: t('approval.columnSubmitter'),
             dataIndex: 'submitter_name',
             key: 'submitter',
-            width: 100,
         },
         {
             title: t('approval.columnStatus'),
             key: 'status',
-            width: 200,
             render: (_: any, record: ApprovalTicket) => {
                 const map = STATUS_MAP(t)[record.status as keyof ReturnType<typeof STATUS_MAP>] || STATUS_MAP(t)['pending'];
                 return (
@@ -139,13 +135,11 @@ const ApprovalCenter: React.FC = () => {
             title: t('approval.columnTime'),
             dataIndex: 'create_time',
             key: 'time',
-            width: 160,
             render: (time: string) => <span style={{ color: token.colorTextSecondary }}>{dayjs(time).format('MM-DD HH:mm:ss')}</span>
         },
         {
             title: t('approval.columnAction'),
             key: 'action',
-            width: 150,
             render: (_: any, record: ApprovalTicket) => (
                 <Space>
                     {hasPermission('system:approval_ticket:view') && (
@@ -228,7 +222,8 @@ const ApprovalCenter: React.FC = () => {
                     dataSource={tickets}
                     rowKey="id"
                     loading={isLoading}
-                    scroll={{ x: 1200 }}
+                    scroll={{ x: 'max-content' }}
+                                   
                     pagination={{
                         current: queryParams.page,
                         pageSize: queryParams.page_size,

@@ -54,6 +54,7 @@ const Environment: React.FC = () => {
             title: t('environment.envName'),
             dataIndex: 'name',
             key: 'name',
+            ellipsis: true,
             render: (text: string) => <span className="font-semibold">{text}</span>
         },
         {
@@ -69,6 +70,7 @@ const Environment: React.FC = () => {
             title: t('environment.description'),
             dataIndex: 'remark',
             key: 'remark',
+            ellipsis: true,
             render: (text: string) => <span className="font-semibold">{text}</span>
         },
         {
@@ -125,7 +127,8 @@ const Environment: React.FC = () => {
                 dataSource={envData?.data}
                 columns={columns}
                 rowKey="id"
-                scroll={{ x: 1200 }}
+                scroll={{ x: 'max-content' }}
+               
                 pagination={{
                     total: envData?.total,
                     current: params.page,

@@ -108,8 +108,8 @@ const UserManagement: React.FC = () => {
     };
 
     const columns: ColumnType<User>[] = [
-        { title: t('user.username'), dataIndex: 'username', key: 'username' },
-        { title: t('user.email'), dataIndex: 'email', key: 'email' },
+        { title: t('user.username'), dataIndex: 'username', key: 'username', width: 150, ellipsis: true },
+        { title: t('user.email'), dataIndex: 'email', key: 'email', width: 200, ellipsis: true },
         {
             title: t('user.role'),
             dataIndex: 'roles_info',
@@ -146,7 +146,6 @@ const UserManagement: React.FC = () => {
         {
             title: t('user.action'),
             key: 'action',
-            width: 180,
             render: (_: any, record: User) => (
                 <Space size="middle">
                     {hasPermission('rbac:user:edit') && (
@@ -205,7 +204,8 @@ const UserManagement: React.FC = () => {
                     columns={columns}
                     loading={isLoading}
                     rowKey="id"
-                    scroll={{ x: 1200 }}
+                    scroll={{ x: 'max-content' }}
+                   
                     pagination={{
                         total: data?.total,
                         current: params.page,

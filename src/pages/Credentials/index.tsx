@@ -109,12 +109,14 @@ const CredentialManagement: React.FC = () => {
             title: t('credential.name'),
             dataIndex: 'name',
             key: 'name',
+            ellipsis: true,
             render: (text: string) => <Text strong>{text}</Text>,
         },
         {
             title: t('credential.username'),
             dataIndex: 'username',
             key: 'username',
+            ellipsis: true,
         },
         {
             title: t('credential.authType'),
@@ -174,7 +176,8 @@ const CredentialManagement: React.FC = () => {
                 columns={columns}
                 rowKey="id"
                 loading={isLoading}
-                scroll={{ x: 1200 }}
+                scroll={{ x: 'max-content' }}
+               
                 pagination={{ pageSize: 10 }}
             />
                 )}

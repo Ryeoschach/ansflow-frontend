@@ -153,6 +153,7 @@ const ResourcePoolManagement: React.FC = () => {
             title: t('resourcePool.poolName'),
             dataIndex: 'name',
             key: 'name',
+            ellipsis: true,
             render: (text: string) => <span className="font-semibold">{text}</span>
         },
         {
@@ -212,6 +213,7 @@ const ResourcePoolManagement: React.FC = () => {
             title: t('resourcePool.description'),
             dataIndex: 'remark',
             key: 'remark',
+            ellipsis: true,
         },
         {
             title: t('resourcePool.action'),
@@ -309,7 +311,8 @@ const ResourcePoolManagement: React.FC = () => {
                 columns={columns}
                 loading={poolsLoading}
                 rowKey="id"
-                scroll={{ x: 1200 }}
+                scroll={{ x: 'max-content' }}
+               
             />
                 )}
 

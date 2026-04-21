@@ -344,6 +344,7 @@ const K8sCenter: React.FC = () => {
       title: t('k8s.clusterName'),
       dataIndex: 'name',
       key: 'name',
+      ellipsis: true,
       render: (text: string) => (
         <Space>
           <ClusterOutlined style={{ color: token.colorPrimary }} />
@@ -365,6 +366,7 @@ const K8sCenter: React.FC = () => {
       title: t('k8s.apiServer'),
       dataIndex: 'api_server',
       key: 'api_server',
+      ellipsis: true,
       render: (text: string) => text || '-',
     },
     {
@@ -679,7 +681,8 @@ const K8sCenter: React.FC = () => {
           dataSource={clustersData?.data || []}
           rowKey="id"
           loading={clustersLoading}
-          scroll={{ x: 1200 }}
+          scroll={{ x: 'max-content' }}
+         
           pagination={false}
           className="w-full"
         />

@@ -72,12 +72,14 @@ const CIEnvironments: React.FC = () => {
             title: t('ciEnv.name'),
             dataIndex: 'name',
             key: 'name',
+            ellipsis: true,
             render: (text: string) => <span className="font-semibold text-[15px]">{text}</span>,
         },
         {
             title: t('ciEnv.image'),
             dataIndex: 'image',
             key: 'image',
+            ellipsis: true,
             render: (text: string) => (
                 <div className="flex items-center gap-2">
                     <CodeOutlined className="text-gray-400" />
@@ -216,7 +218,8 @@ const CIEnvironments: React.FC = () => {
                             columns={columns}
                             dataSource={filteredData}
                             rowKey="id"
-                            scroll={{ x: 1200 }}
+                            scroll={{ x: 'max-content' }}
+                           
                             pagination={{ pageSize: 10 }}
                             size="middle"
                         />
