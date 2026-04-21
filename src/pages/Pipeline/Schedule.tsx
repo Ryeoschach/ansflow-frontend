@@ -241,7 +241,7 @@ const ScheduleList: React.FC = () => {
         okText={t('pipeline.saveAndApply')}
         centered
         width={isMobile ? '95vw' : 500}
-        bodyStyle={{ overflowX: 'auto' }}
+        styles={{ body: { overflowX: 'auto' } }}
         className="custom-modal-premium"
       >
         <Form form={form} layout="vertical" onFinish={(v) => saveMutation.mutate(v)} className="pt-4 px-1">
