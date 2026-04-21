@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-    Table, Button, Space, Input, App, Popconfirm, Tag, Typography, Tabs, theme, Card as AntdCard
+    Table, Button, Space, Input, App, Popconfirm, Tag, Typography, Tabs, theme, Card as AntdCard, Tooltip
 } from 'antd';
 import {
   PlusOutlined,
@@ -12,7 +12,8 @@ import {
   ProjectOutlined,
   FieldTimeOutlined,
   RocketOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  BranchesOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -20,6 +21,7 @@ import { getPipelines, deletePipeline, executePipeline } from '../../api/pipelin
 import dayjs from 'dayjs';
 import History from './History';
 import ScheduleList from './Schedule';
+import VersionHistoryDrawer from './VersionHistory';
 import useAppStore from '../../store/useAppStore';
 import { useTranslation } from 'react-i18next';
 
@@ -37,6 +39,9 @@ const TemplateList = () => {
   const { hasPermission } = useAppStore();
   const [searchText, setSearchText] = useState('');
   const { message, modal } = App.useApp();
+  const [versionDrawerOpen, setVersionDrawerOpen] = useState(false);
+  const [versionPipelineId, setVersionPipelineId] = useState<number | null>(null);
+  const [versionPipelineName, setVersionPipelineName] = useState('');
 
   /** @description 拉取所有流水线模板，支持全局搜索 */
   const { data: pipelineData, isLoading } = useQuery({
@@ -162,6 +167,18 @@ const TemplateList = () => {
               {t('pipeline.history2')}
           </Button>
           )}
+          <Tooltip title={t('version.title', { name: '' })}>
+            <Button
+              size="small"
+              icon={<BranchesOutlined />}
+              onClick={() => {
+                setVersionPipelineId(record.id);
+                setVersionPipelineName(record.name);
+                setVersionDrawerOpen(true);
+              }}
+              className="rounded-lg"
+            />
+          </Tooltip>
           {hasPermission('pipeline:template:delete') && (
           <Popconfirm
             title={t('pipeline.confirmDeleteTitle')}
@@ -215,9 +232,16 @@ const TemplateList = () => {
                 }}
                 className="custom-table-modern"
                 scroll={{ x: 'max-content' }}
-               
+
             />
         </div>
+
+        <VersionHistoryDrawer
+            pipelineId={versionPipelineId}
+            pipelineName={versionPipelineName}
+            open={versionDrawerOpen}
+            onClose={() => setVersionDrawerOpen(false)}
+        />
     </div>
   );
 };
