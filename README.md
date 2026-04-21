@@ -2,7 +2,7 @@
 
 企业级 DevOps 流水线平台前端，基于 React 18 + TypeScript + Vite 构建。
 
-**当前版本：1.3.1**
+**当前版本：1.4.1**
 
 demo: https://ansflow.cyfee.com:10443
 admin/ansflow
@@ -29,6 +29,7 @@ admin/ansflow
 src/
 ├── api/                    # API 请求封装（按模块划分）
 │   ├── approval.ts         # 审批相关
+│   ├── artifact.ts         # 产物管理
 │   ├── auth.ts             # 认证
 │   ├── credential.ts       # 凭据管理
 │   ├── hosts.ts            # 主机管理
@@ -57,6 +58,9 @@ src/
 │   │   ├── Schedule.tsx     # 定时调度
 │   │   ├── CIEnvironments/  # CI 构建环境
 │   │   ├── ImageRegistries/ # Docker 镜像仓库
+│   │   ├── Artifacts/       # 产物管理
+│   │   ├── Webhooks/        # Webhook 触发器
+│   │   ├── VersionHistory/  # 版本历史
 │   │   └── nodes/           # 自定义流水线节点
 │   ├── K8sCenter/           # Kubernetes 管理
 │   │   └── HelmCenter.tsx   # Helm 应用中心
@@ -98,8 +102,11 @@ src/
 - **定时调度**：支持 Cron 表达式配置
 - **执行历史**：查看每次运行详情、步骤日志、状态
 - **失败重试**：支持从指定节点重试，前置节点自动跳过
+- **版本历史**：每次保存自动快照，支持回滚到历史版本
 - **CI 环境**：管理构建代理节点
 - **镜像仓库**：Docker Registry 管理
+- **产物管理**：记录构建产物（Docker 镜像、JAR 包等）及版本历史
+- **Webhook 触发器**：支持 GitHub/GitLab 等外部系统通过 Webhook 触发流水线执行
 
 ### 任务中心（TaskCenter）
 - Ansible Playbook 可视化执行
