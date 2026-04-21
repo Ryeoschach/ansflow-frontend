@@ -57,9 +57,9 @@ const PermissionManagement: React.FC = () => {
     };
 
     const columns = [
-        { title: t('permission.columnName'), dataIndex: 'name', key: 'name' },
-        { title: t('permission.columnCode'), dataIndex: 'code', key: 'code', render: (code: string) => <Typography.Text code>{code}</Typography.Text> },
-        { title: t('permission.columnDesc'), dataIndex: 'desc', key: 'desc' },
+        { title: t('permission.columnName'), dataIndex: 'name', key: 'name', width: 180, ellipsis: true },
+        { title: t('permission.columnCode'), dataIndex: 'code', key: 'code', width: 250, ellipsis: true, render: (code: string) => <Typography.Text code>{code}</Typography.Text> },
+        { title: t('permission.columnDesc'), dataIndex: 'desc', key: 'desc', width: 200, ellipsis: true },
         {
             title: t('permission.columnAction'),
             key: 'action',
@@ -101,7 +101,8 @@ const PermissionManagement: React.FC = () => {
                     columns={columns}
                     rowKey="id"
                     loading={isLoading}
-                    scroll={{ x: 1200 }}
+                    scroll={{ x: 'max-content' }}
+                           
                     pagination={{
                         total: permissions?.total,
                         current: params.page,

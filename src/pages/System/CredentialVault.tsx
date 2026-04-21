@@ -112,6 +112,7 @@ const CredentialVault: React.FC = () => {
             title: t('credentialVault.columnName'),
             dataIndex: 'name',
             key: 'name',
+            ellipsis: true,
             render: (text: string) => (
                 <Space>
                     <SafetyCertificateOutlined style={{ color: token.colorPrimary }} />
@@ -140,6 +141,7 @@ const CredentialVault: React.FC = () => {
             title: t('credentialVault.columnUsername'),
             dataIndex: 'username',
             key: 'username',
+            ellipsis: true,
             render: (val: string) => {
                 if (!val) return <Text type="secondary">-</Text>;
                 return maskSensitiveData ? <span className="opacity-30 tracking-widest text-[8px]">********</span> : <Text code>{val}</Text>;
@@ -154,7 +156,6 @@ const CredentialVault: React.FC = () => {
         {
             title: t('credentialVault.columnAction'),
             key: 'action',
-            width: 160,
             render: (_: any, record: any) => (
                 <Space size="middle" className="pr-4">
                     {hasPermission('system:credential:edit') && (
@@ -229,7 +230,8 @@ const CredentialVault: React.FC = () => {
                     loading={isLoading}
                     pagination={{ showSizeChanger: true, className: "px-6 py-4" }}
                     className="custom-table-modern"
-                    scroll={{ x: 1000, y: 'calc(100vh - 380px)' }}
+                    scroll={{ x: 'max-content', y: 'calc(100vh - 380px)' }}
+                   
                 />
             </Card>
 

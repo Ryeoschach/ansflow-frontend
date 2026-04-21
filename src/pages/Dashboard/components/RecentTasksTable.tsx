@@ -47,7 +47,6 @@ const RecentTasksTable: React.FC<RecentTasksTableProps> = ({ data, isLoading }) 
             title: t('dashboard.status'),
             dataIndex: 'status',
             key: 'status',
-            width: 80,
             render: (status: string) => (
                 <Tag color={status === 'SUCCESS' ? 'success' : 'error'} className="border-0 m-0">
                     {status}
@@ -58,13 +57,11 @@ const RecentTasksTable: React.FC<RecentTasksTableProps> = ({ data, isLoading }) 
             title: t('dashboard.duration'),
             dataIndex: 'time_label',
             key: 'time_label',
-            width: 100,
             render: (time: string) => <span className="text-gray-400 text-sm">{time}</span>,
         },
         {
             title: t('dashboard.action'),
             key: 'action',
-            width: 60,
             render: (_: any, record: any) => (
                 <Button
                     type="text"
@@ -91,7 +88,8 @@ const RecentTasksTable: React.FC<RecentTasksTableProps> = ({ data, isLoading }) 
                     dataSource={dataSource}
                     columns={columns}
                     rowKey="id"
-                    scroll={{ x: 1200 }}
+                    scroll={{ x: 'max-content' }}
+                           
                     pagination={false}
                     size="small"
                 />

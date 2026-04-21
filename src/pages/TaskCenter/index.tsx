@@ -99,6 +99,7 @@ const TaskCenter: React.FC = () => {
             title: t('taskCenter.fieldName'),
             dataIndex: 'name',
             key: 'name',
+            ellipsis: true,
             render: (val: string) => <Text strong>{val}</Text>
         },
         {
@@ -111,6 +112,7 @@ const TaskCenter: React.FC = () => {
             title: t('taskCenter.fieldResourcePool'),
             dataIndex: 'resource_pool_name',
             key: 'resource_pool_name',
+            ellipsis: true,
         },
         {
             title: t('taskCenter.status'),
@@ -126,6 +128,7 @@ const TaskCenter: React.FC = () => {
             title: t('taskCenter.triggerUser'),
             dataIndex: 'creator_name',
             key: 'creator_name',
+            ellipsis: true,
         },
         {
             title: t('taskCenter.action'),
@@ -208,7 +211,8 @@ const TaskCenter: React.FC = () => {
                 columns={columns}
                 rowKey="id"
                 loading={listLoading}
-                scroll={{ x: 1200 }}
+                scroll={{ x: 'max-content' }}
+               
             />
                 )}
             <Modal

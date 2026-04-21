@@ -81,22 +81,26 @@ const ImageRegistries: React.FC = () => {
             title: t('imageRegistry.registryName'),
             dataIndex: 'name',
             key: 'name',
+            ellipsis: true,
             render: (text: string) => <Text strong>{text}</Text>,
         },
         {
             title: t('imageRegistry.registryUrl'),
             dataIndex: 'url',
             key: 'url',
+            ellipsis: true,
         },
         {
             title: t('imageRegistry.defaultNamespace'),
             dataIndex: 'namespace',
             key: 'namespace',
+            ellipsis: true,
         },
         {
             title: t('imageRegistry.ownerUsername'),
             dataIndex: 'username',
             key: 'username',
+            ellipsis: true,
         },
         {
             title: t('imageRegistry.createTime'),
@@ -141,7 +145,8 @@ const ImageRegistries: React.FC = () => {
                     columns={columns}
                     rowKey="id"
                     loading={isLoading}
-                    scroll={{ x: 1200 }}
+                    scroll={{ x: 'max-content' }}
+                           
                     pagination={{ pageSize: 10 }}
                 />
             )}

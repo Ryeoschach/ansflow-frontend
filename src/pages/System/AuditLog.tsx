@@ -69,7 +69,6 @@ const AuditLog: React.FC = () => {
             title: t('audit.columnOperator'),
             dataIndex: 'username',
             key: 'username',
-            width: 120,
             render: (text: string) => (
                 <Space>
                     <div style={{
@@ -87,7 +86,6 @@ const AuditLog: React.FC = () => {
         {
             title: t('audit.columnIntent'),
             key: 'intent',
-            width: 250,
             render: (_: any, record: AuditLogRecord) => (
                 <div>
                     <div>
@@ -109,7 +107,6 @@ const AuditLog: React.FC = () => {
         {
             title: t('audit.columnApi'),
             key: 'api',
-            width: 280,
             render: (_: any, record: AuditLogRecord) => (
                 <div>
                     <div>
@@ -136,7 +133,6 @@ const AuditLog: React.FC = () => {
             title: t('audit.columnDuration'),
             dataIndex: 'duration',
             key: 'duration',
-            width: 120,
             render: (duration: number) => {
                 const color = duration > 1.5 ? antdToken.colorError : (duration > 0.5 ? antdToken.colorWarning : antdToken.colorSuccess);
                 return (
@@ -150,14 +146,12 @@ const AuditLog: React.FC = () => {
             title: t('audit.columnIp'),
             dataIndex: 'ip_address',
             key: 'ip_address',
-            width: 150,
             render: (ip: string) => <Typography.Text type="secondary" style={{ fontFamily: 'monospace' }}>{ip}</Typography.Text>
         },
         {
             title: t('audit.columnTime'),
             dataIndex: 'create_time',
             key: 'create_time',
-            width: 180,
             render: (time: string) => (
                 <div style={{ color: antdToken.colorTextSecondary }}>
                     {dayjs(time).format('YYYY-MM-DD HH:mm:ss')}
@@ -167,7 +161,6 @@ const AuditLog: React.FC = () => {
         {
             title: t('audit.columnAction'),
             key: 'action',
-            width: 100,
             render: (_: any, record: AuditLogRecord) => (
                 hasPermission('rbac:audit:view') ? (
                 <Button
@@ -236,7 +229,8 @@ const AuditLog: React.FC = () => {
                     dataSource={logs}
                     rowKey="id"
                     loading={loading}
-                    scroll={{ x: 1200 }}
+                    scroll={{ x: 'max-content' }}
+                                   
                     pagination={{
                         current: queryParams.page,
                         pageSize: queryParams.page_size,

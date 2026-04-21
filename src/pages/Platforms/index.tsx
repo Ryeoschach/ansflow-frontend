@@ -93,6 +93,7 @@ const PlatformManagement: React.FC = () => {
             title: t('platform.platformName'),
             dataIndex: 'name',
             key: 'name',
+            ellipsis: true,
             render: (text: string) => <span className="font-semibold">{text}</span>
         },
         {
@@ -108,6 +109,7 @@ const PlatformManagement: React.FC = () => {
             title: t('platform.platformDesc'),
             dataIndex: 'remark',
             key: 'remark',
+            ellipsis: true,
             render: (text: string) => <span className="font-semibold">{text}</span>
         },
         {
@@ -209,7 +211,8 @@ const PlatformManagement: React.FC = () => {
                 dataSource={data?.data}
                 columns={columns}
                 rowKey="id"
-                scroll={{ x: 1200 }}
+                scroll={{ x: 'max-content' }}
+               
                 pagination={{
                     total: data?.total,
                     current: params.page,
