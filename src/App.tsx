@@ -198,7 +198,7 @@ const QueryPersistenceManager = () => {
 };
 
 function App() {
-  const { isDark, token, setToken, setPermissions, setCurrentUser, language } = useAppStore();
+  const { isDark, token, setToken, setPermissions, setCurrentUser, setAvatar, language } = useAppStore();
   const { isInitializing, setIsInitializing } = useAppStore();
   const navigate = useNavigate();
   const { i18n } = useTranslation();
@@ -260,6 +260,7 @@ function App() {
       getMe().then((res: any) => {
         setPermissions(res.permissions || []);
         setCurrentUser(res.username);
+        if (res.avatar) setAvatar(res.avatar);
       }).catch(() => {
         setToken(null);
         setPermissions([]); // 清除权限

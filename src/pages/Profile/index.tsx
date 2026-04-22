@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Tabs, Descriptions, Tag, Space, Button, Form, Input, App, Divider, Avatar, Typography, Upload, message, Switch, Select } from 'antd';
 import { UserOutlined, SafetyOutlined, LockOutlined, HomeOutlined, EditOutlined, CameraOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +16,7 @@ const Profile: React.FC = () => {
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const queryClient = useQueryClient();
 
-  const { isDark, setIsDark, language, setLanguage } = useAppStore();
+  const { isDark, setIsDark, language, setLanguage, setAvatar } = useAppStore();
   const { i18n } = useTranslation();
 
   const { data: userInfo, isLoading, refetch } = useQuery({
@@ -25,9 +25,12 @@ const Profile: React.FC = () => {
   });
 
   // 监听 getMe 返回，设置头像
-  useState(() => {
+  useEffect(() => {
     if (userInfo?.avatar) {
       setAvatarUrl(userInfo.avatar);
+      setAvatar(userInfo.avatar);
+    }
+  }, [userInfo]);
     }
   });
 
@@ -54,6 +57,7 @@ const Profile: React.FC = () => {
     },
     onSuccess: (res: any) => {
       setAvatarUrl(res.avatar);
+      setAvatar(res.avatar);
       queryClient.invalidateQueries({ queryKey: ['profile-me'] });
       antMessage.success(t('profile.avatarUpdateSuccess'));
     },

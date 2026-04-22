@@ -22,6 +22,8 @@ interface AppState {
   setToken: (token: string | null) => void;
   currentUser: string | null;
   setCurrentUser: (currentUser: string | null) => void;
+  avatar: string | null;
+  setAvatar: (avatar: string | null) => void;
   permissions: string[];
   setPermissions: (permissions: string[]) => void;
   // 检查是否有权限
@@ -41,6 +43,7 @@ interface PersistedState {
   permissions: string[];
   pipelineActiveTab: string;
   language: string;
+  avatar: string | null;
 }
 
 /**
@@ -61,6 +64,8 @@ const useAppStore = create<AppState>()(
     setToken: (token) => set({ token }),
     currentUser: null,
     setCurrentUser: (currentUser) => set({ currentUser }),
+    avatar: null,
+    setAvatar: (avatar) => set({ avatar }),
     permissions: [],
     setPermissions: (permissions) => set({ permissions }),
     hasPermission: (permission) => {
@@ -82,6 +87,7 @@ const useAppStore = create<AppState>()(
       permissions: state.permissions,
       pipelineActiveTab: state.pipelineActiveTab,
       language: state.language,
+      avatar: state.avatar,
     }),
   })
 );

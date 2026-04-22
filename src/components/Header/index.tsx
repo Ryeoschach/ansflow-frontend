@@ -12,7 +12,7 @@ const { Header: AntHeader } = Layout;
  * 顶部导航栏组件 - 响应式版本
  */
 const Header: React.FC = () => {
-    const { collapsed, toggleCollapsed, isDark, setIsDark, setToken, setCurrentUser, currentUser, language, setLanguage } = useAppStore();
+    const { collapsed, toggleCollapsed, isDark, setIsDark, setToken, setCurrentUser, currentUser, language, setLanguage, avatar } = useAppStore();
     const { toggleMobileSidebar } = useAppStore();
     const { isMobile } = useBreakpoint();
     const { i18n, t } = useTranslation();
@@ -100,7 +100,7 @@ const Header: React.FC = () => {
                 <Space size={8}>
                     <Dropdown menu={userMenuItems}>
                         <Space className="cursor-pointer hover:bg-fill-hover px-2 rounded-lg transition-colors min-w-0">
-                            <Avatar icon={<UserOutlined />} className="bg-amber-500 flex-shrink-0" />
+                            <Avatar icon={<UserOutlined />} src={avatar} className="bg-amber-500 flex-shrink-0" />
                             <span className="font-medium hidden sm:inline whitespace-nowrap overflow-hidden text-ellipsis max-w-[80px]" style={{ color: colorText }}>{currentUser}</span>
                         </Space>
                     </Dropdown>
