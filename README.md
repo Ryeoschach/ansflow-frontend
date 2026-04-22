@@ -2,7 +2,7 @@
 
 企业级 DevOps 流水线平台前端，基于 React 18 + TypeScript + Vite 构建。
 
-**当前版本**：v1.4.1  
+**当前版本**：v1.5.0  
 **在线 Demo**：https://ansflow.cyfee.com:10443  
 **默认账号**：admin / ansflow
 
@@ -41,6 +41,7 @@ src/
 │   ├── pipeline.ts                # 流水线模板/执行/版本 API
 │   ├── rbac.ts                   # 用户/角色/权限 API
 │   ├── registry.ts               # Docker 镜像仓库 API
+│   ├── artifactory.ts           # Artifactory 制品库 API
 │   ├── system.ts                 # 系统设置/备份/监控 API
 │   ├── tasks.ts                  # Ansible 任务 API
 │   └── user.ts                   # 用户管理 API
@@ -295,26 +296,39 @@ const getViableStartNodes = (nodes, edges, lastRunNodes) => {
 - 管理 Docker 构建环境镜像（如 `maven:3-eclipse-temurin-17`）
 - 支持多类型（Java / Node.js / Python 等）
 
-#### 3.7 镜像仓库
+#### 3.8 Docker 镜像仓库
 
-**页面**：`/v1/pipeline/registries`
+**页面**：`/v1/pipeline/artifacts`（Tab: Docker镜像）
 
 **功能**：
 
-- 管理 Docker Registry（Docker Hub / 私有仓库）
+- 管理 Docker Registry（Docker Hub / 私有 Harbor）
 - 配置认证信息
+- 支持创建/编辑/删除镜像仓库
 
-#### 3.8 产物管理
+#### 3.9 Artifactory 制品库
 
-**页面**：`/v1/pipeline/artifacts`
+**页面**：`/v1/pipeline/artifacts`（Tab: 制品库）
 
 **功能**：
 
-- 记录构建产物（Docker 镜像 / JAR 包等）
-- 产物版本历史追溯
-- 关联镜像仓库
+- 管理 JFrog Artifactory 实例（测试连接）
+- 管理 Artifactory 仓库（支持 Maven/npm/Helm/Docker/PyPI/Go 等类型）
+- 实例与仓库两层管理
 
-#### 3.9 Webhook 触发器
+#### 3.10 产物记录
+
+**页面**：`/v1/pipeline/artifacts`（Tab: 产物记录）
+
+**功能**：
+
+- 统一追踪来自 Docker 镜像仓库和 Artifactory 的构建产物
+- 支持 Docker 镜像、JAR 包、Helm Chart、二进制文件等类型
+- 产物版本历史追溯
+- Kaniko 构建成功后自动创建产物记录
+- 支持手动刷新
+
+#### 3.11 Webhook 触发器
 
 **页面**：`/v1/pipeline/webhooks`
 
@@ -334,7 +348,7 @@ const getViableStartNodes = (nodes, edges, lastRunNodes) => {
 4. AnsFlow 验证签名后触发对应流水线
 ```
 
-#### 3.10 版本历史
+#### 3.12 版本历史
 
 **页面**：`/v1/pipeline/versions/:id`
 
