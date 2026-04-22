@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, Typography, App, theme, Tabs, Divider, Modal } from 'antd';
-import { UserOutlined, LockOutlined, SunOutlined, MoonOutlined, GithubOutlined, WechatOutlined, LinkedinOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, Typography, App, theme, Tabs, Divider, Modal, Select, Space } from 'antd';
+import { UserOutlined, LockOutlined, SunOutlined, MoonOutlined, GithubOutlined, WechatOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { login, ldapLogin } from '../../api/auth';
@@ -13,7 +13,8 @@ const LoginPage: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { message } = App.useApp();
-    const { setToken, isDark, setCurrentUser, setIsDark } = useAppStore();
+    const { setToken, isDark, setCurrentUser, setIsDark, language, setLanguage } = useAppStore();
+    const { i18n } = useTranslation();
     const { token: antdToken } = theme.useToken();
 
     const [activeTab, setActiveTab] = useState('password');
@@ -179,13 +180,28 @@ const LoginPage: React.FC = () => {
             style={{ background: isDark ? '#000' : '#f0f2f5' }}>
 
             <div className="absolute top-8 right-8 z-50">
-                <Button
-                    type="text"
-                    icon={isDark ? <SunOutlined /> : <MoonOutlined />}
-                    onClick={() => setIsDark(!isDark)}
-                    className="w-10 h-10 flex items-center justify-center rounded-full glass-effect border-none text-lg"
-                    style={{ color: antdToken.colorText }}
-                />
+                <Space>
+                    <Select
+                        value={language}
+                        onChange={(l) => {
+                            i18n.changeLanguage(l);
+                            setLanguage(l);
+                        }}
+                        size="small"
+                        options={[
+                            { value: 'zh-CN', label: '中文' },
+                            { value: 'en-US', label: 'English' },
+                        ]}
+                        style={{ width: 80 }}
+                    />
+                    <Button
+                        type="text"
+                        icon={isDark ? <SunOutlined /> : <MoonOutlined />}
+                        onClick={() => setIsDark(!isDark)}
+                        className="w-10 h-10 flex items-center justify-center rounded-full glass-effect border-none text-lg"
+                        style={{ color: antdToken.colorText }}
+                    />
+                </Space>
             </div>
 
             {/* 动态背景装饰 */}
