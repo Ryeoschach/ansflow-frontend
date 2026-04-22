@@ -31,6 +31,7 @@ const ConfigCenter: React.FC = () => {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [isRollbackModalOpen, setIsRollbackModalOpen] = useState(false);
+  const [isCategoryDetailModalOpen, setIsCategoryDetailModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ConfigCategory | null>(null);
   const [editingItem, setEditingItem] = useState<ConfigItem | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ConfigCategory | null>(null);
@@ -127,9 +128,10 @@ const ConfigCenter: React.FC = () => {
     onError: (err: any) => message.error(err?.message || t('common.error')),
   });
 
-  // 选中分类获取详情
+  // 选中分类打开详情弹窗
   const handleSelectCategory = (cat: ConfigCategory) => {
     setSelectedCategory(cat);
+    setIsCategoryDetailModalOpen(true);
   };
 
   // 打开回滚弹窗（获取历史）
@@ -309,7 +311,7 @@ const ConfigCenter: React.FC = () => {
               children: (
                 <div className="flex gap-4 overflow-x-auto">
                   {/* 左侧：分类列表 */}
-                  <div className="w-1/3 min-w-[300px]">
+                  <div className="w-full">
                     <div className="flex justify-between items-center mb-3">
                       <Text strong>{t('configCenter.categories')}</Text>
                       {hasPermission('config:category:add') && (
@@ -332,40 +334,6 @@ const ConfigCenter: React.FC = () => {
                       })}
                       scroll={{ x: 'max-content' }}
                     />
-                  </div>
-
-                  {/* 右侧：选中分类的配置项列表 */}
-                  <Divider type="vertical" className="h-auto" />
-                  <div className="flex-1 min-w-[400px]">
-                    {selectedCategory ? (
-                      <>
-                        <div className="flex justify-between items-center mb-3">
-                          <Space>
-                            <Text strong>{selectedCategory.label}</Text>
-                            <Tag>{selectedCategory.name}</Tag>
-                            {selectedCategory.description && <Text type="secondary">{selectedCategory.description}</Text>}
-                          </Space>
-                          {hasPermission('config:item:add') && (
-                            <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => openItemModal()}>
-                              {t('configCenter.addItem')}
-                            </Button>
-                          )}
-                        </div>
-                        <Table
-                          size="small"
-                          dataSource={categoryDetail?.items || []}
-                          columns={itemColumns}
-                          rowKey="id"
-                          loading={!categoryDetail}
-                          pagination={false}
-                          scroll={{ x: 'max-content' }}
-                        />
-                      </>
-                    ) : (
-                      <div className="flex items-center justify-center h-64 text-gray-400">
-                        {t('configCenter.byCategory')}
-                      </div>
-                    )}
                   </div>
                 </div>
               ),
@@ -535,6 +503,42 @@ const ConfigCenter: React.FC = () => {
                 }))}
               />
             </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* 分类详情 Modal */}
+      <Modal
+        title={
+          <Space>
+            <Text strong>{selectedCategory?.label}</Text>
+            {selectedCategory && <Tag>{selectedCategory.name}</Tag>}
+            {selectedCategory?.description && <Text type="secondary" className="text-sm">{selectedCategory.description}</Text>}
+          </Space>
+        }
+        open={isCategoryDetailModalOpen}
+        onCancel={() => setIsCategoryDetailModalOpen(false)}
+        footer={null}
+        width={900}
+      >
+        {selectedCategory && (
+          <div className="mt-4">
+            <div className="flex justify-end mb-3">
+              {hasPermission('config:item:add') && (
+                <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => openItemModal()}>
+                  {t('configCenter.addItem')}
+                </Button>
+              )}
+            </div>
+            <Table
+              size="small"
+              dataSource={categoryDetail?.items || []}
+              columns={itemColumns}
+              rowKey="id"
+              loading={!categoryDetail}
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+            />
           </div>
         )}
       </Modal>
