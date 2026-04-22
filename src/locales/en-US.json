@@ -44,7 +44,9 @@
     "apiDocs": "API Docs"
   },
   "header": {
-    "platformTitle": "DevOps Automation Platform"
+    "platformTitle": "DevOps Automation Platform",
+    "profile": "Profile",
+    "logout": "Logout"
   },
   "auth": {
     "login": "Login",

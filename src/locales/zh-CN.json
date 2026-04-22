@@ -44,7 +44,9 @@
     "apiDocs": "接口文档"
   },
   "header": {
-    "platformTitle": "运维自动化平台"
+    "platformTitle": "运维自动化平台",
+    "profile": "个人中心",
+    "logout": "退出登录"
   },
   "auth": {
     "login": "登录",

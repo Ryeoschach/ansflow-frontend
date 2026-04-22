@@ -28,7 +28,7 @@ const Header: React.FC = () => {
             {
                 key: 'profile',
                 icon: <UserOutlined />,
-                label: '个人中心',
+                label: t('header.profile'),
                 onClick: () => navigate('/v1/profile'),
             },
             {
@@ -37,7 +37,7 @@ const Header: React.FC = () => {
             {
                 key: 'logout',
                 icon: <LogoutOutlined />,
-                label: '退出登录',
+                label: t('header.logout'),
                 onClick: () => {
                     setToken(null);
                     setCurrentUser(null);
