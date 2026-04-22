@@ -248,6 +248,8 @@ const UserManagement: React.FC = () => {
                 onOk={() => form.submit()}
                 onCancel={() => setIsModalOpen(false)}
                 confirmLoading={saveMutation.isPending}
+                okText={t('common.confirm')}
+                cancelText={t('common.cancel')}
             >
                 <Form
                     form={form}
@@ -287,6 +289,8 @@ const UserManagement: React.FC = () => {
                 onOk={() => roleForm.submit()}
                 onCancel={() => setIsRoleModalOpen(false)}
                 confirmLoading={assignRolesMutation.isPending}
+                okText={t('common.confirm')}
+                cancelText={t('common.cancel')}
             >
                 <Form
                     form={roleForm}
@@ -311,6 +315,8 @@ const UserManagement: React.FC = () => {
                 onOk={() => passwordForm.submit()}
                 onCancel={() => setIsPasswordModalOpen(false)}
                 confirmLoading={resetPasswordMutation.isPending}
+                okText={t('common.confirm')}
+                cancelText={t('common.cancel')}
             >
                 <Form
                     form={passwordForm}
