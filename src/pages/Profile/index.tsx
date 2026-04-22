@@ -31,8 +31,6 @@ const Profile: React.FC = () => {
       setAvatar(userInfo.avatar);
     }
   }, [userInfo]);
-    }
-  });
 
   const updatePasswordMutation = useMutation({
     mutationFn: (values: any) => {
