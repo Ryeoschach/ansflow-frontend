@@ -120,6 +120,7 @@ const PipelineWebhooks = lazy(() => import("./pages/Pipeline/Webhooks"));
 const MonitorCenter = lazy(() => import("./pages/System/Monitor"));
 const ConfigCenter = lazy(() => import("./pages/ConfigCenter"));
 const BackupManagement = lazy(() => import("./pages/System/BackupManagement"));
+const Profile = lazy(() => import("./pages/Profile"));
 
 // const PageLoader = () => (
 //     <div className={`h-full w-full flex flex-col items-center justify-center`}>
@@ -316,6 +317,7 @@ function App() {
               <Route path="/" element={<MainLayout isLoading={isInitializing} />}>
                 <Route index element={<Navigate to="/v1/dashboard" replace />} />
                 <Route path="v1/dashboard" element={<Dashboard />} />
+                <Route path="v1/profile" element={<Profile />} />
                 <Route path="v1/tasks" element={<TaskCenter />} />
                 <Route path="v1/task/ansible" element={<TaskCenter />} />
                 <Route path="v1/task/executions" element={<ExecutionHistory />} />

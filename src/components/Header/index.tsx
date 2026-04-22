@@ -29,6 +29,7 @@ const Header: React.FC = () => {
                 key: 'profile',
                 icon: <UserOutlined />,
                 label: '个人中心',
+                onClick: () => navigate('/v1/profile'),
             },
             {
                 type: 'divider' as const,

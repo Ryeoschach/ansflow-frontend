@@ -1370,5 +1370,27 @@
     "dockerRegistry": "Docker Registry",
     "artifactory": "Artifactory",
     "products": "Artifacts"
+  },
+  "profile": {
+    "title": "Profile",
+    "basicInfo": "Basic Info",
+    "securitySettings": "Security",
+    "username": "Username",
+    "roles": "Roles",
+    "permissions": "Permissions",
+    "permissionsCount": "permissions",
+    "lastLogin": "Last Login",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "currentPasswordRequired": "Please enter current password",
+    "newPassword": "New Password",
+    "newPasswordRequired": "Please enter new password",
+    "passwordMinLength": "Password must be at least 6 characters",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordRequired": "Please confirm new password",
+    "passwordMismatch": "Passwords do not match",
+    "updatePassword": "Update Password",
+    "passwordUpdateSuccess": "Password updated successfully",
+    "passwordUpdateFailed": "Password update failed"
   }
 }
