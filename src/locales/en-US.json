@@ -58,7 +58,16 @@
     "loginSuccess": "Login successful! Welcome back",
     "loginError": "Incorrect username or password",
     "subtitle": "Automation Operations Platform based on Django & React",
-    "footer": "©2024 AnsFlow Intelligent System. All Rights Reserved."
+    "footer": "©2024 AnsFlow Intelligent System. All Rights Reserved.",
+    "passwordLogin": "Password Login",
+    "ldapLogin": "LDAP Login",
+    "ldapUsername": "LDAP Username",
+    "or": "or",
+    "github": "GitHub",
+    "wechat": "WeChat",
+    "socialLogin": "Social Login",
+    "wechatLoginTip": "WeChat Login Notice",
+    "wechatLoginTipContent": "WeChat login requires configuration in the WeChat Open Platform."
   },
   "dashboard": {
     "title": "Dashboard",
