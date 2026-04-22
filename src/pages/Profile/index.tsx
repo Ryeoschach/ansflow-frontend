@@ -2,20 +2,19 @@ import React, { useState } from 'react';
 import { Card, Tabs, Descriptions, Tag, Space, Button, Form, Input, App, Divider, Avatar, Typography, Upload, message, Switch, Select } from 'antd';
 import { UserOutlined, SafetyOutlined, LockOutlined, HomeOutlined, EditOutlined, CameraOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useAppStore from '../../store/useAppStore';
 import { getMe } from '../../api/user';
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import request from '../../utils/requests';
 
 const { Text } = Typography;
 
 const Profile: React.FC = () => {
   const { t } = useTranslation();
   const { message: antMessage } = App.useApp();
-  const navigate = useNavigate();
   const [passwordForm] = Form.useForm();
   const [avatarUrl, setAvatarUrl] = useState<string>('');
+  const queryClient = useQueryClient();
 
   const { isDark, setIsDark, language, setLanguage } = useAppStore();
   const { i18n } = useTranslation();
@@ -26,46 +25,47 @@ const Profile: React.FC = () => {
   });
 
   // 监听 getMe 返回，设置头像
-  useEffect(() => {
+  useState(() => {
     if (userInfo?.avatar) {
       setAvatarUrl(userInfo.avatar);
     }
-  }, [userInfo]);
+  });
 
   const updatePasswordMutation = useMutation({
     mutationFn: (values: any) => {
-      return Promise.resolve();
+      return request.post('/account/me/password/', values);
     },
     onSuccess: () => {
       antMessage.success(t('profile.passwordUpdateSuccess'));
       passwordForm.resetFields();
     },
     onError: (err: any) => {
-      antMessage.error(err?.message || t('profile.passwordUpdateFailed'));
+      antMessage.error(err?.response?.data?.message || t('profile.passwordUpdateFailed'));
     },
   });
 
   const uploadAvatarMutation = useMutation({
     mutationFn: (file: File) => {
-      // TODO: 调用后端上传头像接口
-      const reader = new FileReader();
-      return new Promise((resolve) => {
-        reader.onload = (e) => {
-          setAvatarUrl(e.target?.result as string);
-          resolve({ success: true });
-        };
-        reader.readAsDataURL(file);
+      const formData = new FormData();
+      formData.append('avatar', file);
+      return request.patch('/account/me/avatar/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
     },
-    onSuccess: () => {
+    onSuccess: (res: any) => {
+      setAvatarUrl(res.avatar);
+      queryClient.invalidateQueries({ queryKey: ['profile-me'] });
       antMessage.success(t('profile.avatarUpdateSuccess'));
     },
-    onError: () => {
-      antMessage.error(t('profile.avatarUpdateFailed'));
+    onError: (err: any) => {
+      antMessage.error(err?.response?.data?.message || t('profile.avatarUpdateFailed'));
     },
   });
 
   const handleAvatarChange = (info: any) => {
+    if (info.file.status === 'done') {
+      return;
+    }
     const file = info.file.originFileObj || info.file;
     if (file) {
       uploadAvatarMutation.mutate(file);
@@ -92,7 +92,7 @@ const Profile: React.FC = () => {
                 accept="image/*"
               >
                 <div className="relative cursor-pointer group">
-                  <Avatar size={100} icon={<UserOutlined />} src={avatarUrl} className="bg-amber-500" />
+                  <Avatar size={100} icon={<UserOutlined />} src={avatarUrl || userInfo?.avatar} className="bg-amber-500" />
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 rounded-full flex items-center justify-center transition-opacity">
                     <CameraOutlined className="text-white text-xl" />
                   </div>
