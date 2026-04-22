@@ -741,6 +741,7 @@
     "edit": "Edit",
     "assignRole": "Assign Role",
     "delete": "Delete",
+    "resetPassword": "Reset Password",
     "confirmDelete": "Are you sure you want to delete this user?",
     "confirmDeleteContent": "Cannot be recovered after deletion.",
     "addUser": "Add User",
@@ -750,6 +751,7 @@
     "emailRequired": "Please enter email",
     "passwordLabel": "Initial Password",
     "passwordRequired": "Please enter password",
+    "passwordMinLength": "Password must be at least 6 characters",
     "statusActive": "Active",
     "statusDisabled": "Disabled",
     "isAdmin": "Yes",
@@ -763,7 +765,14 @@
     "userDeleted": "User deleted successfully",
     "searchPlaceholder": "Search username/email...",
     "reset": "Reset",
-    "unassigned": "Unassigned"
+    "unassigned": "Unassigned",
+    "resetPasswordTitle": "Reset User Password",
+    "passwordResetSuccess": "Password reset successfully",
+    "passwordResetFailed": "Password reset failed",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordRequired": "Please confirm new password",
+    "passwordMismatch": "Passwords do not match"
   },
   "pipelineNode": {
     "ansibleTask": "Ansible Task",

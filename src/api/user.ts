@@ -30,6 +30,10 @@ export const assignRoles = (id: number, roleIds: number[]) => {
     return request.post(`/users/${id}/assign_roles/`, { role_ids: roleIds });
 };
 
+export const resetUserPassword = (id: number, newPassword: string) => {
+    return request.post(`/users/${id}/reset_password/`, { new_password: newPassword });
+};
+
 export const getMe = () => {
     return request.get('/account/me/');
 };

@@ -3,9 +3,9 @@ import {
     Table, Card, Input, Button, Space, Tag, Typography,
     Modal, Form, Select, App, Tooltip
 } from 'antd';
-import { UserAddOutlined, SearchOutlined, ReloadOutlined, EditOutlined, DeleteOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { UserAddOutlined, SearchOutlined, ReloadOutlined, EditOutlined, DeleteOutlined, SafetyCertificateOutlined, LockOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getUsers, createUser, updateUser, deleteUser, assignRoles } from '../../api/user';
+import { getUsers, createUser, updateUser, deleteUser, assignRoles, resetUserPassword } from '../../api/user';
 import { getRoles } from '../../api/rbac';
 import useAppStore from '../../store/useAppStore';
 import dayjs from 'dayjs';
@@ -29,9 +29,11 @@ const UserManagement: React.FC = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<any>(null);
     const [form] = Form.useForm();
     const [roleForm] = Form.useForm();
+    const [passwordForm] = Form.useForm();
 
     const [inputValue, setInputValue] = useState('');
     useEffect(() => {
@@ -87,6 +89,19 @@ const UserManagement: React.FC = () => {
         },
     });
 
+    const resetPasswordMutation = useMutation({
+        mutationFn: ({ id, newPassword }: { id: number; newPassword: string }) =>
+            resetUserPassword(id, newPassword),
+        onSuccess: () => {
+            message.success(t('user.passwordResetSuccess'));
+            setIsPasswordModalOpen(false);
+            passwordForm.resetFields();
+        },
+        onError: (err: any) => {
+            message.error(err?.response?.data?.message || t('user.passwordResetFailed'));
+        },
+    });
+
     const handleEdit = (record: User) => {
         setEditingUser(record);
         form.setFieldsValue(record);
@@ -105,6 +120,12 @@ const UserManagement: React.FC = () => {
         setEditingUser(record);
         roleForm.setFieldsValue({ role_ids: (record as any).roles || [] });
         setIsRoleModalOpen(true);
+    };
+
+    const handleResetPassword = (record: User) => {
+        setEditingUser(record);
+        passwordForm.resetFields();
+        setIsPasswordModalOpen(true);
     };
 
     const columns: ColumnType<User>[] = [
@@ -161,6 +182,11 @@ const UserManagement: React.FC = () => {
                     {hasPermission('rbac:user:delete') && (
                         <Tooltip title={t('user.delete')}>
                             <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />
+                        </Tooltip>
+                    )}
+                    {hasPermission('rbac:user:edit') && (
+                        <Tooltip title={t('user.resetPassword')}>
+                            <Button type="text" icon={<LockOutlined />} onClick={() => handleResetPassword(record)} />
                         </Tooltip>
                     )}
                 </Space>
@@ -275,6 +301,50 @@ const UserManagement: React.FC = () => {
                             style={{ width: '100%' }}
                             options={allRoles?.data?.map((r: any) => ({ label: r.name, value: r.id }))}
                         />
+                    </Form.Item>
+                </Form>
+            </Modal>
+
+            <Modal
+                title={`${t('user.resetPasswordTitle')} - ${editingUser?.username}`}
+                open={isPasswordModalOpen}
+                onOk={() => passwordForm.submit()}
+                onCancel={() => setIsPasswordModalOpen(false)}
+                confirmLoading={resetPasswordMutation.isPending}
+            >
+                <Form
+                    form={passwordForm}
+                    layout="vertical"
+                    onFinish={(values) => resetPasswordMutation.mutate({ id: editingUser.id, newPassword: values.new_password })}
+                    className="mt-4"
+                >
+                    <Form.Item
+                        label={t('user.newPassword')}
+                        name="new_password"
+                        rules={[
+                            { required: true, message: t('user.passwordRequired') },
+                            { min: 6, message: t('user.passwordMinLength') },
+                        ]}
+                    >
+                        <Input.Password prefix={<LockOutlined />} placeholder={t('user.newPassword')} />
+                    </Form.Item>
+                    <Form.Item
+                        label={t('user.confirmPassword')}
+                        name="confirm_password"
+                        dependencies={['new_password']}
+                        rules={[
+                            { required: true, message: t('user.confirmPasswordRequired') },
+                            ({ getFieldValue }) => ({
+                                validator(_, value) {
+                                    if (!value || getFieldValue('new_password') === value) {
+                                        return Promise.resolve();
+                                    }
+                                    return Promise.reject(new Error(t('user.passwordMismatch')));
+                                },
+                            }),
+                        ]}
+                    >
+                        <Input.Password prefix={<LockOutlined />} placeholder={t('user.confirmPassword')} />
                     </Form.Item>
                 </Form>
             </Modal>
