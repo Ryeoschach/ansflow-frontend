@@ -260,7 +260,7 @@ function App() {
       getMe().then((res: any) => {
         setPermissions(res.permissions || []);
         setCurrentUser(res.username);
-        if (res.avatar) setAvatar(res.avatar);
+        setAvatar(res.avatar || null);
       }).catch(() => {
         setToken(null);
         setPermissions([]); // 清除权限

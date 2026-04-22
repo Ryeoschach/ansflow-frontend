@@ -41,6 +41,7 @@ const Header: React.FC = () => {
                 onClick: () => {
                     setToken(null);
                     setCurrentUser(null);
+                    setAvatar(null); // 清除头像
                     useAppStore.getState().setPermissions([]); // 清除权限
                     navigate('/login');
                 },
