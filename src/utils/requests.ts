@@ -1,6 +1,7 @@
 import axios from 'axios';
 import useAppStore from '../store/useAppStore';
 import { message } from './antd';
+import i18n from '../locales/i18n';
 
 const request = axios.create({
     baseURL: '/api/v1', // 对应 Vite 代理
@@ -83,13 +84,13 @@ request.interceptors.response.use(
 
         // 处理 403 权限不足
         if (response?.status === 403) {
-            const msg = response.data?.detail || '您没有权限执行此操作';
+            const msg = response.data?.detail || i18n.t('common.permissionDenied');
             message.error(msg);
         }
 
         // 处理其他异常 (比如 400 校验错误或者 500 服务器内部错误)
         if (response?.status && response.status !== 401 && response.status !== 403) {
-            let msg = '系统错误，请联系管理员';
+            let msg = i18n.t('common.systemError');
             
             // 适配后端新的统一标准错误结构 ( {code: 400, message: "...", data: null} )
             if (response.data && response.data.message) {

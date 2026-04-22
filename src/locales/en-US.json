@@ -26,7 +26,9 @@
     "createTime": "Created At",
     "actions": "Actions",
     "total": "{{total}} items",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "permissionDenied": "You do not have permission to perform this action",
+    "systemError": "System error, please contact administrator"
   },
   "menu": {
     "dashboard": "Dashboard",
