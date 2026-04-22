@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Card, Table, Button, Space, Modal, Form, Input, Select, Tag, Popconfirm,
-  Tabs, Typography, Tooltip, Drawer, Descriptions, Timeline, App, message, Divider
+  Tabs, Typography, Tooltip, Drawer, Descriptions, Timeline, App, message, Divider, Switch
 } from 'antd';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, HistoryOutlined,
@@ -197,10 +197,42 @@ const ConfigCenter: React.FC = () => {
       title: t('configCenter.itemValue'),
       dataIndex: 'value_display',
       key: 'value_display',
-      ellipsis: true,
-      render: (v: string, record: ConfigItem) => (
-        <Text code className={record.is_encrypted ? 'text-red-400' : ''}>{v}</Text>
-      ),
+      width: 300,
+      render: (v: string, record: ConfigItem) => {
+        if (record.value_type === 'bool') {
+          return (
+            <Switch
+              checked={v === 'true' || v === 'True' || v === '1'}
+              onChange={(checked) => {
+                updateConfigItem(record.id, { value: checked ? 'true' : 'false' }).then(() => {
+                  message.success(t('common.success'));
+                  if (selectedCategory) refetchCategoryDetail();
+                }).catch((err: any) => message.error(err?.message || t('common.error')));
+              }}
+              disabled={!hasPermission('config:item:edit')}
+            />
+          );
+        }
+        return (
+          <Input
+            defaultValue={v}
+            onBlur={(e) => {
+              const newValue = e.target.value;
+              if (newValue !== v) {
+                updateConfigItem(record.id, { value: newValue }).then(() => {
+                  message.success(t('common.success'));
+                  if (selectedCategory) refetchCategoryDetail();
+                }).catch((err: any) => message.error(err?.message || t('common.error')));
+              }
+            }}
+            onPressEnter={(e) => {
+              (e.target as HTMLInputElement).blur();
+            }}
+            disabled={!hasPermission('config:item:edit')}
+            style={{ maxWidth: 250 }}
+          />
+        );
+      },
     },
     { title: t('configCenter.itemValueType'), dataIndex: 'value_type', key: 'value_type', width: 80 },
     {
