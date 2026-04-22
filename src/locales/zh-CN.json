@@ -1390,6 +1390,13 @@
     "passwordMismatch": "两次输入的密码不一致",
     "updatePassword": "更新密码",
     "passwordUpdateSuccess": "密码更新成功",
-    "passwordUpdateFailed": "密码更新失败"
+    "passwordUpdateFailed": "密码更新失败",
+    "clickToUploadAvatar": "点击上传头像",
+    "avatarUpdateSuccess": "头像更新成功",
+    "avatarUpdateFailed": "头像更新失败",
+    "preferences": "偏好设置",
+    "preferencesTitle": "个人偏好",
+    "darkMode": "深色模式",
+    "language": "语言"
   }
 }

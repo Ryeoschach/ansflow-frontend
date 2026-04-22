@@ -1391,6 +1391,13 @@
     "passwordMismatch": "Passwords do not match",
     "updatePassword": "Update Password",
     "passwordUpdateSuccess": "Password updated successfully",
-    "passwordUpdateFailed": "Password update failed"
+    "passwordUpdateFailed": "Password update failed",
+    "clickToUploadAvatar": "Click to upload avatar",
+    "avatarUpdateSuccess": "Avatar updated successfully",
+    "avatarUpdateFailed": "Avatar update failed",
+    "preferences": "Preferences",
+    "preferencesTitle": "Personal Preferences",
+    "darkMode": "Dark Mode",
+    "language": "Language"
   }
 }

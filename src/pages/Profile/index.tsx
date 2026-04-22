@@ -1,36 +1,76 @@
-import React from 'react';
-import { Card, Tabs, Descriptions, Tag, Space, Button, Form, Input, App, Divider, Avatar, Typography } from 'antd';
-import { UserOutlined, SafetyOutlined, LockOutlined, HomeOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { Card, Tabs, Descriptions, Tag, Space, Button, Form, Input, App, Divider, Avatar, Typography, Upload, message, Switch, Select } from 'antd';
+import { UserOutlined, SafetyOutlined, LockOutlined, HomeOutlined, EditOutlined, CameraOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import useAppStore from '../../store/useAppStore';
 import { getMe } from '../../api/user';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const { Text } = Typography;
 
 const Profile: React.FC = () => {
   const { t } = useTranslation();
-  const { message } = App.useApp();
+  const { message: antMessage } = App.useApp();
+  const navigate = useNavigate();
   const [passwordForm] = Form.useForm();
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
+
+  const { isDark, setIsDark, language, setLanguage } = useAppStore();
+  const { i18n } = useTranslation();
 
   const { data: userInfo, isLoading, refetch } = useQuery({
     queryKey: ['profile-me'],
     queryFn: () => getMe() as any,
   });
 
+  // 监听 getMe 返回，设置头像
+  useEffect(() => {
+    if (userInfo?.avatar) {
+      setAvatarUrl(userInfo.avatar);
+    }
+  }, [userInfo]);
+
   const updatePasswordMutation = useMutation({
     mutationFn: (values: any) => {
-      // TODO: 调用后端修改密码接口
       return Promise.resolve();
     },
     onSuccess: () => {
-      message.success(t('profile.passwordUpdateSuccess'));
+      antMessage.success(t('profile.passwordUpdateSuccess'));
       passwordForm.resetFields();
     },
     onError: (err: any) => {
-      message.error(err?.message || t('profile.passwordUpdateFailed'));
+      antMessage.error(err?.message || t('profile.passwordUpdateFailed'));
     },
   });
+
+  const uploadAvatarMutation = useMutation({
+    mutationFn: (file: File) => {
+      // TODO: 调用后端上传头像接口
+      const reader = new FileReader();
+      return new Promise((resolve) => {
+        reader.onload = (e) => {
+          setAvatarUrl(e.target?.result as string);
+          resolve({ success: true });
+        };
+        reader.readAsDataURL(file);
+      });
+    },
+    onSuccess: () => {
+      antMessage.success(t('profile.avatarUpdateSuccess'));
+    },
+    onError: () => {
+      antMessage.error(t('profile.avatarUpdateFailed'));
+    },
+  });
+
+  const handleAvatarChange = (info: any) => {
+    const file = info.file.originFileObj || info.file;
+    if (file) {
+      uploadAvatarMutation.mutate(file);
+    }
+  };
 
   const tabItems = [
     {
@@ -44,7 +84,22 @@ const Profile: React.FC = () => {
       children: (
         <Card className="mt-4">
           <div className="flex items-start gap-6">
-            <Avatar size={80} icon={<UserOutlined />} className="bg-amber-500 flex-shrink-0" />
+            <div className="flex flex-col items-center gap-2">
+              <Upload
+                showUploadList={false}
+                beforeUpload={() => false}
+                onChange={handleAvatarChange}
+                accept="image/*"
+              >
+                <div className="relative cursor-pointer group">
+                  <Avatar size={100} icon={<UserOutlined />} src={avatarUrl} className="bg-amber-500" />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 rounded-full flex items-center justify-center transition-opacity">
+                    <CameraOutlined className="text-white text-xl" />
+                  </div>
+                </div>
+              </Upload>
+              <Text type="secondary" className="text-xs">{t('profile.clickToUploadAvatar')}</Text>
+            </div>
             <div className="flex-1">
               <Descriptions column={2} size="small">
                 <Descriptions.Item label={t('profile.username')}>
@@ -127,6 +182,43 @@ const Profile: React.FC = () => {
               </Button>
             </Form.Item>
           </Form>
+        </Card>
+      ),
+    },
+    {
+      key: 'preferences',
+      label: (
+        <span>
+          <EditOutlined />
+          {t('profile.preferences')}
+        </span>
+      ),
+      children: (
+        <Card className="mt-4 max-w-lg">
+          <Descriptions column={1} size="small" title={t('profile.preferencesTitle')}>
+            <Descriptions.Item label={t('profile.darkMode')}>
+              <Switch
+                checked={isDark}
+                checkedChildren="🌙"
+                unCheckedChildren="☀️"
+                onChange={(checked) => setIsDark(checked)}
+              />
+            </Descriptions.Item>
+            <Descriptions.Item label={t('profile.language')}>
+              <Select
+                value={language}
+                onChange={(l) => {
+                  i18n.changeLanguage(l);
+                  setLanguage(l);
+                }}
+                style={{ width: 140 }}
+                options={[
+                  { value: 'zh-CN', label: '中文' },
+                  { value: 'en-US', label: 'English' },
+                ]}
+              />
+            </Descriptions.Item>
+          </Descriptions>
         </Card>
       ),
     },
