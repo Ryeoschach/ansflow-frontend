@@ -548,24 +548,15 @@ const ConfigCenter: React.FC = () => {
         width={900}
       >
         {selectedCategory && (
-          <div className="mt-4">
-            <div className="flex justify-end mb-3">
-              {hasPermission('config:item:add') && (
-                <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => openItemModal()}>
-                  {t('configCenter.addItem')}
-                </Button>
-              )}
-            </div>
-            <Table
-              size="small"
-              dataSource={categoryDetail?.items || []}
-              columns={itemColumns}
-              rowKey="id"
-              loading={!categoryDetail}
-              pagination={false}
-              scroll={{ x: 'max-content' }}
-            />
-          </div>
+          <Table
+            size="small"
+            dataSource={categoryDetail?.items || []}
+            columns={itemColumns}
+            rowKey="id"
+            loading={!categoryDetail}
+            pagination={false}
+            scroll={{ x: 'max-content' }}
+          />
         )}
       </Modal>
     </div>
