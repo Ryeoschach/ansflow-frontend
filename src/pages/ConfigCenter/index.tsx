@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Card, Table, Button, Space, Modal, Form, Input, Select, Tag, Popconfirm,
-  Tabs, Typography, Tooltip, Drawer, Descriptions, Timeline, App, message, Divider, Switch
+  Tabs, Typography, Tooltip, Drawer, Descriptions, Timeline, App, message, Divider, Switch, Checkbox
 } from 'antd';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, HistoryOutlined,
@@ -199,7 +199,7 @@ const ConfigCenter: React.FC = () => {
       title: t('configCenter.itemValue'),
       dataIndex: 'value_display',
       key: 'value_display',
-      width: 300,
+      width: 350,
       render: (v: string, record: ConfigItem) => {
         if (record.value_type === 'bool') {
           return (
@@ -207,6 +207,32 @@ const ConfigCenter: React.FC = () => {
               checked={v === 'true' || v === 'True' || v === '1'}
               onChange={(checked) => {
                 updateConfigItem(record.id, { value: checked ? 'true' : 'false' }).then(() => {
+                  message.success(t('common.success'));
+                  if (selectedCategory) refetchCategoryDetail();
+                }).catch((err: any) => message.error(err?.message || t('common.error')));
+              }}
+              disabled={!hasPermission('config:item:edit')}
+            />
+          );
+        }
+        // notify_on 特殊渲染：JSON 数组 -> Checkbox 多选
+        if (record.key === 'notify_on') {
+          let currentValues: string[] = [];
+          try {
+            currentValues = JSON.parse(v);
+          } catch { currentValues = []; }
+          const allOptions = [
+            { label: '流水线开始', value: 'pipeline_start' },
+            { label: '流水线结果', value: 'pipeline_result' },
+            { label: '审批请求', value: 'approval_requested' },
+            { label: '审批结果', value: 'approval_result' },
+          ];
+          return (
+            <Checkbox.Group
+              options={allOptions}
+              value={currentValues}
+              onChange={(checkedValues) => {
+                updateConfigItem(record.id, { value: JSON.stringify(checkedValues) }).then(() => {
                   message.success(t('common.success'));
                   if (selectedCategory) refetchCategoryDetail();
                 }).catch((err: any) => message.error(err?.message || t('common.error')));
