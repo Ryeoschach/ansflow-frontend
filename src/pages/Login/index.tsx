@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Form, Input, Button, Card, Typography, App, theme, Tabs, Divider, Modal, Select, Space } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Form, Input, Button, Card, Typography, App, theme, Tabs, Divider, Select, Space } from 'antd';
 import { UserOutlined, LockOutlined, SunOutlined, MoonOutlined, GithubOutlined, WechatOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
@@ -18,7 +18,30 @@ const LoginPage: React.FC = () => {
     const { token: antdToken } = theme.useToken();
 
     const [activeTab, setActiveTab] = useState('password');
-    const [isLdapModalOpen, setIsLdapModalOpen] = useState(false);
+
+    // 检测 URL 中的 token（微信/GitHub 回调）
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const accessToken = params.get('access_token');
+        const username = params.get('username');
+        const error = params.get('error');
+
+        if (error) {
+            message.error(t('auth.socialLoginFailed') + ': ' + error);
+            // 清理 URL
+            window.history.replaceState({}, '', window.location.pathname);
+            return;
+        }
+
+        if (accessToken) {
+            message.success(`${t('auth.loginSuccess')} ${username || 'User'}`);
+            setToken(accessToken);
+            setCurrentUser(username || 'User');
+            // 清理 URL
+            window.history.replaceState({}, '', window.location.pathname);
+            navigate('/v1/dashboard');
+        }
+    }, []);
 
     const loginMutation = useMutation({
         mutationFn: login,
@@ -58,16 +81,15 @@ const LoginPage: React.FC = () => {
     };
 
     const handleWechatLogin = () => {
-        // 微信 OAuth 跳转 - 需要后端提供授权地址
-        // 这里假设后端提供了获取微信授权链接的接口
-        Modal.info({
-            title: t('auth.wechatLoginTip'),
-            content: (
-                <div className="py-4">
-                    <p>{t('auth.wechatLoginTipContent')}</p>
-                </div>
-            ),
-        });
+        // 微信网页应用扫码登录
+        const appid = import.meta.env.VITE_WECHAT_APPID;
+        if (!appid) {
+            message.warning(t('auth.wechatNotConfigured'));
+            return;
+        }
+        // 回调地址：微信授权后重定向到后端，后端再重定向回前端登录页
+        const redirectUri = encodeURIComponent(`${window.location.origin}/api/v1/auth/social/wechat/callback/?redirect_uri=${window.location.origin}/login`);
+        window.location.href = `https://open.weixin.qq.com/connect/qrconnect?appid=${appid}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_login`;
     };
 
     const onFinish = (values: any) => {

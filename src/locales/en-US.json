@@ -67,7 +67,9 @@
     "wechat": "WeChat",
     "socialLogin": "Social Login",
     "wechatLoginTip": "WeChat Login Notice",
-    "wechatLoginTipContent": "WeChat login requires configuration in the WeChat Open Platform."
+    "wechatLoginTipContent": "WeChat login requires configuration in the WeChat Open Platform.",
+    "wechatNotConfigured": "WeChat login not configured, please contact administrator",
+    "socialLoginFailed": "Social login failed"
   },
   "dashboard": {
     "title": "Dashboard",
