@@ -12,7 +12,7 @@ const { Header: AntHeader } = Layout;
  * 顶部导航栏组件 - 响应式版本
  */
 const Header: React.FC = () => {
-    const { collapsed, toggleCollapsed, isDark, setIsDark, setToken, setCurrentUser, currentUser, language, setLanguage, avatar } = useAppStore();
+    const { collapsed, toggleCollapsed, isDark, setIsDark, setToken, setCurrentUser, currentUser, language, setLanguage, avatar, setAvatar } = useAppStore();
     const { toggleMobileSidebar } = useAppStore();
     const { isMobile } = useBreakpoint();
     const { i18n, t } = useTranslation();
