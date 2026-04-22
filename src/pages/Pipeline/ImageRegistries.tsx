@@ -158,7 +158,7 @@ const ImageRegistries: React.FC = () => {
                 onCancel={() => setIsModalOpen(false)}
                 onOk={() => form.submit()}
                 width={isMobile ? '95vw' : 600}
-                bodyStyle={{ overflowX: 'auto' }}
+                styles={{ body: { overflowX: 'auto' } }}
                 confirmLoading={createMutation.isPending || updateMutation.isPending}
             >
                 <Form

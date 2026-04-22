@@ -115,9 +115,8 @@ const PipelineList = lazy(() => import("./pages/Pipeline"));
 const PipelineDesigner = lazy(() => import("./pages/Pipeline/Designer"));
 const PipelineRunViewer = lazy(() => import("./pages/Pipeline/RunViewer"));
 const CIEnvironments = lazy(() => import("./pages/Pipeline/CIEnvironments"));
-const ImageRegistries = lazy(() => import("./pages/Pipeline/ImageRegistries"));
-	const PipelineArtifacts = lazy(() => import("./pages/Pipeline/Artifacts"));
-	const PipelineWebhooks = lazy(() => import("./pages/Pipeline/Webhooks"));
+const ArtifactRepository = lazy(() => import("./pages/Pipeline/ArtifactRepository"));
+const PipelineWebhooks = lazy(() => import("./pages/Pipeline/Webhooks"));
 const MonitorCenter = lazy(() => import("./pages/System/Monitor"));
 const ConfigCenter = lazy(() => import("./pages/ConfigCenter"));
 const BackupManagement = lazy(() => import("./pages/System/BackupManagement"));
@@ -328,8 +327,7 @@ function App() {
                 <Route path="v1/system/menus" element={<MenuManagement />} />
                 <Route path="v1/system/hosts" element={<HostManagement />} />
                 <Route path="v1/pipeline/list" element={<PipelineList />} />
-                <Route path="v1/repos/registries" element={<ImageRegistries />} />
-                <Route path="v1/pipeline/artifacts" element={<PipelineArtifacts />} />
+                <Route path="v1/pipeline/artifacts" element={<ArtifactRepository />} />
                 <Route path="v1/pipeline/webhooks" element={<PipelineWebhooks />} />
                 <Route path="v1/pipeline/designer" element={<PipelineDesigner />} />
                 <Route path="v1/pipeline/runs/:runId" element={<PipelineRunViewer />} />

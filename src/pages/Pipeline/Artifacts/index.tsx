@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { Fragment, useState } from 'react';
 import { Card, Table, Button, Modal, Form, Input, Select, Tag, Space, Typography, App, Tooltip, Popconfirm, Drawer } from 'antd';
-import { PlusOutlined, DeleteOutlined, EditOutlined, EyeOutlined, CloudOutlined, InboxOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, EditOutlined, EyeOutlined, CloudOutlined, InboxOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getArtifacts, deleteArtifact, createArtifact, updateArtifact, getArtifactVersionsById, type Artifact, type ArtifactVersion } from '../../../api/artifact';
@@ -23,7 +23,7 @@ const Artifacts: React.FC = () => {
     const [form] = Form.useForm();
     const [versions, setVersions] = useState<ArtifactVersion[]>([]);
 
-    const { data: artifactData, isLoading } = useQuery({
+    const { data: artifactData, isLoading, refetch } = useQuery({
         queryKey: ['artifacts'],
         queryFn: () => getArtifacts({ page: 1, page_size: 100 }),
         enabled: !!authToken,
@@ -196,31 +196,34 @@ const Artifacts: React.FC = () => {
     ];
 
     return (
-        <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <Typography.Title level={3} style={{ margin: 0, fontWeight: 600 }}>
-                        <InboxOutlined className="mr-2" />{t('artifact.title')}
-                    </Typography.Title>
-                    <Text type="secondary">{t('artifact.subtitle')}</Text>
-                </div>
-            </div>
-
-            <Card variant="outlined" className="shadow-sm rounded-xl">
-                <Table
-                    dataSource={artifactData?.data}
-                    columns={columns}
-                    rowKey="id"
-                    loading={isLoading}
-                    scroll={{ x: 'max-content' }}
-                    pagination={{
-                        total: artifactData?.total,
-                        pageSize: 20,
-                        showSizeChanger: true,
-                        showTotal: total => t('common.total', { total }),
-                    }}
-                />
-            </Card>
+        <>
+        <Card
+            title={
+                <Space>
+                    <InboxOutlined />
+                    {t('artifact.title')}
+                </Space>
+            }
+            extra={
+                <Button type="text" icon={<ReloadOutlined />} onClick={() => refetch()} loading={isLoading}>
+                    {t('common.refresh')}
+                </Button>
+            }
+        >
+            <Table
+                dataSource={artifactData?.data}
+                columns={columns}
+                rowKey="id"
+                loading={isLoading}
+                scroll={{ x: 'max-content' }}
+                pagination={{
+                    total: artifactData?.total,
+                    pageSize: 20,
+                    showSizeChanger: true,
+                    showTotal: total => t('common.total', { total }),
+                }}
+            />
+        </Card>
 
             <Modal
                 title={editingArtifact ? t('artifact.editArtifact') : t('artifact.createArtifact')}
@@ -305,7 +308,7 @@ const Artifacts: React.FC = () => {
                     </div>
                 )}
             </Drawer>
-        </div>
+        </>
     );
 };
 
