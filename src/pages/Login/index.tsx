@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, Typography, App, theme, Tabs, Divider, Select, Space } from 'antd';
 import { UserOutlined, LockOutlined, SunOutlined, MoonOutlined, GithubOutlined, WechatOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { login, ldapLogin } from '../../api/auth';
 import useAppStore from '../../store/useAppStore';
@@ -12,6 +12,7 @@ const { Title, Text } = Typography;
 const LoginPage: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const location = useLocation();
     const { message } = App.useApp();
     const { setToken, isDark, setCurrentUser, setIsDark, language, setLanguage } = useAppStore();
     const { i18n } = useTranslation();
@@ -19,9 +20,9 @@ const LoginPage: React.FC = () => {
 
     const [activeTab, setActiveTab] = useState('password');
 
-    // 检测 URL 中的 token（微信/GitHub 回调）
+    // 检测 URL 中的 token（微信/GitHub 回调）- 使用 location.search 确保 URL 变化时重新执行
     useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(location.search);
         const accessToken = params.get('access_token');
         const username = params.get('username');
         const error = params.get('error');
@@ -41,7 +42,7 @@ const LoginPage: React.FC = () => {
             window.history.replaceState({}, '', window.location.pathname);
             navigate('/v1/dashboard');
         }
-    }, []);
+    }, [location.search]);
 
     const loginMutation = useMutation({
         mutationFn: login,
