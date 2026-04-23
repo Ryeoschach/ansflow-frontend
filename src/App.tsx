@@ -259,7 +259,12 @@ function App() {
     if (token) {
       getMe().then((res: any) => {
         setPermissions(res.permissions || []);
-        setCurrentUser(res.username);
+        // 只有当 res.username 和 store 中的不同时才更新
+        // 这样可以避免覆盖社交登录设置的正确用户名
+        const currentUser = useAppStore.getState().currentUser;
+        if (!currentUser || currentUser === 'User') {
+          setCurrentUser(res.username);
+        }
         setAvatar(res.avatar || null);
       }).catch(() => {
         setToken(null);

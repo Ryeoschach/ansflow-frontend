@@ -38,9 +38,10 @@ const LoginPage: React.FC = () => {
             message.success(`${t('auth.loginSuccess')} ${username || 'User'}`);
             setToken(accessToken);
             setCurrentUser(username || 'User');
-            // 清理 URL
-            window.history.replaceState({}, '', window.location.pathname);
-            navigate('/v1/dashboard');
+            // 清理 URL 后用 React Router 导航
+            window.history.replaceState({}, '', '/v1/dashboard');
+            navigate('/v1/dashboard', { replace: true });
+            return;
         }
     }, [location.search]);
 
