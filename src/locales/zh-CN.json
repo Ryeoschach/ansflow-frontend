@@ -69,7 +69,8 @@
     "wechatLoginTip": "微信登录提示",
     "wechatLoginTipContent": "微信登录需要在微信开放平台配置应用后使用。",
     "wechatNotConfigured": "微信登录未配置，请联系管理员",
-    "socialLoginFailed": "第三方登录失败"
+    "socialLoginFailed": "第三方登录失败",
+    "githubNotConfigured": "GitHub 登录未配置，请联系管理员"
   },
   "dashboard": {
     "title": "仪表盘",

@@ -75,9 +75,14 @@ const LoginPage: React.FC = () => {
 
     const handleGithubLogin = () => {
         // GitHub OAuth 跳转
-        const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID || 'your_github_client_id';
-        const redirectUri = encodeURIComponent(import.meta.env.VITE_GITHUB_REDIRECT_URI || `${window.location.origin}/login`);
-        window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=read:user`;
+        const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
+        if (!clientId) {
+            message.warning(t('auth.githubNotConfigured'));
+            return;
+        }
+        // 回调地址：GitHub 授权后重定向到后端，后端再重定向回前端登录页
+        const backendCallback = encodeURIComponent(`${window.location.origin}/api/v1/auth/social/github/callback/?redirect_uri=${window.location.origin}/login`);
+        window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${backendCallback}&scope=read:user`;
     };
 
     const handleWechatLogin = () => {
