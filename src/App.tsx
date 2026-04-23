@@ -100,6 +100,8 @@ try {
 
 // 单例锁，确保即便是 React StrictMode 两次渲染也只跑一个
 let globalInitPromise: Promise<any> | null = null;
+// 运行中标记，防止并发
+let isAuthRunning = false;
 
 import { setGlobalAntd } from './utils/antd';
 const AntdInitializer: React.FC = () => {
@@ -215,41 +217,78 @@ function App() {
 
   useEffect(() => {
     const initAuth = async () => {
-      // 如果内存已有 Token，直接退出
-      if (token) {
-        setIsInitializing(false);
+      // 防止并发
+      if (isAuthRunning) {
+        console.log('[App] initAuth: already running, skip');
         return;
       }
-      // 如果正在登录页，直接退出
-      if (window.location.pathname === '/login') {
-        setIsInitializing(false);
-        return;
-      }
-      // 使用全局 Promise 锁，防止并发
-      if (!globalInitPromise) {
-        globalInitPromise = (async () => {
-          try {
-            const res = await axios.post('/api/v1/auth/refresh/', {}, {
-              withCredentials: true,
-              validateStatus: (s) => s < 500
-            });
-            if (res.status === 200) {
-              return res.data.data.access;
+      isAuthRunning = true;
+      console.log('[App] initAuth useEffect, token:', token ? 'exists' : 'null', 'path:', window.location.pathname, 'isInit:', isInitializing, 'url:', window.location.search);
+      try {
+        // 如果正在登录页，直接退出（不要重定向，否则会打断 OAuth 回调）
+        if (window.location.pathname === '/login') {
+          console.log('[App] initAuth: already on login page, skip');
+          setIsInitializing(false);
+          return;
+        }
+        // 如果内存已有 Token，直接退出
+        if (token) {
+          console.log('[App] initAuth: token exists, skip refresh');
+          setIsInitializing(false);
+          return;
+        }
+        // 检查 URL 是否有 OAuth token（GitHub/微信 回调带上的）
+        const urlParams = new URLSearchParams(window.location.search);
+        const oauthToken = urlParams.get('access_token');
+        if (oauthToken) {
+          console.log('[App] initAuth: found OAuth token in URL, waiting for LoginPage to process');
+          // 不调用 refresh，等待 LoginPage 的 useEffect 处理
+          setIsInitializing(false);
+          return;
+        }
+        // 使用全局 Promise 锁，防止并发
+        if (!globalInitPromise) {
+          globalInitPromise = (async () => {
+            try {
+              const res = await axios.post('/api/v1/auth/refresh/', {}, {
+                withCredentials: true,
+                validateStatus: (s) => s < 500
+              });
+              if (res.status === 200) {
+                return res.data.data.access;
+              }
+              return null;
+            } catch {
+              return null;
             }
-            return null;
-          } catch {
-            return null;
+          })();
+        }
+        const newToken = await globalInitPromise;
+        console.log('[App] initAuth: newToken from refresh:', newToken ? 'exists' : 'null');
+        if (newToken) {
+          // 只有在 store 中还没有 token 的情况下才接受 refresh 结果
+          // 如果已有 token（可能是 OAuth 刚设置的），则跳过
+          const currentToken = useAppStore.getState().token;
+          if (currentToken) {
+            console.log('[App] initAuth: store already has token, skipping refresh result');
+          } else {
+            setToken(newToken);
           }
-        })();
+        } else {
+          // double-check: maybe OAuth callback set token just now
+          const currentToken = useAppStore.getState().token;
+          if (currentToken) {
+            console.log('[App] initAuth: token was set by OAuth, skip login redirect');
+          } else {
+            console.log('[App] initAuth: no token, redirecting to /login');
+            navigate('/login');
+          }
+        }
+        setIsInitializing(false);
+        globalInitPromise = null; // 跑完清空
+      } finally {
+        isAuthRunning = false;
       }
-      const newToken = await globalInitPromise;
-      if (newToken) {
-        setToken(newToken);
-      } else {
-        navigate('/login');
-      }
-      setIsInitializing(false);
-      globalInitPromise = null; // 跑完清空
     };
     initAuth();
   }, [token, setToken, setIsInitializing, navigate]);
@@ -257,13 +296,26 @@ function App() {
   // 登录成功后获取用户信息及权限
   useEffect(() => {
     if (token) {
+      console.log('[App] getMe useEffect, token:', token ? 'exists' : 'null');
       getMe().then((res: any) => {
+        // 检查 store 中的 token 是否仍然是当初设置的这个
+        // 如果不匹配，说明期间有新的登录发生，跳过用户信息更新
+        const storeToken = useAppStore.getState().token;
+        console.log('[App] getMe success, res:', res, 'tokenMatch:', storeToken === token);
+        if (storeToken !== token) {
+          console.log('[App] getMe callback: token changed from', token, 'to', storeToken, ', skipping user update');
+          return;
+        }
         setPermissions(res.permissions || []);
         setCurrentUser(res.username);
         setAvatar(res.avatar || null);
-      }).catch(() => {
-        setToken(null);
-        setPermissions([]); // 清除权限
+      }).catch((err: any) => {
+        console.log('[App] getMe error:', err);
+        // 网络错误不要清除 token，只有 401 才清除
+        if (err?.response?.status === 401) {
+          setToken(null);
+          setPermissions([]);
+        }
       });
     }
   }, [token, setPermissions, setCurrentUser, setToken]);

@@ -58,7 +58,19 @@
     "loginSuccess": "登录成功！欢迎回来",
     "loginError": "用户名或密码错误",
     "subtitle": "基于 Django & React 的自动化运维平台",
-    "footer": "©2024 AnsFlow Intelligent System. All Rights Reserved."
+    "footer": "©2024 AnsFlow Intelligent System. All Rights Reserved.",
+    "passwordLogin": "密码登录",
+    "ldapLogin": "LDAP 登录",
+    "ldapUsername": "LDAP 用户名",
+    "or": "或",
+    "github": "GitHub",
+    "wechat": "微信",
+    "socialLogin": "第三方登录",
+    "wechatLoginTip": "微信登录提示",
+    "wechatLoginTipContent": "微信登录需要在微信开放平台配置应用后使用。",
+    "wechatNotConfigured": "微信登录未配置，请联系管理员",
+    "socialLoginFailed": "第三方登录失败",
+    "githubNotConfigured": "GitHub 登录未配置，请联系管理员"
   },
   "dashboard": {
     "title": "仪表盘",
