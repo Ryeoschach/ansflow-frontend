@@ -137,7 +137,7 @@ const Profile: React.FC = () => {
       ),
       children: (
         <Card className="mt-4 max-w-lg">
-          <Divider orientation="left">{t('profile.changePassword')}</Divider>
+          <Divider titlePlacement="left">{t('profile.changePassword')}</Divider>
           <Form
             form={passwordForm}
             layout="vertical"
