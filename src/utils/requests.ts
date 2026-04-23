@@ -14,10 +14,14 @@ request.interceptors.request.use(
         const token = useAppStore.getState().token;
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
+            console.log('[Request] Added token, url:', config.url);
+        } else {
+            console.log('[Request] No token, url:', config.url);
         }
         const state = useAppStore.getState();
         // 初始加载中且不是刷新请求，则不发送 Header 或直接拦截
-        if (state.isInitializing && config.url !== '/auth/refresh/') {
+        // 放行 /account/me/ 以支持 OAuth 回调后获取用户信息
+        if (state.isInitializing && config.url !== '/auth/refresh/' && config.url !== '/account/me/') {
             return Promise.reject(new Error('Initial loading'));
         }
         return config;
@@ -40,7 +44,9 @@ request.interceptors.response.use(
             return res;
         }
         // 如果是普通对象（如 login 或 me 接口），则继续剥离一层 data
-        return res.data;
+        // 但如果 res.data 为 undefined（比如 login 接口直接返回 {access, username}），
+        // 则返回整个 res 而不是 undefined
+        return res.data ?? res;
     },
     async (error) => {
         const { config, response } = error;

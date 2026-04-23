@@ -48,3 +48,10 @@ export const ldapLogin = (username: string, password: string) => {
 export const bindSocialAccount = (type: 'github' | 'wechat', code: string) => {
     return request.post('/auth/social/bind/', { type, code });
 };
+
+/**
+ * 登出 - 清除后端 refresh token cookie
+ */
+export const logout = () => {
+    return request.post('/auth/logout/');
+};

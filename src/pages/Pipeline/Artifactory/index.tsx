@@ -460,7 +460,7 @@ const Artifactory: React.FC = () => {
               placeholder={t('artifactory.selectInstance')}
               showSearch
               optionFilterProp="label"
-              options={instancesData?.data?.map((i) => ({
+              options={instancesData?.data?.map((i: any) => ({
                 value: i.id,
                 label: `${i.name} (${i.url})`,
               })) || []}

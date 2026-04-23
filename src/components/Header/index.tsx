@@ -38,11 +38,23 @@ const Header: React.FC = () => {
                 key: 'logout',
                 icon: <LogoutOutlined />,
                 label: t('header.logout'),
-                onClick: () => {
+                onClick: async () => {
+                    // 清除本地状态
                     setToken(null);
                     setCurrentUser(null);
-                    setAvatar(null); // 清除头像
-                    useAppStore.getState().setPermissions([]); // 清除权限
+                    setAvatar(null);
+                    useAppStore.getState().setPermissions([]);
+                    // 调用后端 logout 接口清除 cookie
+                    try {
+                        await fetch('/api/v1/auth/logout/', {
+                            method: 'POST',
+                            credentials: 'include',
+                        });
+                    } catch (e) {
+                        console.log('[Logout] API error:', e);
+                    }
+                    // 强制清除 cookie（虽然 HttpOnly 无法被 JS 删除，但可以尝试）
+                    document.cookie = 'refresh_token=; path=/; max-age=0; SameSite=Lax';
                     navigate('/login');
                 },
             },

@@ -19,9 +19,13 @@ const LoginPage: React.FC = () => {
     const { token: antdToken } = theme.useToken();
 
     const [activeTab, setActiveTab] = useState('password');
+    const [urlProcessed, setUrlProcessed] = useState(false);
 
     // 检测 URL 中的 token（微信/GitHub 回调）- 使用 location.search 确保 URL 变化时重新执行
     useEffect(() => {
+        // 防止重复处理
+        if (urlProcessed) return;
+
         const params = new URLSearchParams(location.search);
         const accessToken = params.get('access_token');
         const username = params.get('username');
@@ -31,16 +35,19 @@ const LoginPage: React.FC = () => {
             message.error(t('auth.socialLoginFailed') + ': ' + error);
             // 清理 URL
             window.history.replaceState({}, '', window.location.pathname);
+            setUrlProcessed(true);
             return;
         }
 
         if (accessToken) {
-            message.success(`${t('auth.loginSuccess')} ${username || 'User'}`);
+            // 设置 token 到 store
             setToken(accessToken);
             setCurrentUser(username || 'User');
-            // 清理 URL 后用 React Router 导航
-            window.history.replaceState({}, '', '/v1/dashboard');
-            navigate('/v1/dashboard', { replace: true });
+            // 清理 URL
+            window.history.replaceState({}, '', window.location.pathname);
+            setUrlProcessed(true);
+            // 跳转 dashboard
+            navigate('/v1/dashboard');
             return;
         }
     }, [location.search]);
@@ -48,10 +55,8 @@ const LoginPage: React.FC = () => {
     const loginMutation = useMutation({
         mutationFn: login,
         onSuccess: (data: any) => {
-            const username = data.username || 'User';
-            message.success(`${t('auth.loginSuccess')} ${username}`);
             setToken(data.access);
-            setCurrentUser(username);
+            setCurrentUser(data.username || 'User');
             navigate('/v1/dashboard');
         },
         onError: (error: any) => {
