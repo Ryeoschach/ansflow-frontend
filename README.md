@@ -2,7 +2,7 @@
 
 企业级 DevOps 流水线平台前端，基于 React 18 + TypeScript + Vite 构建。
 
-**当前版本**：v1.5.0  
+**当前版本**：v1.6.0  
 **在线 Demo**：https://ansflow.cyfee.com:10443  
 **默认账号**：admin / ansflow
 
@@ -149,6 +149,9 @@ src/
 **功能**：
 
 - 用户名 + 密码登录
+- GitHub OAuth 授权登录
+- 微信网页应用扫码登录
+- LDAP 账号密码登录（企业目录）
 - 错误提示（用户名不存在 / 密码错误 / 账号被禁用）
 - 登录后自动跳转首页
 
@@ -158,11 +161,16 @@ src/
 1. POST /api/v1/auth/login/ { username, password }
    → 后端返回 Access Token + Refresh Token（写入 HttpOnly Cookie）
 
-2. 应用启动时，尝试 POST /api/v1/auth/refresh/ 自动续期
+2. GitHub/微信登录：
+   - 前端跳转到后端 OAuth 回调
+   - 后端验证后重定向回前端，携带 access_token
+   - 后端同时将 refresh_token 写入 HttpOnly Cookie
 
-3. 成功后调用 GET /api/v1/account/me/ 获取用户信息 + 权限列表
+3. 应用启动时，尝试 POST /api/v1/auth/refresh/ 自动续期
 
-4. 权限码存入 Zustand store，前端通过 hasPermission() 做按钮级快速判断
+4. 成功后调用 GET /api/v1/account/me/ 获取用户信息 + 权限列表
+
+5. 权限码存入 Zustand store，前端通过 hasPermission() 做按钮级快速判断
 ```
 
 **前端存储**：
