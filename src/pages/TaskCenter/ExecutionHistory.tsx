@@ -11,6 +11,7 @@ import {
     Drawer,
     Input,
     Select,
+    DatePicker,
 } from 'antd';
 import {
     SyncOutlined,
@@ -21,7 +22,9 @@ import {
     SearchOutlined,
     HistoryOutlined,
     StopOutlined,
+    FilterOutlined,
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getExecutions, getExecutionLogs, terminateExecution } from '../../api/tasks';
@@ -43,6 +46,8 @@ const ExecutionHistory: React.FC = () => {
 
     // 筛选状态
     const [params, setParams] = useState<any>({ page: 1, size: 20 });
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [filterForm, setFilterForm] = useState<any>({});
     
     // 处理从 dashboard 等页面跳转过来的 ID 参数
     useEffect(() => {
@@ -201,12 +206,13 @@ const ExecutionHistory: React.FC = () => {
                 </Space>
             }
         >
-            <div className="mb-4 flex gap-4">
+            <div className="mb-4 flex flex-wrap gap-4 items-end">
                 <Input
                     prefix={<SearchOutlined />}
                     placeholder={t('executionHistory.searchByTaskName')}
                     style={{ width: 200 }}
                     onPressEnter={(e: any) => setParams({ ...params, task_name: e.target.value })}
+                    allowClear
                 />
                 <Select
                     allowClear
@@ -216,9 +222,48 @@ const ExecutionHistory: React.FC = () => {
                         { label: t('executionHistory.success'), value: 'success' },
                         { label: t('executionHistory.failed'), value: 'failed' },
                         { label: t('executionHistory.running'), value: 'running' },
+                        { label: t('executionHistory.pending'), value: 'pending' },
                     ]}
                     onChange={(val) => setParams({ ...params, status: val })}
                 />
+                <Button
+                    icon={<FilterOutlined />}
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    type={showAdvanced ? 'primary' : 'default'}
+                >
+                    {t('executionHistory.advancedFilter')}
+                </Button>
+                {showAdvanced && (
+                    <>
+                        <DatePicker.RangePicker
+                            onChange={(dates) => {
+                                if (dates && dates[0] && dates[1]) {
+                                    setParams({
+                                        ...params,
+                                        start_time: dates[0].startOf('day').toISOString(),
+                                        end_time: dates[1].endOf('day').toISOString(),
+                                    });
+                                } else {
+                                    const { start_time, end_time, ...rest } = params;
+                                    setParams(rest);
+                                }
+                            }}
+                            style={{ width: 280 }}
+                        />
+                        <Input
+                            placeholder={t('executionHistory.searchByExecutor')}
+                            style={{ width: 150 }}
+                            onPressEnter={(e: any) => setParams({ ...params, executor_name: e.target.value })}
+                            allowClear
+                        />
+                        <Button
+                            onClick={() => setParams({ page: 1, size: 20 })}
+                            icon={<SyncOutlined />}
+                        >
+                            {t('common.reset')}
+                        </Button>
+                    </>
+                )}
             </div>
 
             <Table

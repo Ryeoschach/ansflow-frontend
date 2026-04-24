@@ -139,7 +139,15 @@
     "neverRun": "Never Run",
     "runNow": "Run Now",
     "clone": "Clone",
-    "createNewTemplate": "Create New Template"
+    "createNewTemplate": "Create New Template",
+    "extraVars": "Variables (Extra Vars)",
+    "addExtraVar": "Add Variable",
+    "previewTitle": "Execution Preview",
+    "confirmRun": "Confirm Run",
+    "batchRun": "Batch Run",
+    "batchRunConfirm": "Confirm Batch Run",
+    "batchRunTip": "Will execute {{count}} selected task templates",
+    "batchRunTriggered": "Batch tasks triggered"
   },
   "credential": {
     "title": "SSH Credential Management",
@@ -1001,7 +1009,9 @@
     "terminateInstructionSent": "Terminate instruction sent",
     "terminateFailed": "Terminate failed",
     "pending": "Queued",
-    "system": "System"
+    "system": "System",
+    "advancedFilter": "Advanced Filter",
+    "searchByExecutor": "Executor"
   },
   "imageRegistry": {
     "title": "Global Image Registry Management",

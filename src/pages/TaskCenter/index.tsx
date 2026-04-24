@@ -11,6 +11,8 @@ import {
     Space,
     Typography,
     App, Tooltip,
+    Collapse,
+    Descriptions,
 } from 'antd';
 import {
     PlusOutlined,
@@ -19,6 +21,7 @@ import {
     PlaySquareOutlined,
     CopyOutlined,
     DeleteOutlined,
+    MinusCircleOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAnsibleTasks, createAnsibleTask, updateAnsibleTask, runAnsibleTask, deleteAnsibleTask } from '../../api/tasks';
@@ -28,6 +31,8 @@ import useBreakpoint from '../../utils/useBreakpoint';
 import { useNavigate } from 'react-router-dom';
 import { TableSkeleton } from '../../components/Skeletons';
 import { useTranslation } from 'react-i18next';
+import CodeMirror from '@uiw/react-codemirror';
+import { yaml } from '@codemirror/lang-yaml';
 
 
 const { Text } = Typography;
@@ -42,6 +47,13 @@ const TaskCenter: React.FC = () => {
     const [form] = Form.useForm();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<any>(null);
+    const [contentValue, setContentValue] = useState('');
+    const [extraVars, setExtraVars] = useState<Array<{ key: string; value: string }>>([]);
+    const [previewModalOpen, setPreviewModalOpen] = useState(false);
+    const [previewRecord, setPreviewRecord] = useState<any>(null);
+    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+    const [batchModalOpen, setBatchModalOpen] = useState(false);
+    const isDark = document.documentElement.classList.contains('dark');
 
     // 1. 获取任务模板列表
     const { data: taskData, isLoading: listLoading } = useQuery({
@@ -64,6 +76,8 @@ const TaskCenter: React.FC = () => {
             message.success(editingTask ? t('taskCenter.updateSuccess') : t('taskCenter.createSuccess'));
             setIsCreateModalOpen(false);
             setEditingTask(null);
+            setContentValue('');
+            setExtraVars([]);
             form.resetFields();
             queryClient.invalidateQueries({ queryKey: ['ansible-tasks'] });
         },
@@ -88,11 +102,63 @@ const TaskCenter: React.FC = () => {
         }
     });
 
+    // 6. 批量运行
+    const batchRunMutation = useMutation({
+        mutationFn: (ids: number[]) => Promise.all(ids.map(id => runAnsibleTask(id))),
+        onSuccess: () => {
+            message.success(t('taskCenter.batchRunTriggered'));
+            setSelectedRowKeys([]);
+            setBatchModalOpen(false);
+            queryClient.invalidateQueries({ queryKey: ['ansible-tasks'] });
+            navigate('/v1/task/executions');
+        },
+    });
+
     const handleEdit = (record: number) => {
         setEditingTask(record);
-        form.setFieldsValue(record);
+        setContentValue(record.content || '');
+        const parsed = parseExtraVars(record.extra_vars);
+        setExtraVars(parsed);
+        form.setFieldsValue({ ...record, extra_vars: record.extra_vars || '{}' });
         setIsCreateModalOpen(true);
     }
+
+    const handleContentChange = (value: string) => {
+        setContentValue(value);
+        form.setFieldValue('content', value);
+    };
+
+    const handleAddExtraVar = () => {
+        setExtraVars([...extraVars, { key: '', value: '' }]);
+    };
+
+    const handleRemoveExtraVar = (index: number) => {
+        setExtraVars(extraVars.filter((_, i) => i !== index));
+    };
+
+    const handleExtraVarChange = (index: number, field: 'key' | 'value', val: string) => {
+        const updated = [...extraVars];
+        updated[index][field] = val;
+        setExtraVars(updated);
+        // Sync to form as JSON string
+        const obj: Record<string, string> = {};
+        updated.forEach(item => {
+            if (item.key.trim()) {
+                obj[item.key.trim()] = item.value;
+            }
+        });
+        form.setFieldValue('extra_vars', JSON.stringify(obj));
+    };
+
+    const parseExtraVars = (extraVarsStr: string): Array<{ key: string; value: string }> => {
+        if (!extraVarsStr) return [];
+        try {
+            const parsed = JSON.parse(extraVarsStr);
+            return Object.entries(parsed).map(([key, value]) => ({ key, value: String(value) }));
+        } catch {
+            return [];
+        }
+    };
 
     const columns = [
         {
@@ -141,7 +207,7 @@ const TaskCenter: React.FC = () => {
                                 type="link"
                                 size="small"
                                 icon={<PlaySquareOutlined />}
-                                onClick={() => runMutation.mutate(record.id)}
+                                onClick={() => { setPreviewRecord(record); setPreviewModalOpen(true); }}
                                 loading={runMutation.isPending && runMutation.variables === record.id}
                             >
                                 {t('taskCenter.runNow')}
@@ -163,7 +229,10 @@ const TaskCenter: React.FC = () => {
                                 icon={<CopyOutlined />}
                                 onClick={() => {
                                     setEditingTask(null);
-                                    form.setFieldsValue({ ...record, name: `${record.name} (copy)` });
+                                    setContentValue(record.content || '');
+                                    const parsed = parseExtraVars(record.extra_vars);
+                                    setExtraVars(parsed);
+                                    form.setFieldsValue({ ...record, name: `${record.name} (copy)`, extra_vars: record.extra_vars || '{}' });
                                     setIsCreateModalOpen(true);
                                 }}
                             >
@@ -197,8 +266,13 @@ const TaskCenter: React.FC = () => {
             }
             extra={
                 <Space>
+                    {hasPermission('tasks:ansible_tasks:run') && selectedRowKeys.length > 0 && (
+                        <Button icon={<PlaySquareOutlined />} onClick={() => setBatchModalOpen(true)}>
+                            {t('taskCenter.batchRun')} ({selectedRowKeys.length})
+                        </Button>
+                    )}
                     {(hasPermission('*') || hasPermission('tasks:ansible_tasks:add')) && (
-                        <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsCreateModalOpen(true)}>{t('taskCenter.createNewTemplate')}</Button>
+                        <Button type="primary" icon={<PlusOutlined />} onClick={() => { form.resetFields(); setEditingTask(null); setContentValue(''); setExtraVars([]); form.setFieldValue('extra_vars', '{}'); setIsCreateModalOpen(true); }}>{t('taskCenter.createNewTemplate')}</Button>
                     )}
                 </Space>
             }
@@ -212,13 +286,16 @@ const TaskCenter: React.FC = () => {
                 rowKey="id"
                 loading={listLoading}
                 scroll={{ x: 'max-content' }}
-               
+                rowSelection={hasPermission('tasks:ansible_tasks:run') ? {
+                    selectedRowKeys,
+                    onChange: setSelectedRowKeys,
+                } : undefined}
             />
                 )}
             <Modal
                 title={editingTask ? t('taskCenter.modalTitleEdit') : t('taskCenter.modalTitleCreate')}
                 open={isCreateModalOpen}
-                onCancel={() => { setIsCreateModalOpen(false); setEditingTask(null); }}
+                onCancel={() => { setIsCreateModalOpen(false); setEditingTask(null); setContentValue(''); setExtraVars([]); form.setFieldValue('extra_vars', '{}'); }}
                 onOk={() => form.submit()}
                 width={isMobile ? '95vw' : 800}
                 bodyStyle={{ overflowX: 'auto' }}
@@ -248,11 +325,109 @@ const TaskCenter: React.FC = () => {
                     <Form.Item noStyle shouldUpdate={(prev, curr) => prev.task_type !== curr.task_type}>
                         {() => (
                             <Form.Item label={t('taskCenter.fieldContent')} name="content" rules={[{ required: true }]}>
-                                <Input.TextArea rows={10} className="font-mono text-xs" />
+                                <div className="border border-gray-300 dark:border-gray-600 rounded overflow-hidden">
+                                    <CodeMirror
+                                        value={contentValue}
+                                        height="300px"
+                                        theme={isDark ? 'dark' : 'light'}
+                                        extensions={[yaml()]}
+                                        onChange={handleContentChange}
+                                        className="text-sm"
+                                    />
+                                </div>
                             </Form.Item>
                         )}
                     </Form.Item>
+                    <Form.Item name="extra_vars" hidden noStyle />
+                    <Collapse
+                        className="mb-4"
+                        items={[{
+                            key: '1',
+                            label: t('taskCenter.extraVars'),
+                            children: (
+                                <div className="space-y-2">
+                                    {extraVars.map((item, index) => (
+                                        <div key={index} className="flex gap-2 items-center">
+                                            <Input
+                                                placeholder="Key"
+                                                value={item.key}
+                                                onChange={(e) => handleExtraVarChange(index, 'key', e.target.value)}
+                                                className="flex-1"
+                                            />
+                                            <Input
+                                                placeholder="Value"
+                                                value={item.value}
+                                                onChange={(e) => handleExtraVarChange(index, 'value', e.target.value)}
+                                                className="flex-1"
+                                            />
+                                            <Button
+                                                type="link"
+                                                danger
+                                                size="small"
+                                                icon={<MinusCircleOutlined />}
+                                                onClick={() => handleRemoveExtraVar(index)}
+                                            />
+                                        </div>
+                                    ))}
+                                    <Button
+                                        type="dashed"
+                                        size="small"
+                                        icon={<PlusOutlined />}
+                                        onClick={handleAddExtraVar}
+                                        className="w-full"
+                                    >
+                                        {t('taskCenter.addExtraVar')}
+                                    </Button>
+                                </div>
+                            ),
+                        }]}
+                    />
                 </Form>
+            </Modal>
+            <Modal
+                title={t('taskCenter.previewTitle')}
+                open={previewModalOpen}
+                onCancel={() => setPreviewModalOpen(false)}
+                onOk={() => { setPreviewModalOpen(false); runMutation.mutate(previewRecord.id); }}
+                okText={t('taskCenter.confirmRun')}
+                cancelText={t('common.cancel')}
+            >
+                <Descriptions column={2} bordered size="small" className="mt-4">
+                    <Descriptions.Item label={t('taskCenter.fieldName')}>{previewRecord?.name}</Descriptions.Item>
+                    <Descriptions.Item label={t('taskCenter.fieldType')}>
+                        {previewRecord?.task_type === 'cmd' ? t('taskCenter.taskTypeCmd') : t('taskCenter.taskTypePlaybook')}
+                    </Descriptions.Item>
+                    <Descriptions.Item label={t('taskCenter.fieldResourcePool')}>{previewRecord?.resource_pool_name}</Descriptions.Item>
+                    <Descriptions.Item label={t('taskCenter.fieldTimeout')}>{previewRecord?.timeout}s</Descriptions.Item>
+                    <Descriptions.Item label={t('taskCenter.fieldContent')} span={2}>
+                        <pre className="whitespace-pre-wrap text-xs p-2 rounded max-h-40 overflow-auto !bg-gray-50 !text-gray-800">{previewRecord?.content}</pre>
+                    </Descriptions.Item>
+                    {previewRecord?.extra_vars && Object.keys(previewRecord.extra_vars).length > 0 && (
+                        <Descriptions.Item label={t('taskCenter.extraVars')} span={2}>
+                            <pre className="whitespace-pre-wrap text-xs p-2 rounded max-h-32 overflow-auto !bg-gray-50 !text-gray-800">
+                                {JSON.stringify(previewRecord.extra_vars, null, 2)}
+                            </pre>
+                        </Descriptions.Item>
+                    )}
+                </Descriptions>
+            </Modal>
+            <Modal
+                title={t('taskCenter.batchRunConfirm')}
+                open={batchModalOpen}
+                onCancel={() => setBatchModalOpen(false)}
+                onOk={() => batchRunMutation.mutate(selectedRowKeys as number[])}
+                okText={t('taskCenter.confirmRun')}
+                cancelText={t('common.cancel')}
+                confirmLoading={batchRunMutation.isPending}
+            >
+                <p className="mb-4">{t('taskCenter.batchRunTip', { count: selectedRowKeys.length })}</p>
+                <div className="max-h-60 overflow-auto">
+                    {taskData?.data
+                        ?.filter((t: any) => selectedRowKeys.includes(t.id))
+                        .map((task: any) => (
+                            <Tag key={task.id} className="mb-1 block">{task.name}</Tag>
+                        ))}
+                </div>
             </Modal>
         </Card>
     );

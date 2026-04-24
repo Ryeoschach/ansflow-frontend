@@ -139,7 +139,15 @@
     "neverRun": "从未运行",
     "runNow": "立即运行",
     "clone": "克隆",
-    "createNewTemplate": "创建新模板"
+    "createNewTemplate": "创建新模板",
+    "extraVars": "变量 (Extra Vars)",
+    "addExtraVar": "添加变量",
+    "previewTitle": "执行预览",
+    "confirmRun": "确认执行",
+    "batchRun": "批量执行",
+    "batchRunConfirm": "确认批量执行",
+    "batchRunTip": "将执行选中的 {{count}} 个任务模板",
+    "batchRunTriggered": "批量任务已触发执行"
   },
   "credential": {
     "title": "SSH 登录凭据管理",
@@ -1000,7 +1008,9 @@
     "terminateInstructionSent": "终止指令已发送",
     "terminateFailed": "终止失败",
     "pending": "排队中",
-    "system": "系统"
+    "system": "系统",
+    "advancedFilter": "高级筛选",
+    "searchByExecutor": "执行者"
   },
   "imageRegistry": {
     "title": "全局镜像仓库管理",
