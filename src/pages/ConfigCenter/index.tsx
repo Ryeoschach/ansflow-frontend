@@ -226,6 +226,7 @@ const ConfigCenter: React.FC = () => {
             { label: '流水线结果', value: 'pipeline_result' },
             { label: '审批请求', value: 'approval_requested' },
             { label: '审批结果', value: 'approval_result' },
+            { label: 'Ansible 任务结果', value: 'task_result' },
           ];
           return (
             <Checkbox.Group
