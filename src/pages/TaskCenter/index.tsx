@@ -22,13 +22,14 @@ import {
     CopyOutlined,
     DeleteOutlined,
     MinusCircleOutlined,
+    ClockCircleOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAnsibleTasks, createAnsibleTask, updateAnsibleTask, runAnsibleTask, deleteAnsibleTask } from '../../api/tasks';
 import { getResourcePools } from '../../api/hosts';
 import useAppStore from '../../store/useAppStore';
 import useBreakpoint from '../../utils/useBreakpoint';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { TableSkeleton } from '../../components/Skeletons';
 import { useTranslation } from 'react-i18next';
 import CodeMirror from '@uiw/react-codemirror';
@@ -286,6 +287,9 @@ const TaskCenter: React.FC = () => {
                 <Space>
                     <PlayCircleOutlined className="text-blue-500" />
                     <span>{t('taskCenter.title')}</span>
+                    <Link to="/v1/task/schedules" className="text-sm text-gray-500 hover:text-blue-500">
+                        <ClockCircleOutlined /> {t('schedule.title')}
+                    </Link>
                 </Space>
             }
             extra={

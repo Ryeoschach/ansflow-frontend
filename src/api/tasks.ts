@@ -21,3 +21,13 @@ export const deleteExecutions = (ids: number[]): Promise<any> => request.delete(
 
 export const getTaskStatus = (id: number): Promise<any> => request.get(`/tasks/${id}/status/`) as any;
 export const terminateExecution = (id: number): Promise<any> => request.post(`/executions/${id}/terminate/`) as any;
+
+// ========================
+// 定时调度接口 (Schedule)
+// ========================
+export const getSchedules = (params?: any): Promise<PaginatedResponse<any>> => request.get('/schedules/', { params }) as any;
+export const createSchedule = (data: any): Promise<any> => request.post('/schedules/', data) as any;
+export const updateSchedule = (id: number, data: any): Promise<any> => request.patch(`/schedules/${id}/`, data) as any;
+export const deleteSchedule = (id: number): Promise<any> => request.delete(`/schedules/${id}/`) as any;
+export const toggleSchedule = (id: number): Promise<any> => request.post(`/schedules/${id}/toggle/`) as any;
+export const triggerSchedule = (id: number): Promise<any> => request.post(`/schedules/${id}/trigger/`) as any;

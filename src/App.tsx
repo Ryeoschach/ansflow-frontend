@@ -21,6 +21,7 @@ import Environment from "./pages/Environments";
 import ResourcePoolManagement from "./pages/ResourcePool";
 import TaskCenter from "./pages/TaskCenter";
 import ExecutionHistory from "./pages/TaskCenter/ExecutionHistory";
+import ScheduleCenter from "./pages/TaskCenter/ScheduleCenter";
 import AuditLog from "./pages/System/AuditLog";
 import ApprovalCenter from "./pages/System/ApprovalCenter";
 import CredentialVault from './pages/System/CredentialVault';
@@ -374,6 +375,7 @@ function App() {
                 <Route path="v1/tasks" element={<TaskCenter />} />
                 <Route path="v1/task/ansible" element={<TaskCenter />} />
                 <Route path="v1/task/executions" element={<ExecutionHistory />} />
+                <Route path="v1/task/schedules" element={<ScheduleCenter />} />
                 <Route path="v1/k8s/helm" element={<HelmCenter />} />
                 <Route path="v1/k8s/management" element={<K8sCenter />} />
                 <Route path="v1/ci-envs" element={<CIEnvironments />} />
