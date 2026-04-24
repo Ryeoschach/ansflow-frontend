@@ -12,6 +12,7 @@ import {
     Input,
     Select,
     DatePicker,
+    Tooltip,
 } from 'antd';
 import {
     SyncOutlined,
@@ -233,6 +234,12 @@ const ExecutionHistory: React.FC = () => {
                 >
                     {t('executionHistory.advancedFilter')}
                 </Button>
+                <Button
+                    icon={<SyncOutlined />}
+                    onClick={() => queryClient.invalidateQueries({ queryKey: ['ansible-executions'] })}
+                >
+                    {t('common.refresh')}
+                </Button>
                 {showAdvanced && (
                     <>
                         <DatePicker.RangePicker
@@ -282,7 +289,20 @@ const ExecutionHistory: React.FC = () => {
             />
 
             <Drawer
-                title={t('executionHistory.logDetails', { id: activeExecutionId })}
+                title={
+                    <Space>
+                        <span>{t('executionHistory.logDetails', { id: activeExecutionId })}</span>
+                        <Tooltip title={t('common.refresh')}>
+                            <Button
+                                type="text"
+                                size="small"
+                                icon={<SyncOutlined spin={logsLoading} />}
+                                onClick={() => queryClient.invalidateQueries({ queryKey: ['execution-logs', activeExecutionId] })}
+                                loading={logsLoading}
+                            />
+                        </Tooltip>
+                    </Space>
+                }
                 placement="right"
                 size={drawerWidth}
                 onClose={() => {
