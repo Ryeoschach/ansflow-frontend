@@ -40,6 +40,7 @@ const ScheduleCenter: React.FC = () => {
     const [form] = Form.useForm();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingSchedule, setEditingSchedule] = useState<any>(null);
+    const [scheduleType, setScheduleType] = useState('cron');
 
     // 获取调度列表
     const { data: scheduleData, isLoading } = useQuery({
@@ -88,7 +89,7 @@ const ScheduleCenter: React.FC = () => {
     const toggleMutation = useMutation({
         mutationFn: ({ id }: { id: number }) => toggleSchedule(id),
         onSuccess: (res: any) => {
-            message.success(res.message);
+            message.success(res.is_enabled ? t('schedule.toggleEnabled') : t('schedule.toggleDisabled'));
             queryClient.invalidateQueries({ queryKey: ['ansible-schedules'] });
         },
     });
@@ -104,6 +105,7 @@ const ScheduleCenter: React.FC = () => {
 
     const handleEdit = (record: any) => {
         setEditingSchedule(record);
+        setScheduleType(record.schedule_type || 'cron');
         form.setFieldsValue(record);
         setIsModalOpen(true);
     };
@@ -146,7 +148,7 @@ const ScheduleCenter: React.FC = () => {
             title: t('schedule.nextRunTime'),
             dataIndex: 'next_run_time',
             key: 'next_run_time',
-            render: (val: string) => val ? new Date(val).toLocaleString() : '-',
+            render: (val: string) => val ? new Date(val).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : '-',
         },
         {
             title: t('schedule.status'),
@@ -226,7 +228,7 @@ const ScheduleCenter: React.FC = () => {
                         <Button
                             type="primary"
                             icon={<PlusOutlined />}
-                            onClick={() => { setEditingSchedule(null); form.resetFields(); setIsModalOpen(true); }}
+                            onClick={() => { setEditingSchedule(null); setScheduleType('cron'); form.resetFields(); setIsModalOpen(true); }}
                         >
                             {t('schedule.createSchedule')}
                         </Button>
@@ -283,51 +285,46 @@ const ScheduleCenter: React.FC = () => {
                                 { label: t('schedule.cron'), value: 'cron' },
                                 { label: t('schedule.interval'), value: 'interval' },
                             ]}
+                            onChange={(val) => setScheduleType(val)}
                         />
                     </Form.Item>
-                    <Form.Item noStyle shouldUpdate={(prev, curr) => prev.schedule_type !== curr.schedule_type}>
-                        {() => (
-                            <>
-                                {form.getFieldValue('schedule_type') === 'cron' ? (
-                                    <Form.Item
-                                        label={t('schedule.cronExpression')}
-                                        name="cron_expression"
-                                        initialValue="0 3 * * *"
-                                        rules={[{ required: true }]}
-                                        extra={t('schedule.cronHelp')}
-                                    >
-                                        <Input placeholder="0 3 * * *" />
-                                    </Form.Item>
-                                ) : (
-                                    <Space>
-                                        <Form.Item
-                                            label={t('schedule.intervalValue')}
-                                            name="interval_value"
-                                            initialValue={1}
-                                            rules={[{ required: true }]}
-                                        >
-                                            <Input type="number" min={1} style={{ width: 100 }} />
-                                        </Form.Item>
-                                        <Form.Item
-                                            label={t('schedule.intervalUnit')}
-                                            name="interval_unit"
-                                            initialValue="hours"
-                                            rules={[{ required: true }]}
-                                        >
-                                            <Select
-                                                style={{ width: 120 }}
-                                                options={[
-                                                    { label: t('schedule.minutes'), value: 'minutes' },
-                                                    { label: t('schedule.hours'), value: 'hours' },
-                                                    { label: t('schedule.days'), value: 'days' },
-                                                ]}
-                                            />
-                                        </Form.Item>
-                                    </Space>
-                                )}
-                            </>
-                        )}
-                    </Form.Item>
+                    {scheduleType === 'cron' ? (
+                        <Form.Item
+                            label={t('schedule.cronExpression')}
+                            name="cron_expression"
+                            initialValue="0 3 * * *"
+                            rules={[{ required: true }]}
+                            extra={t('schedule.cronHelp')}
+                        >
+                            <Input placeholder="0 3 * * *" />
+                        </Form.Item>
+                    ) : (
+                        <Space>
+                            <Form.Item
+                                label={t('schedule.intervalValue')}
+                                name="interval_value"
+                                initialValue={1}
+                                rules={[{ required: true }]}
+                            >
+                                <Input type="number" min={1} style={{ width: 100 }} />
+                            </Form.Item>
+                            <Form.Item
+                                label={t('schedule.intervalUnit')}
+                                name="interval_unit"
+                                initialValue="hours"
+                                rules={[{ required: true }]}
+                            >
+                                <Select
+                                    style={{ width: 120 }}
+                                    options={[
+                                        { label: t('schedule.minutes'), value: 'minutes' },
+                                        { label: t('schedule.hours'), value: 'hours' },
+                                        { label: t('schedule.days'), value: 'days' },
+                                    ]}
+                                />
+                            </Form.Item>
+                        </Space>
+                    )}
                     <Form.Item label={t('schedule.isEnabled')} name="is_enabled" valuePropName="checked" initialValue={true}>
                         <Switch />
                     </Form.Item>
