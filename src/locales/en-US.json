@@ -1011,7 +1011,8 @@
     "pending": "Queued",
     "system": "System",
     "advancedFilter": "Advanced Filter",
-    "searchByExecutor": "Executor"
+    "searchByExecutor": "Executor",
+    "backToTemplates": "Back to Templates"
   },
   "imageRegistry": {
     "title": "Global Image Registry Management",

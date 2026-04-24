@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Table,
     Card,
@@ -28,7 +28,7 @@ import { getAnsibleTasks, createAnsibleTask, updateAnsibleTask, runAnsibleTask, 
 import { getResourcePools } from '../../api/hosts';
 import useAppStore from '../../store/useAppStore';
 import useBreakpoint from '../../utils/useBreakpoint';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { TableSkeleton } from '../../components/Skeletons';
 import { useTranslation } from 'react-i18next';
 import CodeMirror from '@uiw/react-codemirror';
@@ -41,6 +41,7 @@ const TaskCenter: React.FC = () => {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { message } = App.useApp();
     const { token, hasPermission } = useAppStore();
     const { isMobile } = useBreakpoint();
@@ -61,6 +62,21 @@ const TaskCenter: React.FC = () => {
         queryFn: () => getAnsibleTasks({ page: 1, size: 50 }),
         enabled: !!token,
     });
+
+    // 处理从历史页面跳转过来带 edit_task_id 参数（需要在 taskData 定义之后）
+    useEffect(() => {
+        const editTaskId = searchParams.get('edit_task_id');
+        if (editTaskId && taskData?.data) {
+            const task = taskData.data.find((t: any) => t.id === Number(editTaskId));
+            if (task) {
+                handleEdit(task);
+                // 清除 URL 参数防止刷新后重复打开
+                const newParams = new URLSearchParams(searchParams);
+                newParams.delete('edit_task_id');
+                navigate(`/v1/task/ansible?${newParams.toString()}`, { replace: true });
+            }
+        }
+    }, [searchParams, taskData]);
 
     // 2. 获取资源池列表
     const { data: poolData } = useQuery({
@@ -166,7 +182,15 @@ const TaskCenter: React.FC = () => {
             dataIndex: 'name',
             key: 'name',
             ellipsis: true,
-            render: (val: string) => <Text strong>{val}</Text>
+            render: (val: string, record: any) => (
+                <Text
+                    strong
+                    className="cursor-pointer hover:underline"
+                    onClick={() => handleEdit(record)}
+                >
+                    {val}
+                </Text>
+            )
         },
         {
             title: t('taskCenter.fieldType'),

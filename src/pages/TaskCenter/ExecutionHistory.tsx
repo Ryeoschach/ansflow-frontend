@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import {
     Table,
     Card,
@@ -24,6 +24,7 @@ import {
     HistoryOutlined,
     StopOutlined,
     FilterOutlined,
+    LeftOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -38,6 +39,7 @@ const { Text } = Typography;
 const ExecutionHistory: React.FC = () => {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const { message, modal } = App.useApp();
     const { token, hasPermission } = useAppStore();
@@ -125,7 +127,14 @@ const ExecutionHistory: React.FC = () => {
             dataIndex: 'task_name',
             key: 'task_name',
             ellipsis: true,
-            render: (text: string) => <Text>{text}</Text>
+            render: (text: string, record: any) => (
+                <Text
+                    className="cursor-pointer hover:underline"
+                    onClick={() => navigate(`/v1/task/ansible?edit_task_id=${record.task}`)}
+                >
+                    {text}
+                </Text>
+            )
         },
         {
             title: t('executionHistory.targetResourcePool'),
@@ -204,6 +213,9 @@ const ExecutionHistory: React.FC = () => {
                 <Space>
                     <HistoryOutlined className="text-amber-500" />
                     <span>{t('executionHistory.title')}</span>
+                    <Link to="/v1/task/ansible" className="text-sm text-gray-500 hover:text-blue-500">
+                        <LeftOutlined /> {t('executionHistory.backToTemplates')}
+                    </Link>
                 </Space>
             }
         >

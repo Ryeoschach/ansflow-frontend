@@ -1010,7 +1010,8 @@
     "pending": "排队中",
     "system": "系统",
     "advancedFilter": "高级筛选",
-    "searchByExecutor": "执行者"
+    "searchByExecutor": "执行者",
+    "backToTemplates": "返回任务模板"
   },
   "imageRegistry": {
     "title": "全局镜像仓库管理",
