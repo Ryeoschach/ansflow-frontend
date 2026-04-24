@@ -42,7 +42,9 @@ const LoginPage: React.FC = () => {
         if (accessToken) {
             // 设置 token 到 store
             setToken(accessToken);
-            setCurrentUser(username || 'User');
+            const displayUsername = username || 'User';
+            message.success(`${t('auth.loginSuccess')} ${displayUsername}`);
+            setCurrentUser(displayUsername);
             // 清理 URL
             window.history.replaceState({}, '', window.location.pathname);
             setUrlProcessed(true);
@@ -55,8 +57,10 @@ const LoginPage: React.FC = () => {
     const loginMutation = useMutation({
         mutationFn: login,
         onSuccess: (data: any) => {
+            const username = data.user?.username || data.username || 'User';
+            message.success(`${t('auth.loginSuccess')} ${username}`);
             setToken(data.access);
-            setCurrentUser(data.username || 'User');
+            setCurrentUser(username);
             navigate('/v1/dashboard');
         },
         onError: (error: any) => {
@@ -68,7 +72,7 @@ const LoginPage: React.FC = () => {
     const ldapLoginMutation = useMutation({
         mutationFn: ({ username, password }: { username: string; password: string }) => ldapLogin(username, password),
         onSuccess: (data: any) => {
-            const username = data.username || 'User';
+            const username = data.user?.username || data.username || 'User';
             message.success(`${t('auth.loginSuccess')} ${username}`);
             setToken(data.access);
             setCurrentUser(username);
