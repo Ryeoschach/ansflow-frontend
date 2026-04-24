@@ -562,6 +562,7 @@
     "addMenu": "新增菜单",
     "editMenu": "编辑菜单",
     "createMenu": "新增菜单",
+    "addSubmenu": "添加子菜单",
     "menuName": "菜单名称",
     "menuNameRequired": "请输入菜单名称",
     "menuNameEn": "英文名称 (可选)",

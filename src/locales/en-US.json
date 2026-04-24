@@ -563,6 +563,7 @@
     "addMenu": "Add Menu",
     "editMenu": "Edit Menu",
     "createMenu": "Add Menu",
+    "addSubmenu": "Add Submenu",
     "menuName": "Menu Name",
     "menuNameRequired": "Please enter menu name",
     "menuNameEn": "English Name (Optional)",

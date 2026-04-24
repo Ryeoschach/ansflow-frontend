@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Table, Button, Space, Modal, Form, Input, InputNumber, Select, App, Popconfirm, Card, Tooltip } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, AppstoreAddOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getMenus, createMenu, updateMenu, deleteMenu } from '../../api/rbac';
@@ -19,6 +19,7 @@ const MenuManagement: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { message } = App.useApp();
     const [editingMenu, setEditingMenu] = useState<any>(null);
+    const [creatingWithParent, setCreatingWithParent] = useState<number | null>(null);
     const [form] = Form.useForm();
 
     // 1. 获取菜单列表 (树形)
@@ -48,6 +49,8 @@ const MenuManagement: React.FC = () => {
         onSuccess: () => {
             message.success(editingMenu ? t('menuManagement.updateSuccess') : t('menuManagement.createSuccess'));
             setIsModalOpen(false);
+            setEditingMenu(null);
+            setCreatingWithParent(null);
             queryClient.invalidateQueries({ queryKey: ['all_menus'] });
             queryClient.invalidateQueries({ queryKey: ['flat_menus'] });
             queryClient.invalidateQueries({ queryKey: ['my_menus'] });
@@ -65,16 +68,23 @@ const MenuManagement: React.FC = () => {
     });
 
     const showModal = (menu?: any) => {
-        setEditingMenu(menu || null);
-        if (menu) {
-            // 确保 parent 传入的是 ID 值，如果是对象则取其 ID
+        if (menu && menu.id) {
+            // 编辑现有菜单
+            setEditingMenu(menu);
+            setCreatingWithParent(null);
             const formData = {
                 ...menu,
                 parent: typeof menu.parent === 'object' ? menu.parent?.id : menu.parent
             };
             form.setFieldsValue(formData);
         } else {
+            // 新建菜单（可选预设父菜单）
+            setEditingMenu(null);
+            setCreatingWithParent(menu?.parent || null);
             form.resetFields();
+            if (menu?.parent) {
+                form.setFieldsValue({ parent: menu.parent });
+            }
         }
         setIsModalOpen(true);
     };
@@ -90,6 +100,11 @@ const MenuManagement: React.FC = () => {
             key: 'action',
             render: (_: any, record: any) => (
                 <Space size="middle">
+                    {(hasPermission('*') || hasPermission('rbac:menu:create') || hasPermission('rbac:menu:add')) && (
+                        <Tooltip title={t('menuManagement.addSubmenu')}>
+                            <Button type="text" icon={<AppstoreAddOutlined />} onClick={() => showModal({ parent: record.id })} />
+                        </Tooltip>
+                    )}
                     {(hasPermission('*') || hasPermission('rbac:menu:edit')) && (
                         <Tooltip title={t('menuManagement.edit')}>
                             <Button type="text" icon={<EditOutlined />} onClick={() => showModal(record)} />
@@ -115,7 +130,7 @@ const MenuManagement: React.FC = () => {
         }>
             <Table loading={isLoading} columns={columns} dataSource={menuTree} rowKey="id" scroll={{ x: 'max-content' }} pagination={false} expandable={{ defaultExpandAllRows: true }} />
 
-            <Modal title={editingMenu ? t('menuManagement.editMenu') : t('menuManagement.createMenu')} open={isModalOpen} onCancel={() => setIsModalOpen(false)} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={isMobile ? '95vw' : 600} bodyStyle={{ overflowX: 'auto' }}>
+            <Modal title={editingMenu ? t('menuManagement.editMenu') : t('menuManagement.createMenu')} open={isModalOpen} onCancel={() => { setIsModalOpen(false); setEditingMenu(null); setCreatingWithParent(null); }} onOk={() => form.submit()} confirmLoading={mutation.isPending} width={isMobile ? '95vw' : 600} bodyStyle={{ overflowX: 'auto' }}>
                 <Form form={form} layout="vertical" onFinish={(values) => mutation.mutate({...values, parent: values.parent || null})} initialValues={{ order: 0 }}>
                     <Form.Item name="title" label={t('menuManagement.menuName')} rules={[{ required: true, message: t('menuManagement.menuNameRequired') }]}><Input /></Form.Item>
                     <Form.Item name="title_en" label={t('menuManagement.menuNameEn')}><Input placeholder={t('menuManagement.menuNameEnPlaceholder')} /></Form.Item>
