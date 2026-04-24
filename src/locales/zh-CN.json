@@ -1106,6 +1106,7 @@
     "action": "操作",
     "viewDetail": "查看详情",
     "editWebhook": "编辑 Webhook",
+    "create": "新建",
     "createWebhook": "新建 Webhook",
     "createSuccess": "Webhook 创建成功",
     "updateSuccess": "Webhook 更新成功",

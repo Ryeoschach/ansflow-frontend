@@ -1107,6 +1107,7 @@
     "action": "Action",
     "viewDetail": "View Detail",
     "editWebhook": "Edit Webhook",
+    "create": "Create",
     "createWebhook": "Create Webhook",
     "createSuccess": "Webhook created successfully",
     "updateSuccess": "Webhook updated successfully",
