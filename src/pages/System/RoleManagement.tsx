@@ -631,7 +631,7 @@ const RoleManagement: React.FC = () => {
                                                                         >
                                                                             <div className="flex flex-wrap gap-3">
                                                                                 {plist.map((p: any) => {
-                                                                                    const isChecked = selectedPerms.includes(String(p.id));
+                                                                                    const isChecked = Array.isArray(selectedPerms) && selectedPerms.includes(String(p.id));
                                                                                     const danger = p.danger_level || 'safe';
                                                                                     const variant = dangerVariants[danger] || dangerVariants['safe'];
                                                                                     return (

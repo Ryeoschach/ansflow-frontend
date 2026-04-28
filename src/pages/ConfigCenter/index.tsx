@@ -263,14 +263,17 @@ const ConfigCenter: React.FC = () => {
         if (record.key === 'notify_on') {
           let currentValues: string[] = [];
           try {
-            currentValues = JSON.parse(v);
-          } catch { currentValues = []; }
+            const parsed = v ? JSON.parse(v) : [];
+            currentValues = Array.isArray(parsed) ? parsed : [];
+          } catch { 
+            currentValues = []; 
+          }
           const allOptions = [
-            { label: '流水线开始', value: 'pipeline_start' },
-            { label: '流水线结果', value: 'pipeline_result' },
-            { label: '审批请求', value: 'approval_requested' },
-            { label: '审批结果', value: 'approval_result' },
-            { label: 'Ansible 任务结果', value: 'task_result' },
+            { label: t('configCenter.notifyOnPipelineStart'), value: 'pipeline_start' },
+            { label: t('configCenter.notifyOnPipelineResult'), value: 'pipeline_result' },
+            { label: t('configCenter.notifyOnApprovalRequested'), value: 'approval_requested' },
+            { label: t('configCenter.notifyOnApprovalResult'), value: 'approval_result' },
+            { label: t('configCenter.notifyOnTaskResult'), value: 'task_result' },
           ];
           return (
             <Checkbox.Group
@@ -604,7 +607,7 @@ const ConfigCenter: React.FC = () => {
                       <div className="text-xs text-gray-400 mt-1">
                         {t('configCenter.oldValue')}: {log.old_value_display || '-'} → {t('configCenter.newValue')}: {log.new_value_display}
                       </div>
-                      {log.reason && <div className="text-xs text-gray-500">Reason: {log.reason}</div>}
+                      {log.reason && <div className="text-xs text-gray-500">{t('configCenter.rollbackReason')}: {log.reason}</div>}
                       <Button
                         size="small"
                         icon={<RollbackOutlined />}

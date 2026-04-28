@@ -373,7 +373,7 @@ const ResourcePoolManagement: React.FC = () => {
                                     showHeader={false}
                                     pagination={false}
                                     loading={hostsLoading}
-                                    dataSource={availableHosts.filter(h => !selectedHostIds.includes(h.id))}
+                                    dataSource={(availableHosts || []).filter(h => Array.isArray(selectedHostIds) && !selectedHostIds.includes(h.id))}
                                     rowKey="id"
                                     columns={[
                                         {
