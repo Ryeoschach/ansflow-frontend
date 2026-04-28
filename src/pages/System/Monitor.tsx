@@ -192,15 +192,22 @@ const MonitorCenter: React.FC = () => {
       </div>
 
       {isLoading || celeryLoading ? (
-        <Row gutter={[24, 24]}>
-          {[1, 2, 3, 4].map(i => (
-            <Col key={i} xs={24} sm={12} lg={6}>
-              <Card style={{ borderRadius: 16 }}>
-                <Skeleton active avatar paragraph={{ rows: 3 }} />
-              </Card>
-            </Col>
-          ))}
-        </Row>
+        <div className="space-y-8">
+          {/* Hero Card Skeleton */}
+          <Card style={{ borderRadius: 24, height: 200, border: 'none', background: '#f1f5f9' }}>
+            <Skeleton active avatar paragraph={{ rows: 2 }} />
+          </Card>
+          
+          {/* System Health Table Skeleton */}
+          <Card style={{ borderRadius: 16 }}>
+            <Skeleton active paragraph={{ rows: 6 }} />
+          </Card>
+
+          {/* Celery Table Skeleton */}
+          <Card style={{ borderRadius: 16 }}>
+            <Skeleton active paragraph={{ rows: 4 }} />
+          </Card>
+        </div>
       ) : (
         <>
           <Card 
