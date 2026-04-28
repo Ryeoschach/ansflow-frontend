@@ -736,7 +736,19 @@
     "pendingCount": "待扫描",
     "latency": "耗时",
     "unreachable": "连接不可达",
-    "noData": "未能获取到监控数据"
+    "noData": "未能获取到监控数据",
+    "celeryStatus": "Celery 分布式任务状态",
+    "activeWorkers": "活动 Worker",
+    "totalConcurrency": "总并发度",
+    "queueLength": "队列积压",
+    "workerName": "Worker 名称",
+    "workerStatus": "状态",
+    "workerActive": "正在执行",
+    "workerReserved": "等待中",
+    "workerConcurrency": "并发限制",
+    "broker": "消息中间件",
+    "celeryBeatStatus": "任务调度器 (Beat)",
+    "lastRunTime": "最后运行时间"
   },
   "credentialVault": {
     "title": "安全凭据核心",

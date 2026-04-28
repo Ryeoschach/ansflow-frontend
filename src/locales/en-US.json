@@ -737,7 +737,19 @@
     "pendingCount": "Pending",
     "latency": "Latency",
     "unreachable": "Connection unreachable",
-    "noData": "Unable to fetch monitoring data"
+    "noData": "Unable to fetch monitoring data",
+    "celeryStatus": "Celery Distributed Task Status",
+    "activeWorkers": "Active Workers",
+    "totalConcurrency": "Total Concurrency",
+    "queueLength": "Queue Length",
+    "workerName": "Worker Name",
+    "workerStatus": "Status",
+    "workerActive": "Active",
+    "workerReserved": "Reserved",
+    "workerConcurrency": "Concurrency",
+    "broker": "Broker",
+    "celeryBeatStatus": "Task Scheduler (Beat)",
+    "lastRunTime": "Last Run Time"
   },
   "credentialVault": {
     "title": "Secure Credential Core",

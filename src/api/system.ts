@@ -51,3 +51,27 @@ export const getDashboardSummary = (): Promise<DashboardSummary> =>
 
 // 审计足迹日志接口
 export const getAuditLogs = (params?: any): Promise<any> => request.get('/audit-logs/', { params });
+
+export interface CeleryWorker {
+    worker: string;
+    status: 'online' | 'offline';
+    active_count: number;
+    scheduled_count: number;
+    reserved_count: number;
+    concurrency: number;
+    broker_transport: string;
+    rusage: any;
+}
+
+export interface CeleryStatsResponse {
+    workers: CeleryWorker[];
+    queues: { name: string; length: number }[];
+    beat?: {
+        status: 'online' | 'offline';
+        last_run: string;
+    };
+    timestamp: string;
+}
+
+export const getCeleryStats = (): Promise<CeleryStatsResponse> =>
+    request.get<CeleryStatsResponse>('/system/health/celery_stats/') as any;
