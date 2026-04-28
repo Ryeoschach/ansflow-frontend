@@ -5,22 +5,20 @@ import i18n from '../locales/i18n';
 
 const request = axios.create({
     baseURL: '/api/v1', // 对应 Vite 代理
-    timeout: 5000,
+    timeout: 15000,
     withCredentials: true,
 });
 
 request.interceptors.request.use(
     (config) => {
+        (config as any)._startTime = Date.now();
         const token = useAppStore.getState().token;
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
-            console.log('[Request] Added token, url:', config.url);
-        } else {
-            console.log('[Request] No token, url:', config.url);
         }
+        
         const state = useAppStore.getState();
         // 初始加载中且不是刷新请求，则不发送 Header 或直接拦截
-        // 放行 /account/me/ 以支持 OAuth 回调后获取用户信息
         if (state.isInitializing && config.url !== '/auth/refresh/' && config.url !== '/account/me/') {
             return Promise.reject(new Error('Initial loading'));
         }
@@ -33,23 +31,35 @@ let isRefreshing = false;
 let requestsQueue: any[] = [];
 request.interceptors.response.use(
     (response) => {
+        const duration = Date.now() - (response.config as any)._startTime;
+        if (duration > 2000) {
+            console.warn(`[Performance] Slow API Request: ${response.config.url} took ${duration}ms`);
+        }
         const res = response.data;
-        // 如果没有数据（比如 204），直接返回数据内容（已在后端清理，此处应保持 data 层面一致）
+        // 如果没有数据（比如 204），直接返回数据内容
         if (res === undefined || res === null || res === '') {
             return res;
         }
         // 如果后端返回的结构里包含 total，说明是分页数据
-        // 我们把整个 res 返回，让页面能拿到 .data(数组) 和 .total
         if (Object.prototype.hasOwnProperty.call(res, 'total')) {
             return res;
         }
-        // 如果是普通对象（如 login 或 me 接口），则继续剥离一层 data
-        // 但如果 res.data 为 undefined（比如 login 接口直接返回 {access, username}），
-        // 则返回整个 res 而不是 undefined
         return res.data ?? res;
     },
     async (error) => {
         const { config, response } = error;
+        
+        // 如果请求本身就是刷新 Token 请求且报错，直接清空状态并跳转登录
+        if (config.url === '/auth/refresh/' || config.url === '/api/v1/auth/refresh/') {
+            isRefreshing = false;
+            requestsQueue = [];
+            useAppStore.getState().setToken(null);
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
+            return Promise.reject(error);
+        }
+
         // 处理 401 令牌过期
         if (response?.status === 401 && !config._retry && window.location.pathname !== '/login') {
             if (isRefreshing) {
@@ -64,10 +74,11 @@ request.interceptors.response.use(
             config._retry = true;
             isRefreshing = true;
             try {
-                // 发起静默刷新请求（后端会从 Cookie 里取 RT）
-                // 注意：这里手动加了 /api/v1 因为是直接调 axios
+                // 发起静默刷新请求
                 const res = await axios.post('/api/v1/auth/refresh/', {}, { withCredentials: true });
-                const newToken = res.data.data.access; 
+                const newToken = res.data?.data?.access || res.data?.access; 
+
+                if (!newToken) throw new Error('Refresh failed: No access token');
 
                 // 更新 Store 中的内存 Token
                 useAppStore.getState().setToken(newToken);
@@ -79,9 +90,10 @@ request.interceptors.response.use(
                 config.headers.Authorization = `Bearer ${newToken}`;
                 return request(config);
             } catch (refreshError) {
-                // 刷新失败，说明 RT 也过期了，彻底登出
                 useAppStore.getState().setToken(null);
-                window.location.href = '/login';
+                if (window.location.pathname !== '/login') {
+                    window.location.href = '/login';
+                }
                 return Promise.reject(refreshError);
             } finally {
                 isRefreshing = false;

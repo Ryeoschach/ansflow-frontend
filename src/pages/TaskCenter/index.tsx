@@ -451,7 +451,7 @@ const TaskCenter: React.FC = () => {
                 <p className="mb-4">{t('taskCenter.batchRunTip', { count: selectedRowKeys.length })}</p>
                 <div className="max-h-60 overflow-auto">
                     {taskData?.data
-                        ?.filter((t: any) => selectedRowKeys.includes(t.id))
+                        ?.filter((t: any) => Array.isArray(selectedRowKeys) && selectedRowKeys.includes(t.id))
                         .map((task: any) => (
                             <Tag key={task.id} className="mb-1 block">{task.name}</Tag>
                         ))}

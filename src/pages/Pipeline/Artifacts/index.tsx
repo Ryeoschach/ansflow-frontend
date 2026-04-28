@@ -4,6 +4,7 @@ import { PlusOutlined, DeleteOutlined, EditOutlined, EyeOutlined, CloudOutlined,
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getArtifacts, deleteArtifact, createArtifact, updateArtifact, getArtifactVersionsById, type Artifact, type ArtifactVersion } from '../../../api/artifact';
+import { getArtifactoryRepositories } from '../../../api/artifactory';
 import { getRegistries } from '../../../api/registry';
 import { getPipelines } from '../../../api/pipeline';
 import useAppStore from '../../../store/useAppStore';
@@ -32,6 +33,12 @@ const Artifacts: React.FC = () => {
     const { data: registryData } = useQuery({
         queryKey: ['registries-all'],
         queryFn: () => getRegistries({ page: 1, page_size: 100 }),
+        enabled: !!authToken && isModalOpen,
+    });
+
+    const { data: artifactoryRepoData } = useQuery({
+        queryKey: ['artifactory-repos-all'],
+        queryFn: () => getArtifactoryRepositories({ page: 1, page_size: 100 }),
         enabled: !!authToken && isModalOpen,
     });
 
@@ -84,9 +91,16 @@ const Artifacts: React.FC = () => {
     const typeMap: Record<string, { text: string; color: string }> = {
         docker_image: { text: 'Docker 镜像', color: 'blue' },
         jar: { text: 'JAR 包', color: 'orange' },
+        npm_package: { text: 'npm 包', color: 'red' },
+        pypi_package: { text: 'PyPI 包', color: 'green' },
         binary: { text: '二进制', color: 'cyan' },
         helm_chart: { text: 'Helm Chart', color: 'purple' },
         other: { text: '其他', color: 'default' },
+    };
+
+    const sourceMap: Record<string, { text: string; color: string }> = {
+        docker: { text: 'Docker / Harbor', color: 'blue' },
+        artifactory: { text: 'Artifactory', color: 'orange' },
     };
 
     const columns = [
@@ -103,6 +117,16 @@ const Artifacts: React.FC = () => {
             ),
         },
         {
+            title: t('artifact.sourceType'),
+            dataIndex: 'source_type',
+            key: 'source_type',
+            width: 150,
+            render: (v: string) => {
+                const info = sourceMap[v] || { text: v, color: 'default' };
+                return <Tag color={info.color}>{info.text}</Tag>;
+            },
+        },
+        {
             title: t('artifact.type'),
             dataIndex: 'type',
             key: 'type',
@@ -114,11 +138,15 @@ const Artifacts: React.FC = () => {
         },
         {
             title: t('artifact.registry'),
-            dataIndex: 'registry_name',
-            key: 'registry_name',
-            width: 150,
+            key: 'registry_display',
+            width: 180,
             ellipsis: true,
-            render: (text: string) => text ? <Tag color="blue"><CloudOutlined /> {text}</Tag> : '-',
+            render: (_: any, record: Artifact) => {
+                if (record.source_type === 'docker') {
+                    return record.registry_name ? <Tag color="blue"><CloudOutlined /> {record.registry_name}</Tag> : '-';
+                }
+                return record.artifactory_repo_name ? <Tag color="orange"><CloudOutlined /> {record.artifactory_repo_name}</Tag> : '-';
+            },
         },
         {
             title: t('artifact.repository'),
@@ -237,22 +265,47 @@ const Artifacts: React.FC = () => {
                     <Form.Item label={t('artifact.name')} name="name" rules={[{ required: true }]}>
                         <Input placeholder={t('artifact.namePlaceholder')} />
                     </Form.Item>
+                    
+                    <Form.Item label={t('artifact.sourceType')} name="source_type" initialValue="docker">
+                        <Select options={[
+                            { value: 'docker', label: 'Docker 镜像 / Harbor' },
+                            { value: 'artifactory', label: 'Artifactory 制品库' },
+                        ]} />
+                    </Form.Item>
+
                     <div className="flex gap-4">
                         <Form.Item label={t('artifact.type')} name="type" className="flex-1" initialValue="docker_image">
                             <Select options={[
                                 { value: 'docker_image', label: t('artifact.typeDockerImage') },
                                 { value: 'jar', label: t('artifact.typeJar') },
+                                { value: 'npm_package', label: 'npm 包' },
+                                { value: 'pypi_package', label: 'PyPI 包' },
                                 { value: 'binary', label: t('artifact.typeBinary') },
                                 { value: 'helm_chart', label: t('artifact.typeHelmChart') },
                                 { value: 'other', label: t('artifact.typeOther') },
                             ]} />
                         </Form.Item>
-                        <Form.Item label={t('artifact.registry')} name="registry" className="flex-1">
-                            <Select
-                                allowClear
-                                placeholder={t('artifact.selectRegistry')}
-                                options={registryData?.data?.map((r: any) => ({ label: r.name, value: r.id }))}
-                            />
+                        <Form.Item noStyle shouldUpdate={(prev, cur) => prev.source_type !== cur.source_type}>
+                            {({ getFieldValue }) => {
+                                const sourceType = getFieldValue('source_type');
+                                return sourceType === 'docker' ? (
+                                    <Form.Item label={t('artifact.registry')} name="image_registry" className="flex-1">
+                                        <Select
+                                            allowClear
+                                            placeholder={t('artifact.selectRegistry')}
+                                            options={registryData?.data?.map((r: any) => ({ label: r.name, value: r.id }))}
+                                        />
+                                    </Form.Item>
+                                ) : (
+                                    <Form.Item label={t('artifact.artifactoryRepo')} name="artifactory_repo" className="flex-1">
+                                        <Select
+                                            allowClear
+                                            placeholder={t('artifact.selectArtifactoryRepo')}
+                                            options={artifactoryRepoData?.data?.map((r: any) => ({ label: `${r.instance_name}/${r.repo_key} (${r.repo_type})`, value: r.id }))}
+                                        />
+                                    </Form.Item>
+                                );
+                            }}
                         </Form.Item>
                     </div>
                     <Form.Item label={t('artifact.repository')} name="repository">
