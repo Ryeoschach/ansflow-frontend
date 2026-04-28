@@ -66,7 +66,8 @@ const ImageRegistries: React.FC = () => {
 
     const handleEdit = (record: any) => {
         setEditingRegistry(record);
-        form.setFieldsValue(record);
+        // 严禁回填加密字段（后端通常返回掩码），防止用户误提交掩码
+        form.setFieldsValue({ ...record, password: '' });
         setIsModalOpen(true);
     };
 
@@ -188,7 +189,10 @@ const ImageRegistries: React.FC = () => {
                             <Input prefix={<UserOutlined />} />
                         </Form.Item>
                         <Form.Item label={t('imageRegistry.passwordToken')} name="password" className="flex-1" rules={[{ required: !editingRegistry, message: t('imageRegistry.enterAuthKey') }]}>
-                            <Input.Password prefix={<LockOutlined />} placeholder={t('imageRegistry.enterPasswordOrToken')} />
+                            <Input.Password 
+                                prefix={<LockOutlined />} 
+                                placeholder={editingRegistry ? '******' : t('imageRegistry.enterPasswordOrToken')} 
+                            />
                         </Form.Item>
                     </div>
 
