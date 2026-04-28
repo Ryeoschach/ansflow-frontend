@@ -1,7 +1,7 @@
 import React, { useEffect, lazy } from 'react';
 import { ConfigProvider, App as AntdApp, theme } from 'antd';
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import axios from 'axios';
 import MainLayout from './layouts/MainLayout';
@@ -31,6 +31,16 @@ const ConfigCenter = lazy(() => import('./pages/ConfigCenter'));
 const ImageRegistries = lazy(() => import('./pages/Pipeline/ImageRegistries'));
 const Artifacts = lazy(() => import('./pages/Pipeline/Artifacts'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const K8sCenter = lazy(() => import("./pages/K8sCenter"));
+const HelmCenter = lazy(() => import("./pages/K8sCenter/HelmCenter"));
+const PipelineList = lazy(() => import("./pages/Pipeline"));
+const PipelineDesigner = lazy(() => import("./pages/Pipeline/Designer"));
+const PipelineRunViewer = lazy(() => import("./pages/Pipeline/RunViewer"));
+const CIEnvironments = lazy(() => import("./pages/Pipeline/CIEnvironments"));
+const PipelineWebhooks = lazy(() => import("./pages/Pipeline/Webhooks"));
+const MonitorCenter = lazy(() => import("./pages/System/Monitor"));
+const BackupManagement = lazy(() => import("./pages/System/BackupManagement"));
+const Profile = lazy(() => import("./pages/Profile"));
 
 
 const queryClient = new QueryClient({
@@ -114,18 +124,6 @@ const AntdInitializer: React.FC = () => {
   }, [message, notification, modal]);
   return null;
 };
-const K8sCenter = lazy(() => import("./pages/K8sCenter"));
-const HelmCenter = lazy(() => import("./pages/K8sCenter/HelmCenter"));
-const PipelineList = lazy(() => import("./pages/Pipeline"));
-const PipelineDesigner = lazy(() => import("./pages/Pipeline/Designer"));
-const PipelineRunViewer = lazy(() => import("./pages/Pipeline/RunViewer"));
-const CIEnvironments = lazy(() => import("./pages/Pipeline/CIEnvironments"));
-const ArtifactRepository = lazy(() => import("./pages/Pipeline/ArtifactRepository"));
-const PipelineWebhooks = lazy(() => import("./pages/Pipeline/Webhooks"));
-const MonitorCenter = lazy(() => import("./pages/System/Monitor"));
-const ConfigCenter = lazy(() => import("./pages/ConfigCenter"));
-const BackupManagement = lazy(() => import("./pages/System/BackupManagement"));
-const Profile = lazy(() => import("./pages/Profile"));
 
 // const PageLoader = () => (
 //     <div className={`h-full w-full flex flex-col items-center justify-center`}>
@@ -386,7 +384,8 @@ function App() {
                 <Route path="v1/system/menus" element={<MenuManagement />} />
                 <Route path="v1/system/hosts" element={<HostManagement />} />
                 <Route path="v1/pipeline/list" element={<PipelineList />} />
-                <Route path="v1/pipeline/artifacts" element={<ArtifactRepository />} />
+                <Route path="v1/pipeline/artifacts" element={<Artifacts />} />
+                <Route path="v1/pipeline/registries" element={<ImageRegistries />} />
                 <Route path="v1/pipeline/webhooks" element={<PipelineWebhooks />} />
                 <Route path="v1/pipeline/designer" element={<PipelineDesigner />} />
                 <Route path="v1/pipeline/runs/:runId" element={<PipelineRunViewer />} />
