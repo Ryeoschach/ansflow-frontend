@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
 import {
   Card, Table, Button, Space, Modal, Form, Input, Select, Tag, Popconfirm,
-  Tabs, Typography, Tooltip, Drawer, Descriptions, Timeline, App, message, Divider, Switch, Checkbox
+  Tabs, Typography, Tooltip, Descriptions, Timeline, App, Divider, Switch, Checkbox, Statistic, InputNumber
 } from 'antd';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, HistoryOutlined,
-  ReloadOutlined, RollbackOutlined, CheckCircleOutlined
+  ReloadOutlined, RollbackOutlined, CheckCircleOutlined, InfoCircleOutlined, CopyOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { ColumnType } from 'antd/es/table';
+import CodeMirror from '@uiw/react-codemirror';
+import { yaml } from '@codemirror/lang-yaml';
 import useAppStore from '../../store/useAppStore';
 import {
   getCategories, getCategory, createCategory, updateCategory, deleteCategory,
-  getConfigItems, createConfigItem, updateConfigItem, deleteConfigItem,
-  getChangeLogs, rollbackConfigItem, ConfigCategory, ConfigItem, ConfigChangeLog
+  createConfigItem, updateConfigItem, deleteConfigItem,
+  getChangeLogs, rollbackConfigItem, validateConfigItemValue, ConfigCategory, ConfigItem, ConfigChangeLog
 } from '../../api/config';
 
 const { Text, Title } = Typography;
@@ -37,6 +39,8 @@ const ConfigCenter: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<ConfigCategory | null>(null);
   const [selectedItem, setSelectedItem] = useState<ConfigItem | null>(null);
   const [rollbackLogs, setRollbackLogs] = useState<ConfigChangeLog[]>([]);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [categoryForm] = Form.useForm();
   const [itemForm] = Form.useForm();
   const [rollbackForm] = Form.useForm();
@@ -118,7 +122,7 @@ const ConfigCenter: React.FC = () => {
   const rollbackMutation = useMutation({
     mutationFn: ({ changeLogId, reason }: { changeLogId: number; reason: string }) =>
       rollbackConfigItem(selectedItem!.id, { change_log_id: changeLogId, reason }),
-    onSuccess: (res: any) => {
+    onSuccess: () => {
       message.success(t('configCenter.rollbackSuccess'));
       setIsRollbackModalOpen(false);
       rollbackForm.resetFields();
@@ -127,6 +131,24 @@ const ConfigCenter: React.FC = () => {
     },
     onError: (err: any) => message.error(err?.message || t('common.error')),
   });
+
+  // 验证配置值
+  const handleValidate = async (id: number, value: any) => {
+    if (!id) return;
+    try {
+      setIsValidating(true);
+      const res = await validateConfigItemValue(id, value);
+      if (!res.valid) {
+        setValidationError(res.error || t('configCenter.invalidValue'));
+      } else {
+        setValidationError(null);
+      }
+    } catch (err: any) {
+      setValidationError(err?.message || t('common.error'));
+    } finally {
+      setIsValidating(false);
+    }
+  };
 
   // 选中分类打开详情弹窗
   const handleSelectCategory = (cat: ConfigCategory) => {
@@ -157,6 +179,7 @@ const ConfigCenter: React.FC = () => {
   // 配置项表单
   const openItemModal = (item?: ConfigItem) => {
     setEditingItem(item || null);
+    setValidationError(null);
     if (item) {
       itemForm.setFieldsValue({ ...item, value: item.is_encrypted ? '' : item.value });
     } else {
@@ -194,7 +217,28 @@ const ConfigCenter: React.FC = () => {
   ];
 
   const itemColumns: ColumnType<ConfigItem>[] = [
-    { title: t('configCenter.itemKey'), dataIndex: 'key', key: 'key', render: (v: string) => <Tag color="blue">{v}</Tag> },
+    {
+      title: t('configCenter.itemKey'),
+      dataIndex: 'key',
+      key: 'key',
+      render: (v: string) => (
+        <Space>
+          <Tag color="blue">{v}</Tag>
+          <Tooltip title={t('common.copy')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<CopyOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(v);
+                message.success(t('common.success'));
+              }}
+            />
+          </Tooltip>
+        </Space>
+      )
+    },
     {
       title: t('configCenter.itemValue'),
       dataIndex: 'value_display',
@@ -325,9 +369,33 @@ const ConfigCenter: React.FC = () => {
 
   return (
     <div className="p-4">
-      <Title level={4}>{t('configCenter.title')}</Title>
+      <div className="flex justify-between items-center mb-4">
+        <Title level={4} style={{ margin: 0 }}>{t('configCenter.title')}</Title>
+        <Button icon={<ReloadOutlined />} onClick={() => {
+          refetchCategories();
+          refetchLogs();
+          if (selectedCategory) refetchCategoryDetail();
+        }} />
+      </div>
 
-      <Card className="mt-4 shadow-sm overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <Card size="small" className="shadow-sm border-none bg-blue-50 dark:bg-blue-900/10">
+          <Statistic
+            title={t('configCenter.totalCategories')}
+            value={(categoriesData as any)?.count || (categoriesData as any)?.data?.length || 0}
+            prefix={<InfoCircleOutlined className="text-blue-500" />}
+          />
+        </Card>
+        <Card size="small" className="shadow-sm border-none bg-green-50 dark:bg-green-900/10">
+          <Statistic
+            title={t('configCenter.totalItems')}
+            value={(categoriesData as any)?.results?.reduce((acc: number, cur: any) => acc + cur.item_count, 0) || 0}
+            prefix={<CheckCircleOutlined className="text-green-500" />}
+          />
+        </Card>
+      </div>
+
+      <Card className="shadow-sm overflow-hidden">
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
@@ -416,20 +484,22 @@ const ConfigCenter: React.FC = () => {
         onCancel={() => setIsItemModalOpen(false)}
         onOk={() => itemForm.submit()}
         confirmLoading={itemMutation.isPending}
-        width={600}
+        width={editingItem?.value_type === 'json' ? 800 : 600}
       >
         <Form
           form={itemForm}
           layout="vertical"
           onFinish={(values) => itemMutation.mutate(values)}
+          onValuesChange={(changedValues) => {
+            if (editingItem && 'value' in changedValues) {
+              handleValidate(editingItem.id, changedValues.value);
+            }
+          }}
         >
           {!editingItem && (
             <>
               <Form.Item name="key" label={t('configCenter.itemKey')} rules={[{ required: true, message: t('configCenter.keyRequired') }]}>
                 <Input placeholder="e.g. host, port" />
-              </Form.Item>
-              <Form.Item name="value" label={t('configCenter.itemValue')} rules={[{ required: true, message: t('configCenter.valueRequired') }]}>
-                <Input.Password placeholder={t('configCenter.itemValue')} />
               </Form.Item>
               <Form.Item name="value_type" label={t('configCenter.itemValueType')} initialValue="string" rules={[{ required: true }]}>
                 <Select options={[
@@ -440,11 +510,26 @@ const ConfigCenter: React.FC = () => {
                   { label: t('configCenter.typeJson'), value: 'json' },
                 ]} />
               </Form.Item>
+              <Form.Item noStyle shouldUpdate={(prev, cur) => prev.value_type !== cur.value_type}>
+                {({ getFieldValue }) => {
+                  const type = getFieldValue('value_type');
+                  return (
+                    <Form.Item 
+                      name="value" 
+                      label={t('configCenter.itemValue')} 
+                      rules={[{ required: true, message: t('configCenter.valueRequired') }]}
+                      valuePropName={type === 'bool' ? 'checked' : 'value'}
+                    >
+                      {type === 'bool' ? <Switch /> : 
+                       type === 'int' || type === 'float' ? <InputNumber style={{ width: '100%' }} /> :
+                       type === 'json' ? <CodeMirror height="200px" extensions={[yaml()]} /> :
+                       <Input.Password placeholder={t('configCenter.itemValue')} />}
+                    </Form.Item>
+                  );
+                }}
+              </Form.Item>
               <Form.Item name="is_encrypted" label={t('configCenter.itemEncrypted')} valuePropName="checked" initialValue={false}>
-                <Select options={[
-                  { label: t('configCenter.itemEncrypted'), value: true },
-                  { label: t('common.no'), value: false },
-                ]} />
+                <Checkbox>{t('configCenter.itemEncrypted')}</Checkbox>
               </Form.Item>
             </>
           )}
@@ -454,8 +539,28 @@ const ConfigCenter: React.FC = () => {
                 <Descriptions.Item label={t('configCenter.itemKey')}>{editingItem.key}</Descriptions.Item>
                 <Descriptions.Item label={t('configCenter.itemValueType')}>{editingItem.value_type}</Descriptions.Item>
               </Descriptions>
-              <Form.Item name="value" label={t('configCenter.itemValue')} rules={[{ required: true, message: t('configCenter.valueRequired') }]}>
-                <Input.Password placeholder={editingItem.is_encrypted ? '******' : t('configCenter.itemValue')} />
+              <Form.Item 
+                name="value" 
+                label={t('configCenter.itemValue')} 
+                rules={[{ required: true, message: t('configCenter.valueRequired') }]}
+                valuePropName={editingItem.value_type === 'bool' ? 'checked' : 'value'}
+                validateStatus={validationError ? 'error' : ''}
+                help={validationError || (isValidating ? t('common.loading') : '')}
+              >
+                {editingItem.value_type === 'bool' ? (
+                  <Switch />
+                ) : editingItem.value_type === 'int' || editingItem.value_type === 'float' ? (
+                  <InputNumber style={{ width: '100%' }} />
+                ) : editingItem.value_type === 'json' ? (
+                  <CodeMirror
+                    height="200px"
+                    extensions={[yaml()]}
+                  />
+                ) : (
+                  <Input.Password 
+                    placeholder={editingItem.is_encrypted ? '******' : t('configCenter.itemValue')}
+                  />
+                )}
               </Form.Item>
             </>
           )}
