@@ -11,6 +11,7 @@ const request = axios.create({
 
 request.interceptors.request.use(
     (config) => {
+        (config as any)._startTime = Date.now();
         const token = useAppStore.getState().token;
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -30,6 +31,10 @@ let isRefreshing = false;
 let requestsQueue: any[] = [];
 request.interceptors.response.use(
     (response) => {
+        const duration = Date.now() - (response.config as any)._startTime;
+        if (duration > 2000) {
+            console.warn(`[Performance] Slow API Request: ${response.config.url} took ${duration}ms`);
+        }
         const res = response.data;
         // 如果没有数据（比如 204），直接返回数据内容
         if (res === undefined || res === null || res === '') {

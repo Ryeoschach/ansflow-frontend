@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Card, Table, Typography, Tag, Space, Input, Button, theme, Form, Select, Drawer, Descriptions, Alert } from 'antd';
+import { Card, Table, Typography, Tag, Space, Input, Button, theme, Form, Select, Drawer, Descriptions, Alert, DatePicker } from 'antd';
 import { SyncOutlined, SearchOutlined, SafetyCertificateOutlined, CodeOutlined, ExceptionOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getAuditLogs } from '../../api/system';
 import useAppStore from '../../store/useAppStore';
+
+const { RangePicker } = DatePicker;
 
 interface AuditLogRecord {
     id: number;
@@ -30,7 +32,7 @@ const AuditLog: React.FC = () => {
     const { t } = useTranslation();
     const { token: authToken, hasPermission } = useAppStore();
     const { token: antdToken } = theme.useToken();
-    const [queryParams, setQueryParams] = useState({ page: 1, page_size: 15, search: '', method: '' });
+    const [queryParams, setQueryParams] = useState({ page: 1, page_size: 15, search: '', method: '', start_time: '', end_time: '' });
 
     const [form] = Form.useForm();
     const [detailVisible, setDetailVisible] = useState(false);
@@ -51,6 +53,8 @@ const AuditLog: React.FC = () => {
             page: 1,
             search: values.username || '',
             method: values.method || '',
+            start_time: values.date_range?.[0]?.toISOString() || '',
+            end_time: values.date_range?.[1]?.toISOString() || '',
         });
     };
 
@@ -192,13 +196,16 @@ const AuditLog: React.FC = () => {
             <Card variant={"outlined"} className="shadow-sm rounded-xl mb-4">
                 <Form layout="inline" form={form} onFinish={onSearch}>
                     <Form.Item name="username">
-                        <Input placeholder={t('audit.searchPlaceholder')} prefix={<SearchOutlined />} style={{ width: 220 }} />
+                        <Input placeholder={t('audit.searchPlaceholder')} prefix={<SearchOutlined />} style={{ width: 180 }} />
+                    </Form.Item>
+                    <Form.Item name="date_range">
+                        <RangePicker style={{ width: 280 }} />
                     </Form.Item>
                     <Form.Item name="method">
                         <Select
                             placeholder={t('audit.methodPlaceholder')}
                             allowClear
-                            style={{ width: 120 }}
+                            style={{ width: 100 }}
                             options={[
                                 { label: 'POST', value: 'POST' },
                                 { label: 'PUT', value: 'PUT' },
@@ -213,7 +220,7 @@ const AuditLog: React.FC = () => {
                     <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>{t('audit.search')}</Button>
                     )}
                     {hasPermission('rbac:audit:view') && (
-                    <Button onClick={() => { form.resetFields(); setQueryParams({ ...queryParams, page: 1, search: '', method: '' }); }}>{t('audit.reset')}</Button>
+                    <Button onClick={() => { form.resetFields(); setQueryParams({ ...queryParams, page: 1, search: '', method: '', start_time: '', end_time: '' }); }}>{t('audit.reset')}</Button>
                     )}
                     {hasPermission('rbac:audit:view') && (
                     <Button icon={<SyncOutlined />} onClick={() => refetch()}>{t('audit.refresh')}</Button>
@@ -228,6 +235,7 @@ const AuditLog: React.FC = () => {
                     columns={columns}
                     dataSource={logs}
                     rowKey="id"
+                    size="small"
                     loading={loading}
                     scroll={{ x: 'max-content' }}
                                    

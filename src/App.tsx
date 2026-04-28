@@ -1,33 +1,35 @@
+import React, { useEffect, lazy } from 'react';
 import { ConfigProvider, App as AntdApp, theme } from 'antd';
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import axios from 'axios';
 import MainLayout from './layouts/MainLayout';
 import zhCN from 'antd/locale/zh_CN';
 import enUS from 'antd/locale/en_US';
 import useAppStore from './store/useAppStore';
 import { useTranslation } from 'react-i18next';
-import UserManagement from './pages/Users';
-import React, { useEffect, lazy } from 'react';
-import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import LoginPage from './pages/Login';
-import axios from 'axios';
-import RoleManagement from './pages/System/RoleManagement';
-import MenuManagement from './pages/System/MenuManagement';
-import PermissionManagement from './pages/System/PermissionManagement';
 import { getMe } from './api/user';
-import HostManagement from "./pages/Hosts";
-import PlatformManagement from "./pages/Platforms";
-import Environment from "./pages/Environments";
-import ResourcePoolManagement from "./pages/ResourcePool";
-import TaskCenter from "./pages/TaskCenter";
-import ExecutionHistory from "./pages/TaskCenter/ExecutionHistory";
-import ScheduleCenter from "./pages/TaskCenter/ScheduleCenter";
-import AuditLog from "./pages/System/AuditLog";
-import ApprovalCenter from "./pages/System/ApprovalCenter";
-import CredentialVault from './pages/System/CredentialVault';
+import LoginPage from './pages/Login';
 import AppErrorBoundary from './components/ErrorBoundary';
 
-
+const UserManagement = lazy(() => import('./pages/Users'));
+const RoleManagement = lazy(() => import('./pages/System/RoleManagement'));
+const MenuManagement = lazy(() => import('./pages/System/MenuManagement'));
+const PermissionManagement = lazy(() => import('./pages/System/PermissionManagement'));
+const HostManagement = lazy(() => import("./pages/Hosts"));
+const PlatformManagement = lazy(() => import("./pages/Platforms"));
+const Environment = lazy(() => import("./pages/Environments"));
+const ResourcePoolManagement = lazy(() => import("./pages/ResourcePool"));
+const TaskCenter = lazy(() => import("./pages/TaskCenter"));
+const ExecutionHistory = lazy(() => import("./pages/TaskCenter/ExecutionHistory"));
+const ScheduleCenter = lazy(() => import("./pages/TaskCenter/ScheduleCenter"));
+const AuditLog = lazy(() => import("./pages/System/AuditLog"));
+const ApprovalCenter = lazy(() => import("./pages/System/ApprovalCenter"));
+const CredentialVault = lazy(() => import('./pages/System/CredentialVault'));
+const ConfigCenter = lazy(() => import('./pages/ConfigCenter'));
+const ImageRegistries = lazy(() => import('./pages/Pipeline/ImageRegistries'));
+const Artifacts = lazy(() => import('./pages/Pipeline/Artifacts'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 
 
