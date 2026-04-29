@@ -1,0 +1,16 @@
+services:
+  ansflow-frontend:
+    build: .
+    image: ansflow-frontend:v1.7.0
+    container_name: ansflow-frontend
+    ports:
+      - "3000:80"
+    restart: always
+    environment:
+      - NODE_ENV=production
+    networks:
+      - ansflow-network
+
+networks:
+  ansflow-network:
+    external: true
