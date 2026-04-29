@@ -468,7 +468,7 @@ const ApprovalCenter: React.FC = () => {
                         <Switch />
                     </Form.Item>
                     
-                    <Divider orientation="left" orientationMargin="0">{(t as any)('approval.stepsConfig')}</Divider>
+                    <Divider {...({ orientation: 'left', orientationMargin: '0' } as any)}>{t('approval.stepsConfig')}</Divider>
                     <Form.List name="steps">
                         {(fields, { add, remove, move }) => (
                             <div className="space-y-4 max-h-[400px] overflow-y-auto p-2">
@@ -532,7 +532,7 @@ const ApprovalCenter: React.FC = () => {
                         <Input placeholder="e.g. PROD" />
                     </Form.Item>
                     <Form.Item name="template" label={t('approval.template')} rules={[{ required: true }]}>
-                        <Select options={templatesData?.results?.map((t: any) => ({ label: t.name, value: t.id }))} />
+                        <Select options={(templatesData as any)?.data?.map((t: any) => ({ label: t.name, value: t.id }))} />
                     </Form.Item>
                     <Form.Item name="is_active" label={t('common.isActive')} valuePropName="checked" initialValue={true}>
                         <Switch />
@@ -569,7 +569,7 @@ const ApprovalCenter: React.FC = () => {
                             </Descriptions.Item>
                         </Descriptions>
 
-                        <Divider orientation="left" orientationMargin="0">{t('approval.progressTimeline')}</Divider>
+                        <Divider {...({ orientation: 'left', orientationMargin: '0' } as any)}>{t('approval.progressTimeline')}</Divider>
                         <Timeline
                             items={[
                                 {

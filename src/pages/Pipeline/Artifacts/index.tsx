@@ -142,7 +142,7 @@ const Artifacts: React.FC = () => {
             width: 180,
             ellipsis: true,
             render: (_: any, record: Artifact) => {
-                if (record.source_type === 'docker') {
+                if (record.source_type === 'registry') {
                     return record.registry_name ? <Tag color="blue"><CloudOutlined /> {record.registry_name}</Tag> : '-';
                 }
                 return record.artifactory_repo_name ? <Tag color="orange"><CloudOutlined /> {record.artifactory_repo_name}</Tag> : '-';

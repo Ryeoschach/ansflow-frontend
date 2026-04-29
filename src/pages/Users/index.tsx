@@ -45,7 +45,7 @@ const UserManagement: React.FC = () => {
 
     const { data, isLoading } = useQuery<PaginatedResponse<User>>({
         queryKey: ['users', params],
-        queryFn: () => getUsers(params.page, params.size, params.search),
+        queryFn: () => getUsers({ page: params.page, page_size: params.size, search: params.search }),
         enabled: !!token && (hasPermission('rbac:user:view') || hasPermission('*')),
     });
 
