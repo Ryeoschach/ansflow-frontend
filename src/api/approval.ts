@@ -9,8 +9,11 @@ export interface ApprovalTicket {
     id: number;
     title: string;
     status: 'pending' | 'approved' | 'rejected' | 'canceled' | 'finished' | 'failed';
+    status_display: string;
     submitter_name: string;
     submitter: number;
+    approver_name: string | null;
+    approver: number | null;
     resource_type: string;
     target_id: string | null;
     payload: any;
@@ -18,42 +21,13 @@ export interface ApprovalTicket {
     method: string;
     remark: string | null;
     create_time: string;
-    current_step_order: number;
-    template: number | null;
-    template_name: string | null;
-    progresses: TicketProgress[];
+    audit_time: string | null;
 }
 
-export interface TicketProgress {
-    id: number;
-    step_name: string;
-    step_order: number;
-    approver_name: string | null;
-    status: 'approved' | 'rejected';
-    remark: string | null;
-    create_time: string;
-}
-
-export interface ApprovalTemplate {
-    id: number;
+export interface ResourceTemplate {
+    code: string;
     name: string;
-    description: string;
-    is_active: boolean;
-    steps: ApprovalStep[];
-    create_time: string;
-    update_time: string;
-}
-
-export interface ApprovalStep {
-    id: number;
-    template: number;
-    order: number;
-    name: string;
-    approver_roles: number[];
-    approver_roles_names: string[];
-    approver_users: number[];
-    approver_users_names: string[];
-    mode: 'any' | 'all';
+    icon: string;
 }
 
 export interface ApprovalPolicy {
@@ -61,9 +35,8 @@ export interface ApprovalPolicy {
     name: string;
     resource_type: string;
     environment: string | null;
-    template?: number | null;
-    template_name?: string | null;
-    approver_roles?: number[];
+    approver_roles: number[];
+    approver_roles_detail?: any[];
     is_active: boolean;
     create_time: string;
 }
@@ -78,18 +51,14 @@ export const approveTicket = (id: number): Promise<any> =>
 export const rejectTicket = (id: number, remark: string): Promise<any> =>
     request.post(`/approval_tickets/${id}/reject/`, { remark });
 
-// 模板接口 (后端当前 404，建议检查后端代码)
-export const getApprovalTemplates = (params?: any): Promise<PaginatedResponse<ApprovalTemplate>> =>
-    request.get('/approval_templates/', { params }) as any;
+// 资源模版接口 (拦截点)
+export const getApprovalTemplates = (): Promise<ResourceTemplate[]> =>
+    request.get('/approval_templates/') as any;
 
-export const createApprovalTemplate = (data: any): Promise<any> =>
-    request.post('/approval_templates/', data) as any;
-
-export const updateApprovalTemplate = (id: number, data: any): Promise<any> =>
-    request.patch(`/approval_templates/${id}/`, data) as any;
-
-export const deleteApprovalTemplate = (id: number): Promise<any> =>
-    request.delete(`/approval_templates/${id}/`) as any;
+// 保持兼容性的占位符 (防止前端其他引用报错)
+export const createApprovalTemplate = (data: any) => Promise.reject("Not implemented: Use policies instead");
+export const updateApprovalTemplate = (id: number, data: any) => Promise.reject("Not implemented");
+export const deleteApprovalTemplate = (id: number) => Promise.reject("Not implemented");
 
 // 策略接口
 export const getApprovalPolicies = (params?: any): Promise<PaginatedResponse<ApprovalPolicy>> =>

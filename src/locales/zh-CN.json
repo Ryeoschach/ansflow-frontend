@@ -516,7 +516,7 @@
     "resourceType": "资源类型",
     "environment": "适用环境",
     "template": "审批模板",
-    "policyTip": "审批策略决定了哪些高危操作（如删除、执行）需要触发人工审核。",
+    "policyTip": "配置哪些资源在执行时需要先经过人工审批。",
     "addPolicy": "添加策略",
     "editPolicy": "编辑策略",
     "selectResource": "选择或输入资源代码",
@@ -560,7 +560,7 @@
     "rejectModalOkText": "永久废弃该请求",
     "rejectModalContent": "为发起人（{{name}}）留下您的驳回原因：",
     "rejectModalPlaceholder": "如：业务高峰期，严禁执行数据库升配...",
-    "drawerTitle": "审批",
+    "drawerTitle": "审批工单详情",
     "destroyPayload": "废弃请求",
     "forceApprove": "通过请求",
     "descItemId": "单号追踪",
@@ -571,8 +571,20 @@
     "descItemApprover": "签批主",
     "descItemApproverWaiting": "等待中",
     "receiptTitle": "代理底层回执：",
-    "payloadTitle": "发起人尝试上传的数据结构 (Body)",
-    "payloadTip": "提示：如果点击右上角放行，后台将携带这套被冻结的数据，重新调用该接口完成真正的业务。"
+    "payloadTitle": "拦截请求载荷 (Payload)",
+    "payloadTip": "提示：如果点击右上角放行，后台将携带这套被冻结的数据，重新调用该接口完成真正的业务。",
+    "interceptTemplates": "拦截点参考",
+    "interceptTipTitle": "系统支持的拦截模版",
+    "interceptTipDesc": "以下资源点可以在审批策略中进行拦截配置。当这些操作触发时，系统将自动挂起请求并通知相关人员。",
+    "approverRoles": "审批角色",
+    "anyAdmin": "任意管理员",
+    "flowTimeline": "流转状态",
+    "ticketCreated": "工单已提交",
+    "waitingApproval": "等待审批中",
+    "approvalFinished": "审批已完成 ({{status}})",
+    "approverLabel": "签批人",
+    "resourceIdentifier": "资源标识",
+    "anyAdminTip": "留空则表示拥有审批权限的角色均可操作"
   },
   "menuManagement": {
     "title": "菜单管理",
@@ -1371,7 +1383,6 @@
     "skipped": "已跳过",
     "selectRetryNode": "选择重试起点节点"
   },
-
   "configCenter": {
     "title": "配置中心",
     "categories": "分类管理",

@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
-import { Card, Table, Typography, Tag, Space, Button, theme, Select, Drawer, Descriptions, Badge, Modal, Input, App, Tooltip, Tabs, Timeline, Form, Switch, Checkbox, Popconfirm, List, Divider, Empty } from 'antd';
+import { Card, Table, Typography, Tag, Space, Button, theme, Select, Drawer, Descriptions, Badge, Modal, Input, App, Tooltip, Tabs, Timeline, Form, Switch, Popconfirm, List, Avatar, Alert, Divider } from 'antd';
 const { Text } = Typography;
-import { CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, EyeOutlined, PlusOutlined, DeleteOutlined, EditOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, EyeOutlined, PlusOutlined, DeleteOutlined, EditOutlined, SafetyCertificateOutlined, UserOutlined, ClockCircleOutlined, SendOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { 
     getApprovalTickets, approveTicket, rejectTicket, 
-    getApprovalTemplates, createApprovalTemplate, updateApprovalTemplate, deleteApprovalTemplate,
+    getApprovalTemplates,
     getApprovalPolicies, createApprovalPolicy, updateApprovalPolicy, deleteApprovalPolicy,
-    ApprovalTicket, ApprovalTemplate, ApprovalPolicy 
+    ApprovalTicket, ApprovalPolicy, ResourceTemplate 
 } from '../../api/approval';
 import { getRoles } from '../../api/rbac';
-import { getUsers } from '../../api/user';
 import useAppStore from '../../store/useAppStore';
 
 const STATUS_MAP = (t: (key: string) => string) => ({
@@ -29,7 +28,7 @@ const ApprovalCenter: React.FC = () => {
     const { token } = theme.useToken();
     const { message, modal } = App.useApp();
     const queryClient = useQueryClient();
-    const { currentUser, token: authToken, hasPermission } = useAppStore();
+    const { token: authToken, hasPermission } = useAppStore();
 
     const [activeTab, setActiveTab] = useState('tickets');
     
@@ -39,11 +38,6 @@ const ApprovalCenter: React.FC = () => {
     const [currentTicket, setCurrentTicket] = useState<ApprovalTicket | null>(null);
     const [rejectModalVisible, setRejectModalVisible] = useState(false);
     const [rejectRemark, setRejectRemark] = useState('');
-
-    // 模板状态
-    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
-    const [editingTemplate, setEditingTemplate] = useState<ApprovalTemplate | null>(null);
-    const [templateForm] = Form.useForm();
 
     // 策略状态
     const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
@@ -56,10 +50,10 @@ const ApprovalCenter: React.FC = () => {
         enabled: !!authToken && hasPermission('system:approval_ticket:view'),
     });
 
-    const { data: templatesData, refetch: refetchTemplates } = useQuery({
+    const { data: templatesData } = useQuery({
         queryKey: ['approvalTemplates'],
-        queryFn: () => getApprovalTemplates({ page_size: 100 }),
-        enabled: !!authToken && activeTab === 'templates',
+        queryFn: () => getApprovalTemplates(),
+        enabled: !!authToken && activeTab !== 'tickets',
     });
 
     const { data: policiesData, refetch: refetchPolicies } = useQuery({
@@ -71,13 +65,7 @@ const ApprovalCenter: React.FC = () => {
     const { data: rolesData } = useQuery({
         queryKey: ['roles'],
         queryFn: () => getRoles({ page_size: 100 }),
-        enabled: !!authToken && isTemplateModalOpen,
-    });
-
-    const { data: usersData } = useQuery({
-        queryKey: ['users'],
-        queryFn: () => getUsers({ page_size: 100 }),
-        enabled: !!authToken && isTemplateModalOpen,
+        enabled: !!authToken && isPolicyModalOpen,
     });
 
     const tickets = (qData as any)?.data || [];
@@ -89,11 +77,9 @@ const ApprovalCenter: React.FC = () => {
             message.success(t('approval.approvedMessage'));
             setDetailVisible(false);
             refetch();
-            queryClient.invalidateQueries({ queryKey: ['auditLogs'] }); // 如果有联动影响审计
         },
         onError: (err: any) => {
             message.error(err.response?.data?.detail || t('approval.approveError'));
-            refetch();
         }
     });
 
@@ -111,18 +97,6 @@ const ApprovalCenter: React.FC = () => {
         }
     });
 
-    const templateMutation = useMutation({
-        mutationFn: (values: any) => editingTemplate 
-            ? updateApprovalTemplate(editingTemplate.id, values) 
-            : createApprovalTemplate(values),
-        onSuccess: () => {
-            message.success(t('common.success'));
-            setIsTemplateModalOpen(false);
-            refetchTemplates();
-        },
-        onError: (err: any) => message.error(err?.message || t('common.error'))
-    });
-
     const policyMutation = useMutation({
         mutationFn: (values: any) => editingPolicy 
             ? updateApprovalPolicy(editingPolicy.id, values) 
@@ -132,15 +106,7 @@ const ApprovalCenter: React.FC = () => {
             setIsPolicyModalOpen(false);
             refetchPolicies();
         },
-        onError: (err: any) => message.error(err?.message || t('common.error'))
-    });
-
-    const deleteTemplateMutation = useMutation({
-        mutationFn: deleteApprovalTemplate,
-        onSuccess: () => {
-            message.success(t('common.success'));
-            refetchTemplates();
-        }
+        onError: (err: any) => message.error(err?.response?.data?.detail || err?.message || t('common.error'))
     });
 
     const deletePolicyMutation = useMutation({
@@ -157,7 +123,7 @@ const ApprovalCenter: React.FC = () => {
             content: t('approval.confirmContent'),
             onOk: () => approveMutation.mutate(id),
             okText: t('approval.confirmOkText'),
-            okType: 'danger'
+            okType: 'primary'
         });
     };
 
@@ -167,7 +133,7 @@ const ApprovalCenter: React.FC = () => {
             dataIndex: 'id',
             key: 'id',
             render: (id: number, record: ApprovalTicket) => (
-                <Space orientation="vertical" size={2}>
+                <Space direction="vertical" size={2}>
                     <Typography.Text strong>#APP-{id}</Typography.Text>
                     <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
                         {record.resource_type} {record.target_id ? `(ID:${record.target_id})` : ''}
@@ -198,6 +164,12 @@ const ApprovalCenter: React.FC = () => {
             title: t('approval.columnSubmitter'),
             dataIndex: 'submitter_name',
             key: 'submitter',
+            render: (name: string) => (
+                <Space>
+                    <Avatar size="small" icon={<UserOutlined />} />
+                    {name}
+                </Space>
+            )
         },
         {
             title: t('approval.columnStatus'),
@@ -206,10 +178,10 @@ const ApprovalCenter: React.FC = () => {
                 const map = STATUS_MAP(t)[record.status as keyof ReturnType<typeof STATUS_MAP>] || STATUS_MAP(t)['pending'];
                 return (
                     <div>
-                        <Badge status={map.status as any} text={<Typography.Text strong style={{ color: (token as any)[map.color] }}>{map.text}</Typography.Text>} />
-                        {(record.status === 'finished' || record.status === 'failed') && (
-                            <div style={{ fontSize: '11px', color: token.colorTextQuaternary, marginTop: 4, width: '180px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={record.remark || ''}>
-                                {t('approval.receiptTitle')} {record.remark}
+                        <Badge status={map.status as any} text={<Typography.Text strong style={{ color: (token as any)[map.color] }}>{record.status_display || map.text}</Typography.Text>} />
+                        {record.approver_name && (
+                            <div style={{ fontSize: '11px', color: token.colorTextQuaternary, marginTop: 4 }}>
+                                {t('approval.approverLabel')}: {currentTicket.approver_name}
                             </div>
                         )}
                     </div>
@@ -227,7 +199,6 @@ const ApprovalCenter: React.FC = () => {
             key: 'action',
             render: (_: any, record: ApprovalTicket) => (
                 <Space>
-                    {hasPermission('system:approval_ticket:view') && (
                     <Button
                         type="link"
                         size="small"
@@ -239,58 +210,27 @@ const ApprovalCenter: React.FC = () => {
                     >
                         {t('approval.reviewPayload')}
                     </Button>
-                    )}
-                    {record.status === 'pending' && hasPermission('system:approval_ticket:approve') && (
-                        <Button
-                            type="link"
-                            size="small"
-                            danger
-                            onClick={() => {
-                                setCurrentTicket(record);
-                                setRejectModalVisible(true);
-                            }}
-                        >
-                            {t('approval.reject')}
-                        </Button>
-                    )}
                 </Space>
             ),
         },
     ];
 
-    const templateColumns = [
-        { title: t('approval.templateName'), dataIndex: 'name', key: 'name', render: (v: string) => <Typography.Text strong>{v}</Typography.Text> },
-        { title: t('approval.templateDescription'), dataIndex: 'description', key: 'description', ellipsis: true },
-        { title: t('approval.templateSteps'), key: 'steps', render: (_: any, r: ApprovalTemplate) => <Tag color="blue">{r.steps?.length || 0} {t('approval.steps')}</Tag> },
-        { title: t('common.status'), dataIndex: 'is_active', key: 'is_active', render: (v: boolean) => <Badge status={v ? 'success' : 'default'} text={v ? t('common.active') : t('common.inactive')} /> },
-        {
-            title: t('common.action'),
-            key: 'action',
-            width: 120,
-            render: (_: any, record: ApprovalTemplate) => (
-                <Space>
-                    {hasPermission('system:approval_template:edit') && (
-                    <Button type="text" icon={<EditOutlined />} onClick={() => {
-                        setEditingTemplate(record);
-                        templateForm.setFieldsValue(record);
-                        setIsTemplateModalOpen(true);
-                    }} />
-                    )}
-                    {hasPermission('system:approval_template:delete') && (
-                    <Popconfirm title={t('common.confirmDelete')} onConfirm={() => deleteTemplateMutation.mutate(record.id)}>
-                        <Button type="text" danger icon={<DeleteOutlined />} />
-                    </Popconfirm>
-                    )}
+    const policyColumns = [
+        { title: t('approval.policyName'), dataIndex: 'name', key: 'name', render: (v: string) => <Text strong>{v}</Text> },
+        { title: t('approval.resourceType'), dataIndex: 'resource_type', key: 'resource_type', render: (v: string) => <Tag color="blue">{v}</Tag> },
+        { title: t('approval.environment'), dataIndex: 'environment', key: 'environment', render: (v: string) => v ? <Tag color="purple">{v}</Tag> : <Tag color="default">{t('common.all') || '全部'}</Tag> },
+        { 
+            title: t('approval.approverRoles'), 
+            dataIndex: 'approver_roles_detail', 
+            key: 'roles',
+            render: (roles: any[]) => (
+                <Space size={[0, 4]} wrap>
+                    {roles?.map(r => <Tag icon={<SafetyCertificateOutlined />} key={r.id}>{r.name}</Tag>)}
+                    {(!roles || roles.length === 0) && <Text type="secondary" style={{ fontSize: '12px' }}>{t('approval.anyAdmin')}</Text>}
                 </Space>
             )
-        }
-    ];
-
-    const policyColumns = [
-        { title: t('approval.policyName'), dataIndex: 'name', key: 'name' },
-        { title: t('approval.resourceType'), dataIndex: 'resource_type', key: 'resource_type', render: (v: string) => <Tag>{v}</Tag> },
-        { title: t('approval.environment'), dataIndex: 'environment', key: 'environment', render: (v: string) => v ? <Tag color="purple">{v}</Tag> : '-' },
-        { title: t('approval.template'), dataIndex: 'template_name', key: 'template_name', render: (v: string) => v || '-' },
+        },
+        { title: t('common.status'), dataIndex: 'is_active', key: 'is_active', render: (v: boolean) => <Badge status={v ? 'success' : 'default'} text={v ? t('common.active') : t('common.inactive')} /> },
         {
             title: t('common.action'),
             key: 'action',
@@ -300,7 +240,10 @@ const ApprovalCenter: React.FC = () => {
                     {hasPermission('system:approval_policy:edit') && (
                     <Button type="text" icon={<EditOutlined />} onClick={() => {
                         setEditingPolicy(record);
-                        policyForm.setFieldsValue(record);
+                        policyForm.setFieldsValue({
+                            ...record,
+                            approver_roles: record.approver_roles || []
+                        });
                         setIsPolicyModalOpen(true);
                     }} />
                     )}
@@ -343,7 +286,6 @@ const ApprovalCenter: React.FC = () => {
                                             options={[
                                                 { value: '', label: t('approval.selectAllStatus') },
                                                 { value: 'pending', label: t('approval.selectPending') },
-                                                { value: 'approved', label: t('approval.selectApproved') },
                                                 { value: 'finished', label: t('approval.selectFinished') },
                                                 { value: 'failed', label: t('approval.selectFailed') },
                                                 { value: 'rejected', label: t('approval.selectRejected') }
@@ -355,9 +297,7 @@ const ApprovalCenter: React.FC = () => {
                                             onSearch={(e) => setQueryParams({ ...queryParams, resource_type: e, page: 1 })}
                                             style={{ width: 280 }}
                                         />
-                                        {hasPermission('system:approval_ticket:view') && (
-                                            <Button icon={<SyncOutlined />} onClick={() => refetch()}>{t('approval.refresh')}</Button>
-                                        )}
+                                        <Button icon={<SyncOutlined />} onClick={() => refetch()}>{t('approval.refresh')}</Button>
                                     </Space>
 
                                     <Table
@@ -379,16 +319,30 @@ const ApprovalCenter: React.FC = () => {
                         },
                         {
                             key: 'templates',
-                            label: t('approval.templates'),
+                            label: t('approval.interceptTemplates'),
                             children: (
-                                <div className="py-20 text-center">
-                                    <Empty 
-                                        description={
-                                            <span>
-                                                {t('approval.templatesNotAvailable')} <br/>
-                                                <Typography.Text type="secondary" style={{ fontSize: '12px' }}>API: /api/v1/approval_templates/ (404)</Typography.Text>
-                                            </span>
-                                        } 
+                                <div className="p-4">
+                                    <Alert 
+                                        message={t('approval.interceptTipTitle')} 
+                                        description={t('approval.interceptTipDesc')} 
+                                        type="info" 
+                                        showIcon 
+                                        style={{ marginBottom: 24 }} 
+                                    />
+                                    <List
+                                        grid={{ gutter: 16, column: 2 }}
+                                        dataSource={templatesData || []}
+                                        renderItem={(item: ResourceTemplate) => (
+                                            <List.Item>
+                                                <Card size="small" hoverable>
+                                                    <Card.Meta 
+                                                        avatar={<Avatar icon={<SyncOutlined />} style={{ backgroundColor: token.colorPrimary }} />}
+                                                        title={item.name}
+                                                        description={`${t('approval.resourceIdentifier')}: ${item.code}`}
+                                                    />
+                                                </Card>
+                                            </List.Item>
+                                        )}
                                     />
                                 </div>
                             )
@@ -439,72 +393,6 @@ const ApprovalCenter: React.FC = () => {
                 />
             </Modal>
 
-            {/* 模板编辑 Modal */}
-            <Modal
-                title={editingTemplate ? t('approval.editTemplate') : t('approval.addTemplate')}
-                open={isTemplateModalOpen}
-                onCancel={() => setIsTemplateModalOpen(false)}
-                onOk={() => templateForm.submit()}
-                confirmLoading={templateMutation.isPending}
-                width={800}
-                style={{ top: 20 }}
-            >
-                <Form form={templateForm} layout="vertical" onFinish={templateMutation.mutate}>
-                    <Form.Item name="name" label={t('approval.templateName')} rules={[{ required: true }]}>
-                        <Input />
-                    </Form.Item>
-                    <Form.Item name="description" label={t('approval.templateDescription')}>
-                        <Input.TextArea rows={2} />
-                    </Form.Item>
-                    <Form.Item name="is_active" label={t('common.isActive')} valuePropName="checked" initialValue={true}>
-                        <Switch />
-                    </Form.Item>
-                    
-                    <Divider {...({ orientation: 'left', orientationMargin: '0' } as any)}>{t('approval.stepsConfig')}</Divider>
-                    <Form.List name="steps">
-                        {(fields, { add, remove, move }) => (
-                            <div className="space-y-4 max-h-[400px] overflow-y-auto p-2">
-                                {fields.map(({ key, name, ...restField }, index) => (
-                                    <Card 
-                                        key={key} 
-                                        size="small" 
-                                        className="shadow-sm border-gray-200"
-                                        title={<Typography.Text strong>{t('approval.step')} {index + 1}</Typography.Text>} 
-                                        extra={
-                                            <Space>
-                                                <Button type="text" size="small" icon={<ArrowUpOutlined />} onClick={() => move(index, index - 1)} disabled={index === 0} />
-                                                <Button type="text" size="small" icon={<ArrowDownOutlined />} onClick={() => move(index, index + 1)} disabled={index === fields.length - 1} />
-                                                <Button type="text" danger size="small" icon={<DeleteOutlined />} onClick={() => remove(name)} />
-                                            </Space>
-                                        }
-                                    >
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <Form.Item {...restField} name={[name, 'name']} label={t('approval.stepName')} rules={[{ required: true }]}>
-                                                <Input placeholder={t('approval.exampleStepName')} />
-                                            </Form.Item>
-                                            <Form.Item {...restField} name={[name, 'mode']} label={t('approval.stepMode')} initialValue="any">
-                                                <Select options={[{ label: t('approval.modeAny'), value: 'any' }, { label: t('approval.modeAll'), value: 'all' }]} />
-                                            </Form.Item>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <Form.Item {...restField} name={[name, 'approver_roles']} label={t('approval.approverRoles')}>
-                                                <Select mode="multiple" placeholder={t('approval.selectRoles')} options={(rolesData as any)?.data?.map((r: any) => ({ label: r.name, value: r.id }))} />
-                                            </Form.Item>
-                                            <Form.Item {...restField} name={[name, 'approver_users']} label={t('approval.approverUsers')}>
-                                                <Select mode="multiple" placeholder={t('approval.selectUsers')} options={(usersData as any)?.data?.map((u: any) => ({ label: u.username, value: u.id }))} />
-                                            </Form.Item>
-                                        </div>
-                                    </Card>
-                                ))}
-                                <Button type="dashed" onClick={() => add({ mode: 'any' })} block icon={<PlusOutlined />}>
-                                    {t('approval.addStep')}
-                                </Button>
-                            </div>
-                        )}
-                    </Form.List>
-                </Form>
-            </Modal>
-
             {/* 策略编辑 Modal */}
             <Modal
                 title={editingPolicy ? t('approval.editPolicy') : t('approval.addPolicy')}
@@ -518,15 +406,22 @@ const ApprovalCenter: React.FC = () => {
                         <Input placeholder={t('approval.placeholderPolicyName')} />
                     </Form.Item>
                     <Form.Item name="resource_type" label={t('approval.resourceType')} rules={[{ required: true }]}>
-                        <Input placeholder={t('approval.placeholderResourceType')} />
+                        <Select 
+                            placeholder={t('approval.selectResource')}
+                            options={templatesData?.map(t => ({ label: t.name, value: t.code }))}
+                        />
                     </Form.Item>
                     <Form.Item name="environment" label={t('approval.environment')}>
                         <Input placeholder={t('approval.placeholderEnvironment')} />
                     </Form.Item>
-                    <Form.Item name="template" label={t('approval.template')} rules={[{ required: true }]}>
-                        <Select options={(templatesData as any)?.data?.map((t: any) => ({ label: t.name, value: t.id }))} />
+                    <Form.Item name="approver_roles" label={t('approval.approverRoles')} extra={t('approval.anyAdminTip')}>
+                        <Select 
+                            mode="multiple"
+                            placeholder={t('common.selectRoles') || '请选择角色'}
+                            options={(rolesData as any)?.data?.map((r: any) => ({ label: r.name, value: r.id }))}
+                        />
                     </Form.Item>
-                    <Form.Item name="is_active" label={t('common.isActive')} valuePropName="checked" initialValue={true}>
+                    <Form.Item name="is_active" label={t('common.status')} valuePropName="checked" initialValue={true}>
                         <Switch />
                     </Form.Item>
                 </Form>
@@ -542,8 +437,8 @@ const ApprovalCenter: React.FC = () => {
                 extra={
                     currentTicket?.status === 'pending' && hasPermission('system:approval_ticket:approve') && (
                         <Space>
-                            <Button danger icon={<CloseCircleOutlined />} onClick={() => setRejectModalVisible(true)}>{t('approval.destroyPayload')}</Button>
-                            <Button type="primary" icon={<CheckCircleOutlined />} loading={approveMutation.isPending} onClick={() => handleApprove(currentTicket!.id)}>{t('approval.forceApprove')}</Button>
+                            <Button danger icon={<CloseCircleOutlined />} onClick={() => setRejectModalVisible(true)}>{t('approval.reject')}</Button>
+                            <Button type="primary" icon={<CheckCircleOutlined />} loading={approveMutation.isPending} onClick={() => handleApprove(currentTicket!.id)}>{t('approval.confirmOkText')}</Button>
                         </Space>
                     )
                 }
@@ -551,51 +446,47 @@ const ApprovalCenter: React.FC = () => {
                 {currentTicket && (
                     <div className="space-y-6">
                         <Descriptions column={2} bordered size="small" labelStyle={{ background: token.colorFillQuaternary, width: '130px' }}>
-                            <Descriptions.Item label={t('approval.descItemId')}>APP-{currentTicket.id}</Descriptions.Item>
-                            <Descriptions.Item label={t('approval.descItemSubmitter')}>{currentTicket.submitter_name}</Descriptions.Item>
+                            <Descriptions.Item label={t('approval.descItemId')}>{currentTicket.id}</Descriptions.Item>
+                            <Descriptions.Item label={t('approval.columnSubmitter')}>{currentTicket.submitter_name}</Descriptions.Item>
                             <Descriptions.Item label={t('approval.descItemMethod')}>{currentTicket.method}</Descriptions.Item>
                             <Descriptions.Item label={t('approval.descItemUrl')}>{currentTicket.url_path}</Descriptions.Item>
-                            <Descriptions.Item label={t('approval.descItemTemplate')}>{currentTicket.template_name || '-'}</Descriptions.Item>
-                            <Descriptions.Item label={t('approval.descItemStatus')}>
-                                <Badge status={STATUS_MAP(t)[currentTicket.status as keyof ReturnType<typeof STATUS_MAP>]?.status as any} text={STATUS_MAP(t)[currentTicket.status as keyof ReturnType<typeof STATUS_MAP>]?.text} />
+                            <Descriptions.Item label={t('approval.resourceIdentifier')}>{currentTicket.resource_type}</Descriptions.Item>
+                            <Descriptions.Item label={t('approval.columnStatus')}>
+                                <Badge status={STATUS_MAP(t)[currentTicket.status as keyof ReturnType<typeof STATUS_MAP>]?.status as any} text={currentTicket.status_display || STATUS_MAP(t)[currentTicket.status as keyof ReturnType<typeof STATUS_MAP>]?.text} />
                             </Descriptions.Item>
                         </Descriptions>
 
-                        <Divider {...({ orientation: 'left', orientationMargin: '0' } as any)}>{t('approval.progressTimeline')}</Divider>
+                        <Divider orientation="left" orientationMargin="0">{t('approval.flowTimeline')}</Divider>
                         <Timeline
+                            mode="left"
                             items={[
                                 {
-                                    color: 'green',
+                                    label: dayjs(currentTicket.create_time).format('YYYY-MM-DD HH:mm'),
                                     children: (
                                         <div>
-                                            <Text strong>{t('approval.statusTicketCreated')}</Text>
-                                            <div className="text-xs text-gray-400">{dayjs(currentTicket.create_time).format('YYYY-MM-DD HH:mm:ss')}</div>
+                                            <Text strong>{t('approval.ticketCreated')}</Text>
+                                            <div className="text-xs text-gray-400">{t('common.operator') || '操作人'}: {currentTicket.submitter_name}</div>
                                         </div>
                                     ),
+                                    color: 'blue'
                                 },
-                                ...(currentTicket.progresses || []).map(p => ({
-                                    color: p.status === 'approved' ? 'green' : 'red',
+                                {
+                                    label: currentTicket.audit_time ? dayjs(currentTicket.audit_time).format('YYYY-MM-DD HH:mm') : '',
                                     children: (
                                         <div>
-                                            <Space>
-                                                <Text strong>{p.step_name}</Text>
-                                                <Tag color={p.status === 'approved' ? 'success' : 'error'}>{p.status === 'approved' ? t('approval.approved') : t('approval.rejected')}</Tag>
-                                            </Space>
-                                            <div className="text-sm mt-1">{t('approval.approver')}: {p.approver_name}</div>
-                                            {p.remark && <div className="text-sm text-gray-500 italic">"{p.remark}"</div>}
-                                            <div className="text-xs text-gray-400 mt-1">{dayjs(p.create_time).format('YYYY-MM-DD HH:mm:ss')}</div>
+                                            <Text strong>{currentTicket.status === 'pending' ? t('approval.waitingApproval') : t('approval.approvalFinished', { status: currentTicket.status_display || currentTicket.status })}</Text>
+                                            {currentTicket.approver_name && <div className="text-xs text-gray-400">{t('approval.approverLabel')}: {currentTicket.approver_name}</div>}
+                                            {currentTicket.remark && <div className="mt-2 p-2 bg-gray-50 rounded italic text-gray-500">"{currentTicket.remark}"</div>}
                                         </div>
-                                    )
-                                })),
-                                ...(currentTicket.status === 'pending' ? [{
-                                    color: 'gray',
-                                    children: <Text italic type="secondary">{t('approval.waitingNextStep')}</Text>
-                                }] : [])
+                                    ),
+                                    color: currentTicket.status === 'pending' ? 'gray' : (['rejected', 'failed'].includes(currentTicket.status) ? 'red' : 'green'),
+                                    icon: currentTicket.status === 'pending' ? <ClockCircleOutlined /> : null
+                                }
                             ]}
                         />
 
                         <div>
-                            <Typography.Title level={5}>{t('approval.payloadTitle')}</Typography.Title>
+                            <Typography.Title level={5}><SendOutlined /> {t('approval.payloadTitle')}</Typography.Title>
                             <div style={{
                                 background: token.colorFillTertiary,
                                 color: token.colorText,
