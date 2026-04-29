@@ -28,7 +28,8 @@
     "total": "共 {{total}} 条",
     "refresh": "刷新",
     "permissionDenied": "您没有权限执行此操作",
-    "systemError": "系统错误，请联系管理员"
+    "systemError": "系统错误，请联系管理员",
+    "action": "操作"
   },
   "menu": {
     "dashboard": "仪表盘",
@@ -510,6 +511,14 @@
     "tickets": "审批工单",
     "templates": "审批模板",
     "policies": "审批策略",
+    "policyName": "策略名称",
+    "resourceType": "资源类型",
+    "environment": "适用环境",
+    "template": "审批模板",
+    "policyTip": "审批策略决定了哪些高危操作（如删除、执行）需要触发人工审核。",
+    "addPolicy": "添加策略",
+    "editPolicy": "编辑策略",
+    "selectResource": "选择或输入资源代码",
     "templatesNotAvailable": "后端暂未检测到此 API，该功能可能尚未在当前版本中启用。",
     "statusPending": "待审批",
     "statusApproved": "已放行",

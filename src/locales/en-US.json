@@ -28,7 +28,8 @@
     "total": "{{total}} items",
     "refresh": "Refresh",
     "permissionDenied": "You do not have permission to perform this action",
-    "systemError": "System error, please contact administrator"
+    "systemError": "System error, please contact administrator",
+    "action": "Action"
   },
   "menu": {
     "dashboard": "Dashboard",
@@ -511,6 +512,14 @@
     "tickets": "Approval Tickets",
     "templates": "Approval Templates",
     "policies": "Approval Policies",
+    "policyName": "Policy Name",
+    "resourceType": "Resource Type",
+    "environment": "Environment",
+    "template": "Approval Template",
+    "policyTip": "Approval policies determine which high-risk operations require manual review.",
+    "addPolicy": "Add Policy",
+    "editPolicy": "Edit Policy",
+    "selectResource": "Select or enter resource code",
     "templatesNotAvailable": "The backend API for this feature was not detected. It might not be enabled in the current version.",
     "statusPending": "Pending",
     "statusApproved": "Approved",
