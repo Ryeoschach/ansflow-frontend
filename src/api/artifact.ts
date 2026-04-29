@@ -5,8 +5,10 @@ export interface Artifact {
     id: number;
     name: string;
     type: string;
+    source_type: 'registry' | 'artifactory';
     registry: number | null;
     registry_name: string | null;
+    artifactory_repo_name: string | null;
     repository: string | null;
     latest_tag: string | null;
     latest_digest: string | null;

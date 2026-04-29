@@ -131,7 +131,7 @@ const TaskCenter: React.FC = () => {
         },
     });
 
-    const handleEdit = (record: number) => {
+    const handleEdit = (record: any) => {
         setEditingTask(record);
         setContentValue(record.content || '');
         const parsed = parseExtraVars(record.extra_vars);

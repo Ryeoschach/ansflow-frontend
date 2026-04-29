@@ -80,8 +80,8 @@ const ApprovalCenter: React.FC = () => {
         enabled: !!authToken && isTemplateModalOpen,
     });
 
-    const tickets = qData?.results || qData?.data || [];
-    const total = qData?.count || qData?.total || 0;
+    const tickets = (qData as any)?.data || [];
+    const total = (qData as any)?.total || 0;
 
     const approveMutation = useMutation({
         mutationFn: (id: number) => approveTicket(id),
@@ -394,7 +394,7 @@ const ApprovalCenter: React.FC = () => {
                                     </div>
                                     <Table
                                         columns={templateColumns}
-                                        dataSource={templatesData?.results || templatesData?.data || []}
+                                        dataSource={(templatesData as any)?.data || []}
                                         rowKey="id"
                                         pagination={false}
                                     />
@@ -418,7 +418,7 @@ const ApprovalCenter: React.FC = () => {
                                     </div>
                                     <Table
                                         columns={policyColumns}
-                                        dataSource={policiesData?.results || policiesData?.data || []}
+                                        dataSource={(policiesData as any)?.data || []}
                                         rowKey="id"
                                         pagination={false}
                                     />
@@ -468,7 +468,7 @@ const ApprovalCenter: React.FC = () => {
                         <Switch />
                     </Form.Item>
                     
-                    <Divider orientation="left">{t('approval.stepsConfig')}</Divider>
+                    <Divider orientation="left" orientationMargin="0">{(t as any)('approval.stepsConfig')}</Divider>
                     <Form.List name="steps">
                         {(fields, { add, remove, move }) => (
                             <div className="space-y-4 max-h-[400px] overflow-y-auto p-2">
@@ -496,10 +496,10 @@ const ApprovalCenter: React.FC = () => {
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <Form.Item {...restField} name={[name, 'approver_roles']} label={t('approval.approverRoles')}>
-                                                <Select mode="multiple" placeholder={t('approval.selectRoles')} options={rolesData?.results?.map((r: any) => ({ label: r.name, value: r.id }))} />
+                                                <Select mode="multiple" placeholder={t('approval.selectRoles')} options={(rolesData as any)?.data?.map((r: any) => ({ label: r.name, value: r.id }))} />
                                             </Form.Item>
                                             <Form.Item {...restField} name={[name, 'approver_users']} label={t('approval.approverUsers')}>
-                                                <Select mode="multiple" placeholder={t('approval.selectUsers')} options={usersData?.results?.map((u: any) => ({ label: u.username, value: u.id }))} />
+                                                <Select mode="multiple" placeholder={t('approval.selectUsers')} options={(usersData as any)?.data?.map((u: any) => ({ label: u.username, value: u.id }))} />
                                             </Form.Item>
                                         </div>
                                     </Card>
@@ -569,7 +569,7 @@ const ApprovalCenter: React.FC = () => {
                             </Descriptions.Item>
                         </Descriptions>
 
-                        <Divider orientation="left">{t('approval.progressTimeline')}</Divider>
+                        <Divider orientation="left" orientationMargin="0">{t('approval.progressTimeline')}</Divider>
                         <Timeline
                             items={[
                                 {

@@ -107,7 +107,7 @@ const SystemHealthTable: React.FC<{ components: HealthComponent[] }> = ({ compon
       key: 'details',
       render: (_: any, record: HealthComponent) => {
         if (record.status !== 'healthy' && record.message) {
-          return <Text type="danger" size="small">{record.message}</Text>;
+          return <Text type="danger">{record.message}</Text>;
         }
         const details = Object.entries(record).filter(([key]) => !['name', 'label', 'icon', 'status', 'latency', 'message'].includes(key));
         if (details.length === 0) return <Text type="secondary">-</Text>;
@@ -315,7 +315,7 @@ const MonitorCenter: React.FC = () => {
                   </Space>
                   {celeryData.beat && (
                     <Space>
-                      <Text type="secondary" size="small" style={{ fontSize: '12px' }}>{t('monitor.celeryBeatStatus')}:</Text>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>{t('monitor.celeryBeatStatus')}:</Text>
                       <Tag bordered={false} color={celeryData.beat.status === 'online' ? 'success' : 'error'} className="rounded-full px-3">{celeryData.beat.status.toUpperCase()}</Tag>
                       <Tooltip title={t('monitor.lastRunTime')}>
                         <Text type="secondary" style={{ fontSize: '11px' }} className="font-mono">

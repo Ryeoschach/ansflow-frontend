@@ -1,17 +1,8 @@
 import type { User, PaginatedResponse } from '../types';
 import request from '../utils/requests';
 
-export const getUsers = (
-    page: number = 1,
-    pageSize: number = 10,
-    search = '',
-    total: number = 0,
-): Promise<PaginatedResponse<User>> => {
-    return request.get(
-        '/users/', {
-        params: { page, page_size: pageSize, search, total }
-    }
-    );
+export const getUsers = (params?: any): Promise<PaginatedResponse<User>> => {
+    return request.get('/users/', { params });
 };
 
 export const createUser = (data: any) => {

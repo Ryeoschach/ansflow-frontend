@@ -16,6 +16,7 @@ export interface ApprovalTicket {
     payload: any;
     url_path: string;
     method: string;
+    remark: string | null;
     create_time: string;
     current_step_order: number;
     template: number | null;
