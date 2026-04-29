@@ -13,4 +13,5 @@ services:
 
 networks:
   ansflow-network:
-    driver: bridge
+    name: ansflow-common-network
+    external: true
