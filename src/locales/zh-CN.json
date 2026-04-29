@@ -29,7 +29,8 @@
     "refresh": "刷新",
     "permissionDenied": "您没有权限执行此操作",
     "systemError": "系统错误，请联系管理员",
-    "action": "操作"
+    "action": "操作",
+    "isActive": "是否启用"
   },
   "menu": {
     "dashboard": "仪表盘",
@@ -519,6 +520,9 @@
     "addPolicy": "添加策略",
     "editPolicy": "编辑策略",
     "selectResource": "选择或输入资源代码",
+    "placeholderPolicyName": "请输入策略名称",
+    "placeholderResourceType": "例如: pipeline:execute",
+    "placeholderEnvironment": "例如: PROD",
     "templatesNotAvailable": "后端暂未检测到此 API，该功能可能尚未在当前版本中启用。",
     "statusPending": "待审批",
     "statusApproved": "已放行",

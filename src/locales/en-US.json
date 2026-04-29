@@ -29,7 +29,8 @@
     "refresh": "Refresh",
     "permissionDenied": "You do not have permission to perform this action",
     "systemError": "System error, please contact administrator",
-    "action": "Action"
+    "action": "Action",
+    "isActive": "Is Active"
   },
   "menu": {
     "dashboard": "Dashboard",
@@ -520,6 +521,9 @@
     "addPolicy": "Add Policy",
     "editPolicy": "Edit Policy",
     "selectResource": "Select or enter resource code",
+    "placeholderPolicyName": "Enter policy name",
+    "placeholderResourceType": "e.g., pipeline:execute",
+    "placeholderEnvironment": "e.g., PROD",
     "templatesNotAvailable": "The backend API for this feature was not detected. It might not be enabled in the current version.",
     "statusPending": "Pending",
     "statusApproved": "Approved",

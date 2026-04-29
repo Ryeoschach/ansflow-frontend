@@ -515,13 +515,13 @@ const ApprovalCenter: React.FC = () => {
             >
                 <Form form={policyForm} layout="vertical" onFinish={policyMutation.mutate}>
                     <Form.Item name="name" label={t('approval.policyName')} rules={[{ required: true }]}>
-                        <Input />
+                        <Input placeholder={t('approval.placeholderPolicyName')} />
                     </Form.Item>
                     <Form.Item name="resource_type" label={t('approval.resourceType')} rules={[{ required: true }]}>
-                        <Input placeholder="e.g. pipeline:run" />
+                        <Input placeholder={t('approval.placeholderResourceType')} />
                     </Form.Item>
                     <Form.Item name="environment" label={t('approval.environment')}>
-                        <Input placeholder="e.g. PROD" />
+                        <Input placeholder={t('approval.placeholderEnvironment')} />
                     </Form.Item>
                     <Form.Item name="template" label={t('approval.template')} rules={[{ required: true }]}>
                         <Select options={(templatesData as any)?.data?.map((t: any) => ({ label: t.name, value: t.id }))} />
