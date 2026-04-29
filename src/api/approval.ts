@@ -61,8 +61,9 @@ export interface ApprovalPolicy {
     name: string;
     resource_type: string;
     environment: string | null;
-    template: number | null;
-    template_name: string | null;
+    template?: number | null;
+    template_name?: string | null;
+    approver_roles?: number[];
     is_active: boolean;
     create_time: string;
 }
@@ -77,7 +78,7 @@ export const approveTicket = (id: number): Promise<any> =>
 export const rejectTicket = (id: number, remark: string): Promise<any> =>
     request.post(`/approval_tickets/${id}/reject/`, { remark });
 
-// 模板接口
+// 模板接口 (后端当前 404，建议检查后端代码)
 export const getApprovalTemplates = (params?: any): Promise<PaginatedResponse<ApprovalTemplate>> =>
     request.get('/approval_templates/', { params }) as any;
 

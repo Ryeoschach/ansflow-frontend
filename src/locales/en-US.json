@@ -511,6 +511,7 @@
     "tickets": "Approval Tickets",
     "templates": "Approval Templates",
     "policies": "Approval Policies",
+    "templatesNotAvailable": "The backend API for this feature was not detected. It might not be enabled in the current version.",
     "statusPending": "Pending",
     "statusApproved": "Approved",
     "statusRejected": "Rejected",

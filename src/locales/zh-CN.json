@@ -510,6 +510,7 @@
     "tickets": "审批工单",
     "templates": "审批模板",
     "policies": "审批策略",
+    "templatesNotAvailable": "后端暂未检测到此 API，该功能可能尚未在当前版本中启用。",
     "statusPending": "待审批",
     "statusApproved": "已放行",
     "statusRejected": "已驳回",

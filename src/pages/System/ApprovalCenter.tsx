@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Table, Typography, Tag, Space, Button, theme, Select, Drawer, Descriptions, Badge, Modal, Input, App, Tooltip, Tabs, Timeline, Form, Switch, Checkbox, Popconfirm, List, Divider } from 'antd';
+import { Card, Table, Typography, Tag, Space, Button, theme, Select, Drawer, Descriptions, Badge, Modal, Input, App, Tooltip, Tabs, Timeline, Form, Switch, Checkbox, Popconfirm, List, Divider, Empty } from 'antd';
 const { Text } = Typography;
 import { CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, EyeOutlined, PlusOutlined, DeleteOutlined, EditOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -381,24 +381,16 @@ const ApprovalCenter: React.FC = () => {
                             key: 'templates',
                             label: t('approval.templates'),
                             children: (
-                                <>
-                                    <div className="mb-4 flex justify-between">
-                                        <Text type="secondary">{t('approval.templateTip')}</Text>
-                                        {hasPermission('system:approval_template:add') && (
-                                            <Button type="primary" icon={<PlusOutlined />} onClick={() => {
-                                                setEditingTemplate(null);
-                                                templateForm.resetFields();
-                                                setIsTemplateModalOpen(true);
-                                            }}>{t('approval.addTemplate')}</Button>
-                                        )}
-                                    </div>
-                                    <Table
-                                        columns={templateColumns}
-                                        dataSource={(templatesData as any)?.data || []}
-                                        rowKey="id"
-                                        pagination={false}
+                                <div className="py-20 text-center">
+                                    <Empty 
+                                        description={
+                                            <span>
+                                                {t('approval.templatesNotAvailable')} <br/>
+                                                <Typography.Text type="secondary" style={{ fontSize: '12px' }}>API: /api/v1/approval_templates/ (404)</Typography.Text>
+                                            </span>
+                                        } 
                                     />
-                                </>
+                                </div>
                             )
                         },
                         {
