@@ -508,6 +508,9 @@
   "approval": {
     "title": "Security Suspension & Approval Center",
     "subtitle": "All high-risk operations touching the red line will be suspended here, waiting for manual confirmation from authorized personnel.",
+    "tickets": "Approval Tickets",
+    "templates": "Approval Templates",
+    "policies": "Approval Policies",
     "statusPending": "Pending",
     "statusApproved": "Approved",
     "statusRejected": "Rejected",

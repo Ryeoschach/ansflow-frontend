@@ -507,6 +507,9 @@
   "approval": {
     "title": "安全挂起与审批",
     "subtitle": "所有触及红线的「高危动作」都会在此挂起，等待拥有审查权限人员的手动确认。",
+    "tickets": "审批工单",
+    "templates": "审批模板",
+    "policies": "审批策略",
     "statusPending": "待审批",
     "statusApproved": "已放行",
     "statusRejected": "已驳回",

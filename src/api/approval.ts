@@ -79,26 +79,26 @@ export const rejectTicket = (id: number, remark: string): Promise<any> =>
 
 // 模板接口
 export const getApprovalTemplates = (params?: any): Promise<PaginatedResponse<ApprovalTemplate>> =>
-    request.get('/approval/templates/', { params }) as any;
+    request.get('/approval_templates/', { params }) as any;
 
 export const createApprovalTemplate = (data: any): Promise<any> =>
-    request.post('/approval/templates/', data) as any;
+    request.post('/approval_templates/', data) as any;
 
 export const updateApprovalTemplate = (id: number, data: any): Promise<any> =>
-    request.patch(`/approval/templates/${id}/`, data) as any;
+    request.patch(`/approval_templates/${id}/`, data) as any;
 
 export const deleteApprovalTemplate = (id: number): Promise<any> =>
-    request.delete(`/approval/templates/${id}/`) as any;
+    request.delete(`/approval_templates/${id}/`) as any;
 
 // 策略接口
 export const getApprovalPolicies = (params?: any): Promise<PaginatedResponse<ApprovalPolicy>> =>
-    request.get('/approval/policies/', { params }) as any;
+    request.get('/approval_policies/', { params }) as any;
 
 export const createApprovalPolicy = (data: any): Promise<any> =>
-    request.post('/approval/policies/', data) as any;
+    request.post('/approval_policies/', data) as any;
 
 export const updateApprovalPolicy = (id: number, data: any): Promise<any> =>
-    request.patch(`/approval/policies/${id}/`, data) as any;
+    request.patch(`/approval_policies/${id}/`, data) as any;
 
 export const deleteApprovalPolicy = (id: number): Promise<any> =>
-    request.delete(`/approval/policies/${id}/`) as any;
+    request.delete(`/approval_policies/${id}/`) as any;
