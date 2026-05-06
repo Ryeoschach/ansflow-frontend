@@ -181,7 +181,7 @@ const ApprovalCenter: React.FC = () => {
                         <Badge status={map.status as any} text={<Typography.Text strong style={{ color: (token as any)[map.color] }}>{record.status_display || map.text}</Typography.Text>} />
                         {record.approver_name && (
                             <div style={{ fontSize: '11px', color: token.colorTextQuaternary, marginTop: 4 }}>
-                                {t('approval.approverLabel')}: {currentTicket.approver_name}
+                                {t('approval.approverLabel')}: {record.approver_name}
                             </div>
                         )}
                     </div>
@@ -456,7 +456,7 @@ const ApprovalCenter: React.FC = () => {
                             </Descriptions.Item>
                         </Descriptions>
 
-                        <Divider orientation="left" orientationMargin="0">{t('approval.flowTimeline')}</Divider>
+                        <Divider {...({ orientation: 'left', orientationMargin: '0' } as any)}>{t('approval.flowTimeline')}</Divider>
                         <Timeline
                             mode="left"
                             items={[
