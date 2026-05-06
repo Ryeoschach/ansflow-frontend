@@ -2,7 +2,7 @@
 
 企业级 DevOps 流水线平台前端，基于 React 18 + TypeScript + Vite 构建。
 
-**当前版本**：v1.7.0  
+**当前版本**：v1.8.0  
 **在线 Demo**：https://ansflow.cyfee.com:10443  
 **默认账号**：admin / ansflow
 
@@ -16,6 +16,8 @@
 | 构建 | Vite 5 | 快速开发与生产构建 |
 | UI 组件 | Ant Design 6 | 企业级 UI 组件库 |
 | 样式 | Tailwind CSS v4 + @ant-design/cssinjs | 原子化 CSS + 组件库样式集成 |
+| 编辑器 | Monaco Editor | 企业级代码/YAML 编辑体验 |
+| 终端 | xterm.js | 基于 WebSocket 的交互式终端 |
 | 状态管理 | Zustand v5 | 轻量级状态管理，支持 localStorage 持久化 |
 | 数据请求 | Axios + TanStack Query v5 | HTTP 请求封装 + 服务端状态缓存 |
 | 路由 | React Router v6 | SPA 路由，支持嵌套路由 |
@@ -73,6 +75,22 @@ src/
 
 - **全量国际化**：所有统计项（分类总数/配置项总数）、通知选项（notify_on）及变更原因（Reason）均已支持中英文切换。
 - **稳定性增强**：针对 `notify_on` 等复杂配置项的解析逻辑进行了健壮性加固，防止非数组数据导致的渲染崩溃。
+
+---
+
+### 8.8 K8S 运维增强 (v1.8.0) - 重磅更新
+
+**页面**：`/v1/k8s/center`
+
+**功能**：
+
+- **交互式 WebTTY**：集成 `xterm.js`，实现与 K8s Pod 的实时交互终端，支持颜色高亮、按键转发与窗口自适应。
+- **实时日志流 (Follow Logs)**：支持 Pod 日志实时滚动输出，告别手动刷新。
+- **Monaco YAML 编辑器**：升级原有文本框为 VS Code 同款编辑器，支持 YAML 语法高亮、自动对齐及深浅色主题适配。
+- **资源利用率可视化 (Metrics)**：
+  - **Node 指标**：直观展示节点 CPU 与内存的实时利用率进度条。
+  - **Pod 负载**：在 Pod 列表中实时展示容器级的 CPU (Core) 与内存 (MiB) 消耗。
+- **事件中心 (Events)**：在集群详情中提供全局事件视图，快速定位镜像拉取失败、OOMKill 等隐蔽问题。
 
 ---
 
