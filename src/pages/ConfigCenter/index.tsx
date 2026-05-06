@@ -355,10 +355,10 @@ const ConfigCenter: React.FC = () => {
       key: 'action',
       render: (v: string) => {
         const map: Record<string, { color: string; text: string }> = {
-          create: { color: 'green', text: t('configCenter.actionCreate') },
-          update: { color: 'blue', text: t('configCenter.actionUpdate') },
-          delete: { color: 'red', text: t('configCenter.actionDelete') },
-          rollback: { color: 'orange', text: t('configCenter.actionRollback') },
+          create: { color: 'success', text: t('configCenter.actionCreate') },
+          update: { color: 'processing', text: t('configCenter.actionUpdate') },
+          delete: { color: 'error', text: t('configCenter.actionDelete') },
+          rollback: { color: 'warning', text: t('configCenter.actionRollback') },
         };
         const m = map[v] || { color: 'default', text: v };
         return <Tag color={m.color}>{m.text}</Tag>;
@@ -382,18 +382,18 @@ const ConfigCenter: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-        <Card size="small" className="shadow-sm border-none bg-blue-50 dark:bg-blue-900/10">
+        <Card size="small" className="shadow-sm border-none bg-emerald-50 dark:bg-emerald-900/10">
           <Statistic
             title={t('configCenter.totalCategories')}
             value={(categoriesData as any)?.count || (categoriesData as any)?.data?.length || 0}
-            prefix={<InfoCircleOutlined className="text-blue-500" />}
+            prefix={<InfoCircleOutlined className="text-emerald-600" />}
           />
         </Card>
         <Card size="small" className="shadow-sm border-none bg-green-50 dark:bg-green-900/10">
           <Statistic
             title={t('configCenter.totalItems')}
             value={(categoriesData as any)?.results?.reduce((acc: number, cur: any) => acc + cur.item_count, 0) || 0}
-            prefix={<CheckCircleOutlined className="text-green-500" />}
+            prefix={<CheckCircleOutlined className="text-green-600" />}
           />
         </Card>
       </div>
@@ -425,7 +425,7 @@ const ConfigCenter: React.FC = () => {
                       rowKey="id"
                       loading={categoriesLoading}
                       pagination={false}
-                      rowClassName={(record) => selectedCategory?.id === record.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''}
+                      rowClassName={(record) => selectedCategory?.id === record.id ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''}
                       onRow={(record) => ({
                         onClick: () => handleSelectCategory(record),
                         style: { cursor: 'pointer' },
@@ -594,11 +594,11 @@ const ConfigCenter: React.FC = () => {
             <div className="max-h-64 overflow-y-auto">
               <Timeline
                 items={rollbackLogs.map((log) => ({
-                  color: log.action === 'create' ? 'green' : log.action === 'update' ? 'blue' : 'orange',
+                  color: log.action === 'create' ? 'green' : log.action === 'update' ? 'processing' : 'warning',
                   children: (
                     <div>
                       <Space>
-                        <Tag color={log.action === 'create' ? 'green' : log.action === 'update' ? 'blue' : 'orange'}>
+                        <Tag color={log.action === 'create' ? 'success' : log.action === 'update' ? 'processing' : 'warning'}>
                           {log.action}
                         </Tag>
                         <Text type="secondary">{dayjs(log.create_time).format('YYYY-MM-DD HH:mm:ss')}</Text>
