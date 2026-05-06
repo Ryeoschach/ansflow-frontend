@@ -30,6 +30,7 @@ import {
   EllipsisOutlined,
   RotateRightOutlined,
   PauseCircleOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -51,6 +52,8 @@ import { Resizable } from 'react-resizable';
 import './TableResizable.css';
 import useAppStore from "../../store/useAppStore.ts";
 import useBreakpoint from '../../utils/useBreakpoint';
+import K8sYamlEditor from './components/K8sYamlEditor';
+import HelmRepoManager from './components/HelmRepoManager';
 
 
 const { Title, Text } = Typography;
@@ -114,10 +117,25 @@ const HelmCenter: React.FC = () => {
 
   // History & Values State
   const [isHistoryVisible, setIsHistoryVisible] = useState(false);
+  const [isRepoModalVisible, setIsRepoModalVisible] = useState(false);
   const [activeRelease, setActiveRelease] = useState<any>(null);
   const [editValuesYaml, setEditValuesYaml] = useState('');
 
+  // 联动选择状态
+  const [selectedRepoId, setSelectedRepoId] = useState<number | undefined>();
+
   // Queries
+  const { data: reposData } = useQuery({
+    queryKey: ['helm', 'repos'],
+    queryFn: () => getHelmRepos({ page: 1, size: 100 }),
+  });
+
+  const { data: repoChartsData, isLoading: chartsLoading } = useQuery({
+    queryKey: ['helm', 'repo-charts', selectedRepoId],
+    queryFn: () => getHelmRepoCharts(selectedRepoId!),
+    enabled: !!selectedRepoId,
+  });
+
   const { data: clustersData } = useQuery({
     queryKey: ['k8s', 'clusters'],
     queryFn: () => getK8sClusters({ page: 1, size: 100 }),
@@ -264,7 +282,7 @@ const HelmCenter: React.FC = () => {
   // --- 提交处理逻辑 ---
   const handleInstallSubmit = (values: any) => {
     if (installMode === 'repo') {
-      const payload = { ...values, values: editValuesYaml };
+      const payload = { ...values, values: editValuesYaml, repo_id: selectedRepoId };
       if (isUpgrade) {
         upgradeChartMutation.mutate(payload);
       } else {
@@ -369,9 +387,14 @@ const HelmCenter: React.FC = () => {
             />
             <Button icon={<ReloadOutlined />} onClick={() => refetchHelm()} disabled={!selectedCluster}>{t('helm.refreshList')}</Button>
             <div className="flex-1 text-right">
-              { hasPermission('helm:chart:add') && (
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => { setIsUpgrade(false); setIsChartModalVisible(true); chartForm.resetFields(); setScaffoldFiles([]); setEditValuesYaml(''); setActiveFilePath(null); }} disabled={!selectedCluster}>{t('helm.publishNewApp')}</Button>
-              )}
+              <Space>
+                { hasPermission('helm:repo:view') && (
+                  <Button icon={<DatabaseOutlined />} onClick={() => setIsRepoModalVisible(true)}>{t('helm.repoManager')}</Button>
+                )}
+                { hasPermission('helm:chart:add') && (
+                  <Button type="primary" icon={<PlusOutlined />} onClick={() => { setIsUpgrade(false); setIsChartModalVisible(true); chartForm.resetFields(); setScaffoldFiles([]); setEditValuesYaml(''); setActiveFilePath(null); }} disabled={!selectedCluster}>{t('helm.publishNewApp')}</Button>
+                )}
+              </Space>
             </div>
           </div>
           {!selectedCluster ? (
@@ -429,10 +452,29 @@ const HelmCenter: React.FC = () => {
                 </Form.Item>
                 {installMode === 'repo' && (
                   <>
-                    <Form.Item name="chart" label={t('helm.chartSource')} rules={[{ required: !isUpgrade }]}><Input placeholder={isUpgrade ? t('helm.autoIdentify') : "bitnami/nginx"} /></Form.Item>
+                    <Form.Item label={t('helm.targetRepo')}>
+                      <Select
+                        placeholder={t('helm.selectRepo')}
+                        onChange={(val) => {
+                          setSelectedRepoId(val);
+                          chartForm.setFieldValue('chart', undefined);
+                        }}
+                        options={(reposData as any)?.data?.map((r: any) => ({ label: r.name, value: r.id }))}
+                      />
+                    </Form.Item>
+                    <Form.Item name="chart" label={t('helm.chartSource')} rules={[{ required: !isUpgrade }]}>
+                      <Select
+                        showSearch
+                        placeholder={isUpgrade ? t('helm.autoIdentify') : t('helm.selectChart')}
+                        loading={chartsLoading}
+                        options={(repoChartsData as any)?.map((c: any) => ({ label: `${c.name} (${c.version})`, value: c.name }))}
+                        disabled={!selectedRepoId && !isUpgrade}
+                      />
+                    </Form.Item>
                     <Form.Item name="version" label={t('helm.chartVersionOptional')} extra={t('helm.chartVersionExample')}><Input placeholder="latest" /></Form.Item>
                   </>
                 )}
+
                 {installMode === 'upload' && (
                   <Form.Item label={t('helm.chartFile')} required={!isUpgrade}>
                     <Upload beforeUpload={(f) => { setFileList([f]); return false; }} fileList={fileList} maxCount={1} accept=".tgz"><Button icon={<CloudUploadOutlined />} block>{isUpgrade ? t('helm.reuploadAndUpdateOptional') : t('helm.selectTgzFile')}</Button></Upload>
@@ -447,14 +489,12 @@ const HelmCenter: React.FC = () => {
               <div className="w-2/3 flex flex-col border-l pl-6">
                 <div className="mb-2 flex justify-between items-center"><Text strong>{isUpgrade ? t('helm.editValuesYaml') : t('helm.editScaffoldFiles')}</Text>{isUpgrade && <Tag color="blue">{t('helm.realtimeSync')}</Tag>}</div>
                 {isUpgrade ? (
-                  <TextArea
+                  <K8sYamlEditor
                     value={editValuesYaml}
-                    onChange={(e) => setEditValuesYaml(e.target.value)}
-                    className="h-112.5 font-mono text-xs bg-gray-50 border-gray-200 text-gray-800 dark:bg-gray-950 dark:border-gray-800 dark:text-green-400 p-4 rounded-lg"
-                    placeholder={t('helm.editConfigHere')}
+                    onChange={(val) => setEditValuesYaml(val || '')}
                   />) : (
-                    <div className="flex gap-4 h-112.5">
-                        <div className="w-40 overflow-y-auto border border-gray-200 dark:border-gray-800 rounded p-2 bg-gray-50 dark:bg-gray-950">
+                    <div className="flex gap-4 h-[600px]">
+                        <div className="w-48 overflow-y-auto border border-gray-200 dark:border-gray-800 rounded p-2 bg-gray-50 dark:bg-gray-950">
                           <List
                             size="small"
                             dataSource={scaffoldFiles}
@@ -468,11 +508,12 @@ const HelmCenter: React.FC = () => {
                             )}
                           />
                         </div>
-                        <TextArea
-                          value={activeFileContent}
-                          onChange={(e) => handleFileContentChange(e.target.value)}
-                          className="flex-1 font-mono text-xs bg-gray-50 border-gray-200 text-gray-800 dark:bg-gray-950 dark:border-gray-800 dark:text-green-400 p-4 rounded-lg"
-                        />
+                        <div className="flex-1 min-w-0">
+                          <K8sYamlEditor
+                            value={activeFileContent}
+                            onChange={(val) => handleFileContentChange(val || '')}
+                          />
+                        </div>
                     </div>
                 )}
               </div>
@@ -481,6 +522,7 @@ const HelmCenter: React.FC = () => {
         </div>
       </Modal>
       <Modal title={t('helm.releaseHistory', { name: activeRelease?.name })} open={isHistoryVisible} onCancel={() => setIsHistoryVisible(false)} footer={null} width={isMobile ? '95vw' : 750} bodyStyle={{ overflowX: 'auto' }}><Table columns={historyColumns} dataSource={Array.isArray(historyData) ? historyData : []} loading={historyLoading} rowKey="revision" pagination={false} /></Modal>
+      <Modal title={t('helm.repoManager')} open={isRepoModalVisible} onCancel={() => setIsRepoModalVisible(false)} footer={null} width={900} destroyOnClose><HelmRepoManager /></Modal>
     </div>
   );
 };

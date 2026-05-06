@@ -85,8 +85,9 @@ src/
 **功能**：
 
 - **交互式 WebTTY**：集成 `xterm.js`，实现与 K8s Pod 的实时交互终端，支持颜色高亮、按键转发与窗口自适应。
+- **Helm 仓库管理 (Repo Manager)**：新增仓库管理界面，支持添加私有 Helm 仓库、连通性测试以及 Chart 搜索选择。
 - **实时日志流 (Follow Logs)**：支持 Pod 日志实时滚动输出，告别手动刷新。
-- **Monaco YAML 编辑器**：升级原有文本框为 VS Code 同款编辑器，支持 YAML 语法高亮、自动对齐及深浅色主题适配。
+- **Monaco YAML 编辑器**：全面升级 Helm Values 与 K8s 资源编辑器，支持语法高亮、自动对齐及深浅色主题适配。
 - **资源利用率可视化 (Metrics)**：
   - **Node 指标**：直观展示节点 CPU 与内存的实时利用率进度条。
   - **Pod 负载**：在 Pod 列表中实时展示容器级的 CPU (Core) 与内存 (MiB) 消耗。

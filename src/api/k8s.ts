@@ -119,3 +119,24 @@ export const stopHelmChart = (clusterId: number, data: { name: string; namespace
 // 获取已上传的 Local Charts
 export const getHelmLocalCharts = (): Promise<any[]> =>
     request.get<any[]>('/k8s/helm_list_local_charts/') as any;
+
+// ========================
+// Helm 仓库 接口
+// ========================
+export const getHelmRepos = (params?: any): Promise<PaginatedResponse<any>> =>
+    request.get('/helm_repositories/', { params }) as any;
+
+export const createHelmRepo = (data: any) =>
+    request.post('/helm_repositories/', data);
+
+export const updateHelmRepo = (id: number, data: any) =>
+    request.put(`/helm_repositories/${id}/`, data);
+
+export const deleteHelmRepo = (id: number) =>
+    request.delete(`/helm_repositories/${id}/`);
+
+export const testHelmRepo = (id: number) =>
+    request.post(`/helm_repositories/${id}/test_connection/`);
+
+export const getHelmRepoCharts = (id: number) =>
+    request.get(`/helm_repositories/${id}/charts_list/`);
