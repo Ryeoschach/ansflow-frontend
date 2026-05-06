@@ -1563,6 +1563,7 @@
     "preferences": "偏好设置",
     "preferencesTitle": "个人偏好",
     "darkMode": "深色模式",
-    "language": "语言"
+    "language": "语言",
+    "themeColor": "配色方案"
   }
 }

@@ -150,8 +150,7 @@ const Sidebar: React.FC = () => {
 
     // 渲染 Logo 区域
     const logoArea = (
-        <div className={`h-16 flex items-center justify-center m-4 ${isDark ? 'bg-[#262626]' : 'bg-[#f5f5f5]'
-            } rounded-lg shrink-0`}>
+        <div className={`h-16 flex items-center justify-center m-4 bg-primary/10 rounded-lg shrink-0 border border-solid border-primary/10`}>
             <Link to="/v1/dashboard">
                 <span className="text-xl font-bold text-amber-500 border-2 rounded-md px-3 py-2 cursor-pointer hover:opacity-80 transition-all duration-300">
                     {collapsed ? 'A' : 'AnsFlow'}
@@ -253,8 +252,7 @@ const Sidebar: React.FC = () => {
             trigger={null}
             collapsible
             collapsed={collapsed}
-            className={`h-screen sticky top-0 left-0 border-r ${isDark ? 'border-[#303030]' : 'border-[#f0f0f0]'
-                }`}
+            className="h-screen sticky top-0 left-0 border-r border-solid border-primary/5"
             theme={isDark ? 'dark' : 'light'}
             width={240}
         >

@@ -16,8 +16,16 @@ const Profile: React.FC = () => {
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const queryClient = useQueryClient();
 
-  const { isDark, setIsDark, language, setLanguage, setAvatar } = useAppStore();
+  const { isDark, setIsDark, themeKey, setThemeKey, language, setLanguage, setAvatar } = useAppStore();
   const { i18n } = useTranslation();
+
+  const themeOptions = [
+    { key: 'forest', name: '森林大地', colors: ['#606C38', '#283618', '#FEFAE0'] },
+    { key: 'deepsea', name: '深海日落', colors: ['#1B4965', '#0D1B2A', '#E0E1DD'] },
+    { key: 'teal', name: '青翠砂砾', colors: ['#599A8F', '#334752', '#F4F1DE'] },
+    { key: 'nordic', name: '北欧极简', colors: ['#D65454', '#263651', '#F6FBF4'] },
+    { key: 'pastel', name: '温柔淡彩', colors: ['#9E868D', '#5C4F51', '#DEE9E4'] },
+  ];
 
   const { data: userInfo, isLoading, refetch } = useQuery({
     queryKey: ['profile-me'],
@@ -221,6 +229,31 @@ const Profile: React.FC = () => {
               />
             </Descriptions.Item>
           </Descriptions>
+
+          <Divider orientation="left">{t('profile.themeColor') || '配色方案'}</Divider>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {themeOptions.map((opt) => (
+              <div
+                key={opt.key}
+                onClick={() => setThemeKey(opt.key as any)}
+                className={`cursor-pointer group relative p-3 rounded-2xl border-2 transition-all duration-300 ${
+                  themeKey === opt.key 
+                    ? 'border-primary bg-primary/5 shadow-md scale-105' 
+                    : 'border-transparent hover:border-gray-200 bg-gray-50/50 dark:bg-slate-800/20'
+                }`}
+              >
+                <div className="flex gap-1.5 mb-2 h-6 items-center">
+                   {opt.colors.map((c, i) => (
+                     <div key={i} className="w-full h-full rounded-md shadow-inner" style={{ backgroundColor: c }} />
+                   ))}
+                </div>
+                <div className="flex justify-between items-center px-1">
+                   <Text className={`text-xs ${themeKey === opt.key ? 'font-bold text-primary' : 'opacity-60'}`}>{opt.name}</Text>
+                   {themeKey === opt.key && <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />}
+                </div>
+              </div>
+            ))}
+          </div>
         </Card>
       ),
     },

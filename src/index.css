@@ -4,17 +4,31 @@
 /* 引入 Tailwind 4 */
 @import "tailwindcss";
 
-/* 主题定制：将 AntD 变量映射到 Tailwind */
+/* 核心重构：将 AntD 动态变量映射到 Tailwind 主题系统 */
 @theme {
-  --color-primary: var(--ant-primary-color);
-  --color-primary-hover: var(--ant-primary-color-hover);
-  --color-primary-active: var(--ant-primary-color-active);
+  /* 品牌色系 - 随 ConfigProvider 动态变化 */
+  --color-primary: var(--ant-color-primary);
+  --color-primary-hover: var(--ant-color-primary-hover);
+  --color-primary-active: var(--ant-color-primary-active);
+  --color-primary-bg: var(--ant-color-primary-bg);
+  
+  /* 状态色系 */
+  --color-success: var(--ant-color-success);
+  --color-warning: var(--ant-color-warning);
+  --color-error: var(--ant-color-error);
+  --color-info: var(--ant-color-info);
+
+  /* 文本色系 */
   --color-text-base: var(--ant-color-text);
-  --color-text-description: var(--ant-color-text-description);
-  --color-fill-hover: var(--ant-color-fill-secondary);
-  /* --color-logo: #292C33; */
+  --color-text-secondary: var(--ant-color-text-description);
+  
+  /* 布局色系 */
+  --color-layout-bg: var(--ant-color-bg-layout);
+  --color-container-bg: var(--ant-color-bg-container);
+  --color-border-base: var(--ant-color-border);
+
+  /* 玻璃拟态色值映射 */
   --color-glass-white: color-mix(in srgb, var(--ant-color-bg-container), transparent 25%);
-  --color-glass-dark: color-mix(in srgb, var(--ant-color-bg-container), transparent 25%);
 }
 
 /* 基础样式 */
@@ -22,7 +36,8 @@
   :root {
     font-family: Inter, system-ui, sans-serif;
     color-scheme: light dark;
-    background-color: #FEFAE0; /* 奶油米白背景 */
+    /* 核心：动态背景色，由 ConfigProvider 驱动 */
+    background-color: var(--ant-color-bg-layout);
   }
 
   body {
@@ -38,19 +53,19 @@
 /* 组件与工具样式 */
 @layer utilities {
 
-  /* 玻璃拟态效果 - 适配米白底色 */
+  /* 玻璃拟态效果 - 动态适配主题容器色 */
   .glass-effect {
-    background: rgba(254, 250, 224, 0.75) !important; /* FEFAE0 的透明版 */
-    backdrop-filter: blur(10px) saturate(160%) !important;
-    border-bottom: 1px solid rgba(96, 108, 56, 0.1); /* 主色低透明度边框 */
-    box-shadow: 0 4px 12px rgba(40, 54, 24, 0.04);
+    background: color-mix(in srgb, var(--ant-color-bg-container), transparent 25%) !important;
+    backdrop-filter: blur(12px) saturate(180%) !important;
+    border-bottom: 1px solid rgba(var(--ant-color-primary-rgb), 0.08); 
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
   }
 
   /* 暗色模式：html 标签上有 .dark 类 */
   .dark .glass-effect {
-    background: rgba(26, 36, 17, 0.8) !important;
-    border-bottom: 1px solid rgba(233, 237, 201, 0.1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    background: color-mix(in srgb, var(--ant-color-bg-container), transparent 20%) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   }
 }
 

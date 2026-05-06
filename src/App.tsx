@@ -13,6 +13,29 @@ import { getMe } from './api/user';
 import LoginPage from './pages/Login';
 import AppErrorBoundary from './components/ErrorBoundary';
 
+const THEMES: Record<string, any> = {
+  forest: {
+    primary: '#606C38', heading: '#283618', bg: '#FDFCF0', container: '#FFFFFF', warning: '#DDA15E', link: '#BC6C25', text: '#283618',
+    darkPrimary: '#ADC178', darkHeading: '#F0F5E1', darkBg: '#0E140A', darkContainer: '#1D2619', darkBorder: '#2D3A26'
+  },
+  deepsea: {
+    primary: '#1B4965', heading: '#0D1B2A', bg: '#F8F9FA', container: '#FFFFFF', warning: '#F9BC4D', link: '#E88C3E', text: '#0D1B2A',
+    darkPrimary: '#5FA8D3', darkHeading: '#E0E1DD', darkBg: '#0B132B', darkContainer: '#1C2541', darkBorder: '#2A3B5A'
+  },
+  teal: {
+    primary: '#599A8F', heading: '#334752', bg: '#FDFBF7', container: '#FFFFFF', warning: '#E6C587', link: '#D9795E', text: '#334752',
+    darkPrimary: '#84A59D', darkHeading: '#F2CC8F', darkBg: '#1A1C22', darkContainer: '#2B2D42', darkBorder: '#3F425A'
+  },
+  nordic: {
+    primary: '#D65454', heading: '#263651', bg: '#F9FBFC', container: '#FFFFFF', warning: '#FBCDD6', link: '#5D83A3', text: '#263651',
+    darkPrimary: '#E5989B', darkHeading: '#FFB703', darkBg: '#111827', darkContainer: '#1F2937', darkBorder: '#374151'
+  },
+  pastel: {
+    primary: '#9E868D', heading: '#5C4F51', bg: '#F8F9F9', container: '#FFFFFF', warning: '#FBCDD6', link: '#E7A6B5', text: '#5C4F51',
+    darkPrimary: '#B5838D', darkHeading: '#FFB703', darkBg: '#1F1A1C', darkContainer: '#2D2327', darkBorder: '#3D2F34'
+  }
+};
+
 const UserManagement = lazy(() => import('./pages/Users'));
 const RoleManagement = lazy(() => import('./pages/System/RoleManagement'));
 const MenuManagement = lazy(() => import('./pages/System/MenuManagement'));
@@ -201,7 +224,61 @@ const QueryPersistenceManager = () => {
 };
 
 function App() {
-  const { isDark, token, setToken, setPermissions, setCurrentUser, setAvatar, language } = useAppStore();
+  const { isDark, themeKey, token, setToken, setPermissions, setCurrentUser, setAvatar, language } = useAppStore();
+  const currentTheme = THEMES[themeKey] || THEMES.forest;
+
+  const antdTheme = React.useMemo(() => ({
+    cssVar: true,
+    algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
+    token: {
+      colorPrimary: isDark ? currentTheme.darkPrimary : currentTheme.primary,
+      colorInfo: isDark ? currentTheme.darkPrimary : currentTheme.primary,
+      colorSuccess: currentTheme.primary,
+      colorWarning: currentTheme.warning,
+      colorError: currentTheme.link,
+      colorLink: currentTheme.link,
+      colorTextBase: isDark ? currentTheme.darkHeading : currentTheme.text,
+      colorBgLayout: isDark ? currentTheme.darkBg : currentTheme.bg,
+      colorBgContainer: isDark ? currentTheme.darkContainer : currentTheme.container,
+      borderRadius: 12,
+      fontFamily: 'Inter, system-ui, sans-serif',
+    },
+    components: {
+      Layout: {
+        headerBg: isDark ? currentTheme.darkBg : currentTheme.heading,
+        headerColor: currentTheme.bg,
+        bodyBg: isDark ? currentTheme.darkBg : currentTheme.bg,
+        siderBg: isDark ? currentTheme.darkBg : currentTheme.heading,
+        triggerBg: isDark ? currentTheme.darkContainer : currentTheme.primary,
+      },
+      Menu: {
+        darkItemBg: isDark ? currentTheme.darkBg : currentTheme.heading,
+        darkSubMenuItemBg: isDark ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.05)',
+        popupBg: isDark ? currentTheme.darkBg : currentTheme.heading,
+        itemBorderRadius: 8,
+        // 核心修复：确保文字在深色背景下始终可见
+        darkItemColor: 'rgba(255, 255, 255, 0.65)',
+        darkItemSelectedColor: '#FFFFFF', 
+        darkItemSelectedBg: currentTheme.primary,
+        itemSelectedColor: currentTheme.primary,
+      },
+      Table: {
+        headerBg: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
+        borderColor: isDark ? currentTheme.darkBorder : '#f0f0f0',
+        rowHoverBg: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+      },
+      Card: {
+        boxShadowTertiary: isDark ? '0 8px 24px -4px rgba(0,0,0,0.4)' : '0 4px 12px -2px rgba(40,54,24,0.05)',
+        borderRadiusLG: 16,
+        borderColor: isDark ? currentTheme.darkBorder : '#f0f0f0',
+      },
+      Button: {
+        borderRadius: 8,
+        fontWeight: 500,
+      }
+    },
+
+  }), [isDark, themeKey]);
   const { isInitializing, setIsInitializing } = useAppStore();
   const navigate = useNavigate();
   const { i18n } = useTranslation();
@@ -324,12 +401,12 @@ function App() {
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark');
-      document.body.style.backgroundColor = '#141414';
+      document.body.style.backgroundColor = currentTheme.darkBg;
     } else {
       document.documentElement.classList.remove('dark');
-      document.body.style.backgroundColor = '#FEFAE0'; // 奶油米白背景
+      document.body.style.backgroundColor = currentTheme.bg;
     }
-  }, [isDark]);
+  }, [isDark, currentTheme.bg, currentTheme.darkBg]);
 
   // if (isInitializing) {
   //   return <div className="h-screen w-screen flex items-center justify-center">加载中...</div>;
@@ -339,44 +416,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ConfigProvider
         locale={antdLocale}
-        theme={{
-          cssVar: true,
-          algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
-          token: {
-            colorPrimary: isDark ? '#A3B18A' : '#606C38', // 暗橄榄绿
-            colorInfo: isDark ? '#A3B18A' : '#606C38',
-            colorSuccess: '#606C38',
-            colorWarning: '#DDA15E',
-            colorError: '#BC6C25',
-            colorLink: '#BC6C25',
-            colorTextBase: isDark ? '#E9EDC9' : '#283618', // 深森林绿文本
-            colorBgLayout: isDark ? '#141414' : '#FEFAE0', // 全局奶油米白背景
-            borderRadius: 12,
-            fontFamily: 'Inter, system-ui, sans-serif',
-          },
-          components: {
-            Layout: {
-              headerBg: isDark ? '#1A2411' : '#283618', // 深森林绿顶栏
-              headerColor: '#FEFAE0',
-              siderBg: isDark ? '#1A2411' : '#283618', // 深森林绿侧边栏
-              triggerBg: isDark ? '#283618' : '#606C38',
-            },
-            Menu: {
-              darkItemBg: isDark ? '#1A2411' : '#283618',
-              darkSubMenuItemBg: isDark ? '#0F160A' : '#1A2411',
-              itemBorderRadius: 8,
-              darkItemSelectedBg: '#606C38',
-              darkItemSelectedColor: '#FEFAE0',
-            },
-            Card: {
-              boxShadowTertiary: '0 4px 6px -1px rgb(40 54 24 / 0.05)',
-            },
-            Button: {
-              borderRadius: 8,
-              fontWeight: 500,
-            }
-          },
-        }}
+        theme={antdTheme}
       >
         <AntdApp>
           <AntdInitializer />

@@ -1563,6 +1563,7 @@
     "preferences": "Preferences",
     "preferencesTitle": "Personal Preferences",
     "darkMode": "Dark Mode",
-    "language": "Language"
+    "language": "Language",
+    "themeColor": "Theme Color"
   }
 }

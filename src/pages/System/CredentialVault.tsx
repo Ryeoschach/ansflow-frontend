@@ -126,12 +126,12 @@ const CredentialVault: React.FC = () => {
             render: (_: any, record: any) => {
                 const typeValue = record.auth_type || record.type;
                 const map: any = {
-                    'key': { color: 'purple', icon: <KeyOutlined />, text: t('credentialVault.typeSshKey') },
-                    'ssh_key': { color: 'purple', icon: <KeyOutlined />, text: t('credentialVault.typeSshKey') },
-                    'password': { color: 'blue', icon: <LockOutlined />, text: t('credentialVault.typePassword') },
-                    'login_pass': { color: 'blue', icon: <LockOutlined />, text: t('credentialVault.typePassword') },
-                    'token': { color: 'orange', icon: <InfoCircleOutlined />, text: t('credentialVault.typeToken') },
-                    'file': { color: 'cyan', icon: <FileTextOutlined />, text: t('credentialVault.typeFile') },
+                    'key': { color: 'warning', icon: <KeyOutlined />, text: t('credentialVault.typeSshKey') },
+                    'ssh_key': { color: 'warning', icon: <KeyOutlined />, text: t('credentialVault.typeSshKey') },
+                    'password': { color: 'processing', icon: <LockOutlined />, text: t('credentialVault.typePassword') },
+                    'login_pass': { color: 'processing', icon: <LockOutlined />, text: t('credentialVault.typePassword') },
+                    'token': { color: 'warning', icon: <InfoCircleOutlined />, text: t('credentialVault.typeToken') },
+                    'file': { color: 'success', icon: <FileTextOutlined />, text: t('credentialVault.typeFile') },
                 };
                 const conf = map[typeValue] || { color: 'default', icon: <KeyOutlined />, text: typeValue };
                 return <Tag color={conf.color} icon={conf.icon} className="rounded-full px-3">{conf.text}</Tag>;
@@ -184,7 +184,7 @@ const CredentialVault: React.FC = () => {
                 <Space size="large">
                     <div
                       style={{ background: token.colorPrimary }}
-                      className="p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-500/20 items-center justify-center flex"
+                      className="p-2.5 rounded-2xl text-white shadow-lg shadow-primary/20 items-center justify-center flex"
                     >
                         <LockOutlined className="text-2xl" />
                     </div>
@@ -215,7 +215,7 @@ const CredentialVault: React.FC = () => {
                         {maskSensitiveData ? t('credentialVault.unmask') : t('credentialVault.applyMask')}
                     </Button>
                     {hasPermission('system:credential:add') && (
-                    <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenModal()} className="h-10 px-6 rounded-xl shadow-lg shadow-indigo-500/30">
+                    <Button type="primary" icon={<PlusOutlined />} onClick={() => handleOpenModal()} className="h-10 px-6 rounded-xl shadow-lg shadow-primary/30">
                         {t('credentialVault.addCredential')}
                     </Button>
                     )}

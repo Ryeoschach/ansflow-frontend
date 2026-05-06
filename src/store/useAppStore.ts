@@ -11,6 +11,9 @@ interface AppState {
   // 切换主题
   isDark: boolean;
   setIsDark: (isDark: boolean) => void;
+  // 主题配色 Key
+  themeKey: 'forest' | 'deepsea' | 'teal' | 'nordic' | 'pastel';
+  setThemeKey: (key: 'forest' | 'deepsea' | 'teal' | 'nordic' | 'pastel') => void;
   // 语言
   language: string;
   setLanguage: (lang: string) => void;
@@ -38,6 +41,7 @@ interface AppState {
 
 interface PersistedState {
   isDark: boolean;
+  themeKey: string;
   collapsed: boolean;
   currentUser: string | null;
   permissions: string[];
@@ -56,6 +60,8 @@ const useAppStore = create<AppState>()(
     toggleCollapsed: () => set((state) => ({ collapsed: !state.collapsed })),
     isDark: false,
     setIsDark: (isDark) => set({ isDark }),
+    themeKey: 'forest',
+    setThemeKey: (themeKey) => set({ themeKey }),
     language: 'zh-CN',
     setLanguage: (language) => set({ language }),
     pipelineActiveTab: 'templates',
@@ -82,6 +88,7 @@ const useAppStore = create<AppState>()(
     name: 'ansflow-app-storage',
     partialize: (state): PersistedState => ({
       isDark: state.isDark,
+      themeKey: state.themeKey,
       collapsed: state.collapsed,
       currentUser: state.currentUser,
       permissions: state.permissions,
