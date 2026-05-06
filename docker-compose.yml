@@ -8,8 +8,14 @@ services:
     restart: always
     environment:
       - NODE_ENV=production
+    volumes:
+      - ansflow-media:/usr/share/nginx/media/:ro
     networks:
       - ansflow-network
+
+volumes:
+  ansflow-media:
+    external: true
 
 networks:
   ansflow-network:
