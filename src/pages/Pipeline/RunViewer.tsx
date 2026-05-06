@@ -37,6 +37,7 @@ import HttpNode from './nodes/HttpNode';
 import GitNode from './nodes/GitNode';
 import BuildNode from './nodes/BuildNode';
 import KanikoNode from './nodes/KanikoNode';
+import LogTerminal from './components/LogTerminal';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -108,6 +109,7 @@ const ViewerCore = () => {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [selectedNodeData, setSelectedNodeData] = useState<any>(null);
+  const [incrementalLog, setIncrementalLog] = useState<{nodeId: string, content: string} | null>(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
 
   /**
@@ -125,12 +127,21 @@ const ViewerCore = () => {
 
   /** @description 收到 WS 推送时，即时修正 React Query 缓存，避免全页 Reload */
   useEffect(() => {
-    if (lastJsonMessage && (lastJsonMessage as any).type === 'status_update') {
-      const newData = (lastJsonMessage as any).data;
-      queryClient.setQueryData(['pipeline_run', runId], (old: any) => ({
-          ...old, 
-          data: old?.data ? { ...old.data, ...newData } : { ...old, ...newData }
-      }));
+    if (lastJsonMessage) {
+      const msg = lastJsonMessage as any;
+      if (msg.type === 'status_update') {
+        const newData = msg.data;
+        queryClient.setQueryData(['pipeline_run', runId], (old: any) => ({
+            ...old, 
+            data: old?.data ? { ...old.data, ...newData } : { ...old, ...newData }
+        }));
+      } else if (msg.type === 'pipeline_node_log_append') {
+        // 增量日志处理
+        setIncrementalLog({
+          nodeId: msg.data.node_id,
+          content: msg.data.content
+        });
+      }
     }
   }, [lastJsonMessage, queryClient, runId]);
 
@@ -488,20 +499,19 @@ const ViewerCore = () => {
              </div>
              
              <div className="flex-1 bg-slate-950 border border-solid border-slate-800 rounded-2xl shadow-2xl relative overflow-hidden group">
-                <pre 
-                    ref={logRef}
-                    style={{ fontSize: `${logFontSize}px` }}
-                    className="absolute inset-0 p-5 font-mono text-slate-300 overflow-y-auto leading-relaxed whitespace-pre-wrap selection:bg-blue-500/30 custom-scrollbar"
-                >
-                    {selectedNodeData?.logs ? (
-                        <AnsiLog text={selectedNodeData.logs} />
-                    ) : (
-                        <div className="flex flex-col items-center justify-center h-full opacity-20 gap-2">
-                            <SyncOutlined className="text-3xl animate-spin" />
-                            <span className="text-[10px]">WAITING FOR STDIO BUFFER...</span>
-                        </div>
-                    )}
-                </pre>
+                {(selectedNodeData?.logs || (selectedNodeData?.id && incrementalLog?.nodeId === selectedNodeData.id)) ? (
+                    <LogTerminal
+                        logs={selectedNodeData?.logs}
+                        incrementalLog={(selectedNodeData?.id && incrementalLog?.nodeId === selectedNodeData.id) ? incrementalLog?.content : undefined}
+                        fontSize={logFontSize}
+                        autoScroll={autoScroll}
+                    />
+                ) : (
+                    <div className="flex flex-col items-center justify-center h-full opacity-20 gap-2">
+                        <SyncOutlined className="text-3xl animate-spin" />
+                        <span className="text-[10px]">WAITING FOR STDIO BUFFER...</span>
+                    </div>
+                )}
                 {/* 日志底部渐变阴影 */}
                 <div className="absolute bottom-0 left-0 right-0 h-10 bg-linear-to-t from-slate-950 to-transparent pointer-events-none" />
              </div>

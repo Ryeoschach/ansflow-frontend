@@ -278,21 +278,41 @@ const DesignerCore = () => {
       if (!pipelineId) { message.warning(t('pipelineDesigner.saveFirstBeforeRun')); return; }
       try {
           const res = await executePipeline(Number(pipelineId));
-          if (res.code === 202 || res.status === 'pending_approval') {
-                modal.warning({
+          // 处理审批拦截 (202 Accepted)
+          if (res.code === 202 || res.status === 'pending_approval' || (res as any).ticket_id) {
+                modal.confirm({
                     title: t('pipelineDesigner.operationRequiresApproval'),
+                    icon: <SettingOutlined style={{ color: '#faad14' }} />,
                     content: (
                         <div className="mt-2">
-                            <p>{res.message || t('pipelineDesigner.systemSecurityProtection')}</p>
+                            <p className="font-bold text-amber-600">{res.message || t('pipelineDesigner.systemSecurityProtection')}</p>
+                            <p className="text-xs text-gray-500 mt-2">该流水线已被安全策略拦截，需管理员审批通过后方可继续执行。您可以前往审批中心查看详情。</p>
                         </div>
                     ),
-                    okText: t('pipelineDesigner.ok')
+                    okText: '前往审批中心',
+                    cancelText: t('pipelineDesigner.ok'),
+                    onOk: () => navigate('/v1/approval/tickets')
                 });
                 return;
           }
           const runId = res.run_id || res.data?.run_id;
-          if (runId) navigate(`/v1/pipeline/runs/${runId}`);
-      } catch (e: any) { message.error(e.message); }
+          if (runId) {
+            message.success(t('pipeline.executeSuccess', { runId }));
+            navigate(`/v1/pipeline/runs/${runId}`);
+          }
+      } catch (e: any) { 
+          // 容错处理：部分拦截可能走 catch 流程（取决于 Axios 封装）
+          if (e.response?.status === 202) {
+              const res = e.response.data;
+              modal.info({
+                  title: t('pipelineDesigner.operationRequiresApproval'),
+                  content: res.message || '操作已进入审批流',
+                  onOk: () => navigate('/v1/approval/tickets')
+              });
+          } else {
+              message.error(e.message); 
+          }
+      }
   };
 
   const nodeTemplates = useMemo(() => [
