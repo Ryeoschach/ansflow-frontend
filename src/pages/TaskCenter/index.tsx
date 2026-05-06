@@ -197,7 +197,7 @@ const TaskCenter: React.FC = () => {
             title: t('taskCenter.fieldType'),
             dataIndex: 'task_type',
             key: 'task_type',
-            render: (val: string) => val === 'cmd' ? <Tag color="blue">{t('taskCenter.taskTypeCmd')}</Tag> : <Tag color="purple">{t('taskCenter.taskTypePlaybook')}</Tag>
+            render: (val: string) => val === 'cmd' ? <Tag color="processing">{t('taskCenter.taskTypeCmd')}</Tag> : <Tag color="warning">{t('taskCenter.taskTypePlaybook')}</Tag>
         },
         {
             title: t('taskCenter.fieldResourcePool'),

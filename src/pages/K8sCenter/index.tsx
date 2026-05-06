@@ -413,7 +413,7 @@ const K8sCenter: React.FC = () => {
       dataIndex: 'auth_type',
       key: 'auth_type',
       render: (type: string) => (
-        <Tag color={type === 'kubeconfig' ? 'blue' : 'green'}>
+        <Tag color="processing">
           {type === 'kubeconfig' ? 'Kubeconfig' : 'Token'}
         </Tag>
       ),
@@ -687,7 +687,7 @@ const K8sCenter: React.FC = () => {
 
   const eventColumns = [
     { title: '最后发生', dataIndex: 'last_timestamp', key: 'last_timestamp', width: 150, render: (t: string) => t ? new Date(t).toLocaleString() : '-' },
-    { title: '类型', dataIndex: 'type', key: 'type', width: 100, render: (t: string) => <Tag color={t === 'Warning' ? 'orange' : 'blue'}>{t}</Tag> },
+    { title: '类型', dataIndex: 'type', key: 'type', width: 100, render: (t: string) => <Tag color={t === 'Warning' ? 'orange' : 'processing'}>{t}</Tag> },
     { title: '原因', dataIndex: 'reason', key: 'reason', width: 120 },
     { title: '对象', dataIndex: 'object', key: 'object', width: 180, ellipsis: true },
     { title: '消息', dataIndex: 'message', key: 'message', ellipsis: true },

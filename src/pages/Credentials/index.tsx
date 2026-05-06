@@ -123,7 +123,7 @@ const CredentialManagement: React.FC = () => {
             dataIndex: 'auth_type',
             key: 'auth_type',
             render: (val: string) => (
-                val === 'password' ? <Tag color="blue">{t('credential.password')}</Tag> : <Tag color="purple">{t('credential.sshKey')}</Tag>
+                val === 'password' ? <Tag color="processing">{t('credential.password')}</Tag> : <Tag color="warning">{t('credential.sshKey')}</Tag>
             ),
         },
         {

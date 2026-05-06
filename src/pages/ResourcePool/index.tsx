@@ -160,7 +160,7 @@ const ResourcePoolManagement: React.FC = () => {
             title: t('resourcePool.poolCode'),
             dataIndex: 'code',
             key: 'code',
-            render: (text: string) => <Tag color="blue">{text}</Tag>
+            render: (text: string) => <Tag color="processing">{text}</Tag>
         },
         {
             title: t('resourcePool.hostCount'),
@@ -202,7 +202,7 @@ const ResourcePoolManagement: React.FC = () => {
                         trigger="hover"
                         placement="right"
                     >
-                        <Tag color="cyan" className="cursor-help">
+                        <Tag color="processing" className="cursor-help">
                             {t('resourcePool.hostsCount', { count: hosts?.length || 0 })}
                         </Tag>
                     </Popover>

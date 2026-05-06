@@ -206,7 +206,7 @@ const RoleManagement: React.FC = () => {
 
     const columns = [
         { title: t('role.columnName'), dataIndex: 'name', key: 'name', width: 150, ellipsis: true },
-        { title: t('role.columnCode'), dataIndex: 'code', key: 'code', width: 150, render: (code: string) => <Tag color="blue">{code}</Tag> },
+        { title: t('role.columnCode'), dataIndex: 'code', key: 'code', width: 150, render: (code: string) => <Tag color="processing">{code}</Tag> },
         {
             title: t('role.columnParents'),
             dataIndex: 'parents',

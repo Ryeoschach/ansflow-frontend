@@ -137,7 +137,7 @@ const UserManagement: React.FC = () => {
             key: 'roles_info',
             render: (roles: any[]) => (
                 <Space wrap>
-                    {roles?.map(role => <Tag color="blue" key={role.id}>{role.name}</Tag>)}
+                    {roles?.map(role => <Tag color="processing" key={role.id}>{role.name}</Tag>)}
                     {(!roles || roles.length === 0) && <span className="text-gray-400">{t('user.unassigned')}</span>}
                 </Space>
             )

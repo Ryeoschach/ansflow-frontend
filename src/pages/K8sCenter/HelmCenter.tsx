@@ -228,10 +228,10 @@ const HelmCenter: React.FC = () => {
     {
       title: t('helm.deployedImage'), dataIndex: 'deployed_images', key: 'deployed_images', width: 220, ellipsis: true,
       render: (images: string[]) => images && images.length > 0
-        ? images.map((img, i) => <Tag key={i} color="geekblue" style={{ marginBottom: 2 }}>{img}</Tag>)
+        ? images.map((img, i) => <Tag key={i} color="processing" style={{ marginBottom: 2 }}>{img}</Tag>)
         : <Text type="secondary">-</Text>
     },
-    { title: t('helm.releaseBatch'), dataIndex: 'revision', key: 'revision', width: 100, render: (v: any) => <Tag color="purple">Rev: {v}</Tag> },
+    { title: t('helm.releaseBatch'), dataIndex: 'revision', key: 'revision', width: 100, render: (v: any) => <Tag color="warning">Rev: {v}</Tag> },
     {
       title: t('helm.status'), dataIndex: 'status', key: 'status', width: 100,
       render: (s: string) => <Tag color={s === 'deployed' ? 'success' : 'warning'}>{s}</Tag>
@@ -487,7 +487,7 @@ const HelmCenter: React.FC = () => {
             </div>
             {(isUpgrade || scaffoldFiles?.length > 0) && (
               <div className="w-2/3 flex flex-col border-l pl-6">
-                <div className="mb-2 flex justify-between items-center"><Text strong>{isUpgrade ? t('helm.editValuesYaml') : t('helm.editScaffoldFiles')}</Text>{isUpgrade && <Tag color="blue">{t('helm.realtimeSync')}</Tag>}</div>
+                <div className="mb-2 flex justify-between items-center"><Text strong>{isUpgrade ? t('helm.editValuesYaml') : t('helm.editScaffoldFiles')}</Text>{isUpgrade && <Tag color="processing">{t('helm.realtimeSync')}</Tag>}</div>
                 {isUpgrade ? (
                   <K8sYamlEditor
                     value={editValuesYaml}

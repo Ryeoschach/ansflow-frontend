@@ -217,8 +217,8 @@ const ApprovalCenter: React.FC = () => {
 
     const policyColumns = [
         { title: t('approval.policyName'), dataIndex: 'name', key: 'name', render: (v: string) => <Text strong>{v}</Text> },
-        { title: t('approval.resourceType'), dataIndex: 'resource_type', key: 'resource_type', render: (v: string) => <Tag color="blue">{v}</Tag> },
-        { title: t('approval.environment'), dataIndex: 'environment', key: 'environment', render: (v: string) => v ? <Tag color="purple">{v}</Tag> : <Tag color="default">{t('common.all') || '全部'}</Tag> },
+        { title: t('approval.resourceType'), dataIndex: 'resource_type', key: 'resource_type', render: (v: string) => <Tag color="processing">{v}</Tag> },
+        { title: t('approval.environment'), dataIndex: 'environment', key: 'environment', render: (v: string) => v ? <Tag color="warning">{v}</Tag> : <Tag color="default">{t('common.all') || '全部'}</Tag> },
         { 
             title: t('approval.approverRoles'), 
             dataIndex: 'approver_roles_detail', 

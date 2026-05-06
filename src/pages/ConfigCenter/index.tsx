@@ -223,7 +223,7 @@ const ConfigCenter: React.FC = () => {
       key: 'key',
       render: (v: string) => (
         <Space>
-          <Tag color="blue">{v}</Tag>
+          <Tag color="processing">{v}</Tag>
           <Tooltip title={t('common.copy')}>
             <Button
               type="text"
@@ -316,7 +316,7 @@ const ConfigCenter: React.FC = () => {
       dataIndex: 'is_encrypted',
       key: 'is_encrypted',
       width: 80,
-      render: (v: boolean) => v ? <Tag color="orange">{t('configCenter.itemEncrypted')}</Tag> : '-',
+      render: (v: boolean) => v ? <Tag color="warning">{t('configCenter.itemEncrypted')}</Tag> : '-',
     },
     { title: t('configCenter.itemDescription'), dataIndex: 'description', key: 'description', ellipsis: true },
     {

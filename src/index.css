@@ -22,7 +22,7 @@
   :root {
     font-family: Inter, system-ui, sans-serif;
     color-scheme: light dark;
-    background-color: #f0f2f5;
+    background-color: #FEFAE0; /* 奶油米白背景 */
   }
 
   body {
@@ -38,26 +38,19 @@
 /* 组件与工具样式 */
 @layer utilities {
 
-  /* 玻璃拟态效果 */
+  /* 玻璃拟态效果 - 适配米白底色 */
   .glass-effect {
-    /* 强制使用显式的带有透明度的纯正 RGBA 颜色，解决颜色注入导致的失效 */
-    background: rgba(255, 255, 255, 0.65) !important;
-    /* 仅保留标准属性，不要写 -webkit-，交给打包器自动补全，否则打包时会导致标准属性被误删 */
-    backdrop-filter: blur(8px) saturate(180%) !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-    /* 加深边框线 */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    /* 增加轻微阴影 */
+    background: rgba(254, 250, 224, 0.75) !important; /* FEFAE0 的透明版 */
+    backdrop-filter: blur(10px) saturate(160%) !important;
+    border-bottom: 1px solid rgba(96, 108, 56, 0.1); /* 主色低透明度边框 */
+    box-shadow: 0 4px 12px rgba(40, 54, 24, 0.04);
   }
 
   /* 暗色模式：html 标签上有 .dark 类 */
   .dark .glass-effect {
-    /* 暗黑模式下使用透明度 70% 的深灰纯色 */
-    background: rgba(20, 20, 20, 0.65) !important;
-    /* 白色透明线 */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-    /* 阴影 */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    background: rgba(26, 36, 17, 0.8) !important;
+    border-bottom: 1px solid rgba(233, 237, 201, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -65,10 +58,10 @@
   scrollbar-gutter: stable;
 }
 
-/* 统一自定义滚动条样式 */
+/* 统一自定义滚动条样式 - 适配大地色系 */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -76,12 +69,12 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(96, 108, 56, 0.15); /* 主色系低透明度 */
   border-radius: 10px;
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(163, 177, 138, 0.2);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {

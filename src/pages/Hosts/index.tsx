@@ -94,7 +94,7 @@ const HostManagement: React.FC = () => {
             key: 'env',
             render: (envId: number) => {
                 const env = environments.find((e: any) => e.id === envId);
-                return <Tag color="blue">{env?.name || `ID:${envId}`}</Tag>;
+                return <Tag color="processing">{env?.name || `ID:${envId}`}</Tag>;
             }
         },
         {
@@ -105,7 +105,7 @@ const HostManagement: React.FC = () => {
                 if (!platformId) return <Tag color="default">{t('host.unclassified')}</Tag>;
 
                 const p = platforms.find((p: any) => p.id === platformId);
-                return <Tag color="cyan">{p?.name || `ID:${platformId}`}</Tag>;
+                return <Tag color="processing">{p?.name || `ID:${platformId}`}</Tag>;
             }
         },
         {

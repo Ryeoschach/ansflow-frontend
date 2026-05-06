@@ -155,7 +155,7 @@ const ExecutionHistory: React.FC = () => {
             title: t('executionHistory.executor'),
             dataIndex: 'executor_name',
             key: 'executor_name',
-            render: (val: string) => <Tag color="orange">{val || t('executionHistory.system')}</Tag>
+            render: (val: string) => <Tag color="warning">{val || t('executionHistory.system')}</Tag>
         },
         {
             title: t('executionHistory.createTime'),

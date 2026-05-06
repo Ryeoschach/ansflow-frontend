@@ -89,17 +89,17 @@ const Artifacts: React.FC = () => {
     };
 
     const typeMap: Record<string, { text: string; color: string }> = {
-        docker_image: { text: 'Docker 镜像', color: 'blue' },
+        docker_image: { text: 'Docker 镜像', color: 'processing' },
         jar: { text: 'JAR 包', color: 'orange' },
         npm_package: { text: 'npm 包', color: 'red' },
         pypi_package: { text: 'PyPI 包', color: 'green' },
-        binary: { text: '二进制', color: 'cyan' },
+        binary: { text: '二进制', color: 'processing' },
         helm_chart: { text: 'Helm Chart', color: 'purple' },
         other: { text: '其他', color: 'default' },
     };
 
     const sourceMap: Record<string, { text: string; color: string }> = {
-        docker: { text: 'Docker / Harbor', color: 'blue' },
+        docker: { text: 'Docker / Harbor', color: 'processing' },
         artifactory: { text: 'Artifactory', color: 'orange' },
     };
 
@@ -111,7 +111,7 @@ const Artifacts: React.FC = () => {
             ellipsis: true,
             render: (text: string, record: Artifact) => (
                 <Space>
-                    <InboxOutlined style={{ color: '#1890ff' }} />
+                    <InboxOutlined style={{ color: '#606C38' }} />
                     <Text strong>{text}</Text>
                 </Space>
             ),
@@ -143,9 +143,9 @@ const Artifacts: React.FC = () => {
             ellipsis: true,
             render: (_: any, record: Artifact) => {
                 if (record.source_type === 'registry') {
-                    return record.registry_name ? <Tag color="blue"><CloudOutlined /> {record.registry_name}</Tag> : '-';
+                    return record.registry_name ? <Tag color="processing"><CloudOutlined /> {record.registry_name}</Tag> : '-';
                 }
-                return record.artifactory_repo_name ? <Tag color="orange"><CloudOutlined /> {record.artifactory_repo_name}</Tag> : '-';
+                return record.artifactory_repo_name ? <Tag color="warning"><CloudOutlined /> {record.artifactory_repo_name}</Tag> : '-';
             },
         },
         {

@@ -379,10 +379,10 @@ const DesignerCore = () => {
                       const colorMap: any = {
                         ansible: '#EE0000', 
                         git_clone: '#1A1D1E', 
-                        docker_build: '#2496ED', 
-                        kaniko_build: '#F39C12',
-                        k8s_deploy: '#326CE5',
-                        http_webhook: '#8E44AD'
+                        docker_build: '#606C38', 
+                        kaniko_build: '#DDA15E',
+                        k8s_deploy: '#283618',
+                        http_webhook: '#BC6C25'
                       };
                       const nodeColor = colorMap[node.type] || token.colorPrimary;
                       return (

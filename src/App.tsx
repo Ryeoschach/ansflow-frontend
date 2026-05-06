@@ -327,7 +327,7 @@ function App() {
       document.body.style.backgroundColor = '#141414';
     } else {
       document.documentElement.classList.remove('dark');
-      document.body.style.backgroundColor = '#f0f2f5';
+      document.body.style.backgroundColor = '#FEFAE0'; // 奶油米白背景
     }
   }, [isDark]);
 
@@ -340,24 +340,41 @@ function App() {
       <ConfigProvider
         locale={antdLocale}
         theme={{
-          cssVar: {},
+          cssVar: true,
           algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
           token: {
-            colorPrimary: isDark ? '#818cf8' : '#6366f1',
-            controlOutline: isDark ? 'rgba(129, 140, 248, 0.15)' : 'rgba(99, 102, 241, 0.15)',
-            borderRadius: 10,
+            colorPrimary: isDark ? '#A3B18A' : '#606C38', // 暗橄榄绿
+            colorInfo: isDark ? '#A3B18A' : '#606C38',
+            colorSuccess: '#606C38',
+            colorWarning: '#DDA15E',
+            colorError: '#BC6C25',
+            colorLink: '#BC6C25',
+            colorTextBase: isDark ? '#E9EDC9' : '#283618', // 深森林绿文本
+            colorBgLayout: isDark ? '#141414' : '#FEFAE0', // 全局奶油米白背景
+            borderRadius: 12,
             fontFamily: 'Inter, system-ui, sans-serif',
           },
           components: {
             Layout: {
-              headerBg: isDark ? '#141414' : '#fff',
-              siderBg: isDark ? '#141414' : '#fff',
+              headerBg: isDark ? '#1A2411' : '#283618', // 深森林绿顶栏
+              headerColor: '#FEFAE0',
+              siderBg: isDark ? '#1A2411' : '#283618', // 深森林绿侧边栏
+              triggerBg: isDark ? '#283618' : '#606C38',
             },
             Menu: {
-              darkItemBg: '#141414',
-              darkSubMenuItemBg: '#141414',
+              darkItemBg: isDark ? '#1A2411' : '#283618',
+              darkSubMenuItemBg: isDark ? '#0F160A' : '#1A2411',
               itemBorderRadius: 8,
+              darkItemSelectedBg: '#606C38',
+              darkItemSelectedColor: '#FEFAE0',
             },
+            Card: {
+              boxShadowTertiary: '0 4px 6px -1px rgb(40 54 24 / 0.05)',
+            },
+            Button: {
+              borderRadius: 8,
+              fontWeight: 500,
+            }
           },
         }}
       >
