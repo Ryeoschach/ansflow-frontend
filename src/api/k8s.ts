@@ -40,6 +40,18 @@ export const getK8sDeployments = (clusterId: number, params?: { namespace?: stri
 export const getK8sServices = (clusterId: number, params?: { namespace?: string }): Promise<any[]> =>
     request.get<any[]>(`/k8s/${clusterId}/services_list/`, { params }) as any;
 
+// 获取节点 Metrics
+export const getK8sNodesMetrics = (clusterId: number): Promise<any[]> =>
+    request.get<any[]>(`/k8s/${clusterId}/metrics_nodes/`) as any;
+
+// 获取 Pod Metrics
+export const getK8sPodsMetrics = (clusterId: number, params?: { namespace?: string }): Promise<any[]> =>
+    request.get<any[]>(`/k8s/${clusterId}/metrics_pods/`, { params }) as any;
+
+// 获取事件列表
+export const getK8sEvents = (clusterId: number, params?: { namespace?: string }): Promise<any[]> =>
+    request.get<any[]>(`/k8s/${clusterId}/events_list/`, { params }) as any;
+
 // 获取 Pod 日志
 export const getK8sPodLogs = (clusterId: number, params: { namespace: string; pod_name: string; container?: string; tail_lines?: number }) =>
     request.get<{ logs: string }>(`/k8s/${clusterId}/pod_logs_list/`, { params });

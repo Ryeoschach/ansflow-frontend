@@ -16,6 +16,7 @@ import {
   Tooltip,
   theme,
   InputNumber,
+  Progress,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
@@ -52,6 +53,9 @@ import {
   updateK8sYaml,
   execK8sPodCommand,
   deleteK8sPod,
+  getK8sNodesMetrics,
+  getK8sPodsMetrics,
+  getK8sEvents,
 } from '../../api/k8s';
 import { K8sResource } from '../../types';
 import request from "../../utils/requests";
@@ -59,9 +63,40 @@ import useAppStore from "../../store/useAppStore.ts";
 import useBreakpoint from '../../utils/useBreakpoint';
 
 import useK8sStore from "../../store/useK8sStore";
+import K8sTerminal from './components/K8sTerminal';
+import K8sStreamingLogs from './components/K8sStreamingLogs';
+import K8sYamlEditor from './components/K8sYamlEditor';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
+
+/**
+ * @description 解析 K8s 资源单位 (如 200m -> 0.2, 1Gi -> 1024, 1234567n -> 0.00123)
+ */
+const parseK8sResource = (val: string | number, type: 'cpu' | 'mem') => {
+  if (val === undefined || val === null || val === '') return 0;
+  const strVal = String(val);
+  
+  if (type === 'cpu') {
+    if (strVal.endsWith('n')) return parseInt(strVal) / 1000000000;
+    if (strVal.endsWith('u')) return parseInt(strVal) / 1000000;
+    if (strVal.endsWith('m')) return parseInt(strVal) / 1000;
+    return parseFloat(strVal);
+  } else {
+    // 内存单位处理 Ki, Mi, Gi, Ti, Pi, Ei
+    const units: Record<string, number> = { 
+      'Ki': 1, 'Mi': 1024, 'Gi': 1024 * 1024, 'Ti': 1024 * 1024 * 1024,
+      'K': 1, 'M': 1024, 'G': 1024 * 1024, 'T': 1024 * 1024 * 1024
+    };
+    for (const unit in units) {
+      if (strVal.endsWith(unit)) {
+        const num = parseInt(strVal.slice(0, -unit.length));
+        return (num * units[unit]) / 1024; // 返回 MiB
+      }
+    }
+    return parseFloat(strVal) / 1024 / 1024; // 假设是 Byte，转 MiB
+  }
+};
 
 /**
  * @name K8sCenter
@@ -263,6 +298,27 @@ const K8sCenter: React.FC = () => {
     enabled: !!activeClusterId && isDetailVisible,
   });
 
+  const { data: nodesMetrics } = useQuery({
+    queryKey: ['k8s', activeClusterId, 'metrics', 'nodes'],
+    queryFn: () => getK8sNodesMetrics(activeClusterId!),
+    enabled: !!activeClusterId && isDetailVisible,
+    refetchInterval: 15000, // 每 15 秒刷新一次指标
+  });
+
+  const { data: podsMetrics } = useQuery({
+    queryKey: ['k8s', activeClusterId, 'metrics', 'pods', activeNamespace],
+    queryFn: () => getK8sPodsMetrics(activeClusterId!, { namespace: activeNamespace }),
+    enabled: !!activeClusterId && isDetailVisible,
+    refetchInterval: 15000,
+  });
+
+  const { data: eventsData, isLoading: eventsLoading } = useQuery({
+    queryKey: ['k8s', activeClusterId, 'events', activeNamespace],
+    queryFn: () => getK8sEvents(activeClusterId!, { namespace: activeNamespace }),
+    enabled: !!activeClusterId && isDetailVisible,
+    refetchInterval: 30000,
+  });
+
   /**
    * @section 集群增删改逻辑
    */
@@ -406,10 +462,30 @@ const K8sCenter: React.FC = () => {
       render: (status: string) => <Tag color={status === 'Ready' ? 'success' : 'error'}>{status}</Tag>,
     },
     {
-      title: t('k8s.role'),
-      dataIndex: 'roles',
-      key: 'roles',
-      render: (roles: string[]) => roles.map((r) => <Tag key={r}>{r}</Tag>),
+      title: 'CPU 利用率',
+      key: 'cpu',
+      render: (_: any, record: any) => {
+        const metricsList = Array.isArray(nodesMetrics) ? nodesMetrics : (nodesMetrics as any)?.data || [];
+        const metric = metricsList.find((m: any) => m.metadata.name === record.name);
+        if (!metric) return <Text type="secondary">N/A</Text>;
+        const usage = parseK8sResource(metric.usage.cpu, 'cpu');
+        const capacity = parseK8sResource(record.cpu, 'cpu');
+        const percent = capacity > 0 ? Math.round((usage / capacity) * 100) : 0;
+        return <Progress percent={percent} size="small" status={percent > 80 ? 'exception' : 'active'} />;
+      }
+    },
+    {
+      title: '内存利用率',
+      key: 'mem',
+      render: (_: any, record: any) => {
+        const metricsList = Array.isArray(nodesMetrics) ? nodesMetrics : (nodesMetrics as any)?.data || [];
+        const metric = metricsList.find((m: any) => m.metadata.name === record.name);
+        if (!metric) return <Text type="secondary">N/A</Text>;
+        const usage = parseK8sResource(metric.usage.memory, 'mem');
+        const capacity = parseK8sResource(record.memory, 'mem');
+        const percent = capacity > 0 ? Math.round((usage / capacity) * 100) : 0;
+        return <Progress percent={percent} size="small" status={percent > 80 ? 'exception' : 'active'} />;
+      }
     },
     { title: t('k8s.ipAddress'), dataIndex: 'internal_ip', key: 'internal_ip' },
     {
@@ -432,6 +508,25 @@ const K8sCenter: React.FC = () => {
   const podColumns = [
     { title: t('k8s.podName'), dataIndex: 'name', key: 'name' },
     { title: t('k8s.namespace'), dataIndex: 'namespace', key: 'namespace' },
+    {
+      title: '实时负载',
+      key: 'metrics',
+      render: (_: any, record: any) => {
+        const metricsList = Array.isArray(podsMetrics) ? podsMetrics : [];
+        const metric = metricsList.find((m: any) => 
+          m.metadata.name === record.name && m.metadata.namespace === record.namespace
+        );
+        if (!metric) return <Text type="secondary">N/A</Text>;
+        const cpu = metric.containers.reduce((acc: number, c: any) => acc + parseK8sResource(c.usage.cpu, 'cpu'), 0);
+        const mem = metric.containers.reduce((acc: number, c: any) => acc + parseK8sResource(c.usage.memory, 'mem'), 0);
+        return (
+          <Space direction="vertical" size={0} className="w-full">
+            <Text style={{ fontSize: '10px' }} strong>CPU: {cpu < 0.001 ? '<0.001' : cpu.toFixed(3)} 核</Text>
+            <Text style={{ fontSize: '10px' }} strong>Mem: {mem.toFixed(1)} MiB</Text>
+          </Space>
+        );
+      }
+    },
     {
       title: t('k8s.status'),
       dataIndex: 'status',
@@ -588,6 +683,14 @@ const K8sCenter: React.FC = () => {
         </Button>
       ),
     },
+  ];
+
+  const eventColumns = [
+    { title: '最后发生', dataIndex: 'last_timestamp', key: 'last_timestamp', width: 150, render: (t: string) => t ? new Date(t).toLocaleString() : '-' },
+    { title: '类型', dataIndex: 'type', key: 'type', width: 100, render: (t: string) => <Tag color={t === 'Warning' ? 'orange' : 'blue'}>{t}</Tag> },
+    { title: '原因', dataIndex: 'reason', key: 'reason', width: 120 },
+    { title: '对象', dataIndex: 'object', key: 'object', width: 180, ellipsis: true },
+    { title: '消息', dataIndex: 'message', key: 'message', ellipsis: true },
   ];
 
   return (
@@ -872,6 +975,16 @@ const K8sCenter: React.FC = () => {
                 ),
                 children: <Table columns={serviceColumns} dataSource={servicesData} rowKey="name" loading={servicesLoading} pagination={{ pageSize: 10 }} />,
               },
+              {
+                key: 'events',
+                label: (
+                  <Space>
+                    <FileTextOutlined />
+                    <span>事件中心</span>
+                  </Space>
+                ),
+                children: <Table columns={eventColumns} dataSource={eventsData} rowKey="name" loading={eventsLoading} pagination={{ pageSize: 10 }} />,
+              },
             ]}
           />
         </div>
@@ -911,29 +1024,23 @@ const K8sCenter: React.FC = () => {
               <FileTextOutlined style={{ color: token.colorPrimary }} />
               <span>{t('k8s.podLogs', { name: logPod?.name })}</span>
             </Space>
-            <Button
-              size="small"
-              icon={<ReloadOutlined />}
-              onClick={() => fetchLogs(logPod)}
-              loading={logsLoading}
-            >
-              {t('k8s.refresh')}
-            </Button>
           </div>
         }
         open={isLogModalVisible}
         onCancel={() => setIsLogModalVisible(false)}
         footer={null}
-        width={isMobile ? '95vw' : 1000}
-        bodyStyle={{ overflowX: 'auto' }}
+        width={isMobile ? '95vw' : 1100}
+        destroyOnClose
         className="top-5"
       >
-        <pre
-          style={{ background: token.colorBgLayout, borderColor: token.colorBorderSecondary, color: token.colorText }}
-          className="p-4 rounded-lg border border-solid overflow-auto max-h-150 text-xs leading-relaxed font-mono"
-        >
-          {podLogs || t('k8s.noLogsOutput')}
-        </pre>
+        {logPod && (
+          <K8sStreamingLogs
+            clusterId={activeClusterId!}
+            namespace={logPod.namespace}
+            podName={logPod.name}
+            tailLines={500}
+          />
+        )}
       </Modal>
 
       {/* YAML Editor Modal */}
@@ -953,17 +1060,14 @@ const K8sCenter: React.FC = () => {
           style: hasPermission('k8s:cluster:update_yaml') ? {} : { display: 'none' }
         }}
         confirmLoading={yamlUpdateMutation.isPending}
-        width={isMobile ? '95vw' : 900}
-        bodyStyle={{ overflowX: 'auto' }}
+        width={isMobile ? '95vw' : 1100}
+        destroyOnClose
         className="top-5"
       >
-        <TextArea
+        <K8sYamlEditor
           value={yamlContent}
-          onChange={(e) => setYamlContent(e.target.value)}
-          rows={25}
+          onChange={(val) => setYamlContent(val || '')}
           readOnly={!hasPermission('k8s:cluster:update_yaml')}
-          style={{ background: token.colorBgLayout, borderColor: token.colorBorderSecondary, color: token.colorText }}
-          className="font-mono text-xs p-4 rounded-lg"
         />
       </Modal>
 
@@ -978,31 +1082,18 @@ const K8sCenter: React.FC = () => {
         open={isShellModalVisible}
         onCancel={() => setIsShellModalVisible(false)}
         footer={null}
-        width={isMobile ? '95vw' : 900}
-        bodyStyle={{ overflowX: 'auto' }}
+        width={isMobile ? '95vw' : 1100}
+        destroyOnClose
         className="top-5"
       >
-        <div className="mb-4 mt-3">
-          <Space.Compact className="w-full">
-            <Input
-              value={shellCommand}
-              onChange={(e) => setShellCommand(e.target.value)}
-              onPressEnter={handleShellExec}
-              placeholder={t('k8s.enterCommand')}
-            />
-            {hasPermission('k8s:cluster:pod_exec') && (
-            <Button type="primary" onClick={handleShellExec} loading={shellExecMutation.isPending} icon={<PlayCircleOutlined />}>
-              {t('k8s.execute')}
-            </Button>
-                )}
-          </Space.Compact>
-        </div>
-        <div
-          style={{ background: token.colorBgLayout, borderColor: token.colorBorderSecondary, color: token.colorText }}
-          className="p-4 border border-solid rounded-lg font-mono text-xs min-h-100 max-h-125 overflow-auto whitespace-pre-wrap leading-relaxed shadow-inner"
-        >
-          {shellExecMutation.isPending ? t('k8s.commandExecuting') : shellOutput || t('k8s.waitingForCommand')}
-        </div>
+        {shellTarget && (
+          <K8sTerminal
+            clusterId={activeClusterId!}
+            namespace={shellTarget.namespace}
+            podName={shellTarget.name}
+            onClose={() => {}}
+          />
+        )}
       </Modal>
     </div>
   );
