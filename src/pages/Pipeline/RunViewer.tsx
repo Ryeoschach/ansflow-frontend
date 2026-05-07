@@ -61,12 +61,12 @@ const AnsiLog = React.memo(({ text }: { text: string }) => {
   const parseAnsi = (str: string) => {
     // 基础 ANSI 颜色映射表
     const colorMap: Record<string, string> = {
-      '31': '#ff4d4f', // Error (Red)
-      '32': '#52c41a', // Success (Green)
-      '33': '#faad14', // Warning (Yellow)
-      '34': '#1890ff', // Info (Blue)
-      '36': '#13c2c2', // Cyan
-      '90': '#8c8c8c', // Debug (Grey)
+      '31': token.colorError,
+      '32': token.colorSuccess,
+      '33': token.colorWarning,
+      '34': token.colorInfo,
+      '36': token.colorInfo,
+      '90': token.colorTextTertiary,
     };
 
     const parts = str.split(/(\u001b\[\d+m)/g);
@@ -391,11 +391,10 @@ const ViewerCore = () => {
                 className="rounded-2xl shadow-lg"
                 nodeColor={(n) => {
                     const s = n.data.runStatus;
-                    if (s === 'success') return '#22c55e';
-                    if (s === 'failed') return '#ef4444';
-                    if (s === 'running') return '#3b82f6';
-                    if (s === 'skipped') return '#94a3b8';
-                    return '#94a3b8';
+                    if (s === 'success') return token.colorSuccess;
+                    if (s === 'failed') return token.colorError;
+                    if (s === 'running') return token.colorPrimary;
+                    return token.colorTextTertiary;
                 }}
             />
             <Background gap={32} size={1} color={token.colorBorderSecondary} />

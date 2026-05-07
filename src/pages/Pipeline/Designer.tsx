@@ -376,29 +376,20 @@ const DesignerCore = () => {
 
                 <div className="flex flex-col gap-3">
                     {nodeTemplates.map((node) => {
-                      const colorMap: any = {
-                        ansible: '#EE0000', 
-                        git_clone: '#1A1D1E', 
-                        docker_build: '#606C38', 
-                        kaniko_build: '#DDA15E',
-                        k8s_deploy: '#283618',
-                        http_webhook: '#BC6C25'
-                      };
-                      const nodeColor = colorMap[node.type] || token.colorPrimary;
                       return (
                         <div
                             key={node.type}
-                            style={{ 
-                                background: token.colorBgContainer, 
-                                borderLeft: `4px solid ${nodeColor}`,
-                                borderColor: token.colorBorderSecondary 
+                            style={{
+                                background: token.colorBgContainer,
+                                borderLeft: `4px solid ${token.colorPrimary}`,
+                                borderColor: token.colorBorderSecondary
                             }}
                             className="p-4 border border-solid rounded-xl cursor-grab hover:shadow-lg transition-all group flex items-start gap-3"
                             onDragStart={(event) => onDragStart(event, node.type)}
                             draggable
                         >
-                            <div 
-                              style={{ color: nodeColor, backgroundColor: `${nodeColor}15` }} 
+                            <div
+                              style={{ color: token.colorPrimary, backgroundColor: token.colorPrimaryBg }}
                               className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform"
                             >
                                 {node.icon}

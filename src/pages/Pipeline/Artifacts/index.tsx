@@ -111,7 +111,7 @@ const Artifacts: React.FC = () => {
             ellipsis: true,
             render: (text: string, record: Artifact) => (
                 <Space>
-                    <InboxOutlined style={{ color: '#606C38' }} />
+                    <InboxOutlined style={{ color: token.colorPrimary }} />
                     <Text strong>{text}</Text>
                 </Space>
             ),

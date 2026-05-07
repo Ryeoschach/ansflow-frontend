@@ -305,7 +305,7 @@ const BackupManagement: React.FC = () => {
             disabled={restoreLoading}
           >
             <p className="ant-upload-drag-icon">
-              <UploadOutlined style={{ fontSize: 48, color: '#1890ff' }} />
+              <UploadOutlined style={{ fontSize: 48, color: token.colorPrimary }} />
             </p>
             <p className="ant-upload-text">{t('backup.uploadTip')}</p>
             <p className="ant-upload-hint">{t('backup.uploadHint')}</p>
