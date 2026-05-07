@@ -1,5 +1,5 @@
 import React, { Fragment, useState } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Select, Tag, Space, Typography, App, Tooltip, Popconfirm, Drawer } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, Select, Tag, Space, Typography, App, Tooltip, Popconfirm, Drawer, theme } from 'antd';
 import { PlusOutlined, DeleteOutlined, EditOutlined, EyeOutlined, CloudOutlined, InboxOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +16,7 @@ const Artifacts: React.FC = () => {
     const { t } = useTranslation();
     const { message } = App.useApp();
     const { token: authToken, hasPermission } = useAppStore();
+    const { token } = theme.useToken();
     const queryClient = useQueryClient();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingArtifact, setEditingArtifact] = useState<Artifact | null>(null);
