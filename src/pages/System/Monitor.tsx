@@ -27,6 +27,7 @@ const componentsIcons: Record<string, React.ReactNode> = {
 
 const CeleryWorkerTable: React.FC<{ workers: any[] }> = ({ workers }) => {
   const { t } = useTranslation();
+  const { token } = theme.useToken();
   const columns = [
     { 
       title: t('monitor.workerName'), dataIndex: 'worker', key: 'worker', ellipsis: true,

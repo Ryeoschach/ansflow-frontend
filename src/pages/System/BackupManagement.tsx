@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Card, Table, Button, Space, Modal, Upload, message, Typography, Popconfirm,
-  Statistic, Row, Col, Alert, Checkbox
+  Statistic, Row, Col, Alert, Checkbox, theme
 } from 'antd';
 import type { TablePaginationConfig } from 'antd';
 import {
@@ -16,6 +16,7 @@ const { Title, Text } = Typography;
 
 const BackupManagement: React.FC = () => {
   const { t } = useTranslation();
+  const { token } = theme.useToken();
   const queryClient = useQueryClient();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [restoreLoading, setRestoreLoading] = useState(false);
