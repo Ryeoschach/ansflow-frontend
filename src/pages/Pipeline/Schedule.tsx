@@ -23,7 +23,7 @@ const { Text } = Typography;
  */
 const ScheduleList: React.FC = () => {
   const { t } = useTranslation();
-  const { isDark, token: _authToken, hasPermission } = useAppStore();
+  const { token: _authToken, hasPermission } = useAppStore();
   const { token: antdToken } = theme.useToken();
   const queryClient = useQueryClient();
   const { message, modal } = App.useApp();
@@ -141,7 +141,7 @@ const ScheduleList: React.FC = () => {
       key: 'cron_expression',
       render: (text: string) => (
         <Tag
-          style={{ background: isDark ? 'rgba(129, 140, 248, 0.1)' : 'rgba(99, 102, 241, 0.1)', borderColor: antdToken.colorBorderSecondary }}
+          style={{ background: 'rgba(var(--ant-color-primary-rgb), 0.1)', borderColor: antdToken.colorBorderSecondary }}
           icon={<ClockCircleOutlined style={{ color: antdToken.colorPrimary }} />}
           className="font-mono rounded-lg px-3 border-none"
         >

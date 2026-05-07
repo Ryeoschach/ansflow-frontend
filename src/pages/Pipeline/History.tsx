@@ -112,7 +112,7 @@ export default function PipelineHistory() {
       title: t('pipeline.runId'),
       dataIndex: 'id',
       key: 'id',
-      render: (id: number) => <Text code className="text-blue-600 font-mono">#{id}</Text>
+      render: (id: number) => <Text code className="text-primary font-mono opacity-80">#{id}</Text>
     },
     {
       title: t('pipeline.blueprint'),
@@ -157,7 +157,7 @@ export default function PipelineHistory() {
           return (
               <div className="flex flex-col">
                   <Text className="text-xs">{start.format('YYYY-MM-DD HH:mm')}</Text>
-                  <Text type="secondary" className="text-[10px] text-blue-500 font-medium">
+                  <Text type="secondary" className="text-[10px] text-primary font-medium opacity-80">
                     {t('dashboard.duration')}: {diffSec > 60 ? `${Math.floor(diffSec/60)}m ${diffSec%60}s` : `${diffSec}s`}
                   </Text>
               </div>

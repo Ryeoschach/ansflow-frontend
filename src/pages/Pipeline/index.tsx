@@ -72,7 +72,7 @@ const TemplateList = () => {
                     <p className="text-gray-400 text-xs mt-2">
                         {t('pipeline.approvalTicket')}: <Tag color="warning">#APP-{res.ticket_id || 'N/A'}</Tag>
                     </p>
-                    <p className="mt-3 font-semibold text-blue-600">{t('pipeline.approvalNote')}</p>
+                    <p className="mt-3 font-semibold text-primary">{t('pipeline.approvalNote')}</p>
                 </div>
             ),
             okText: t('pipeline.goToApproval'),
@@ -95,11 +95,11 @@ const TemplateList = () => {
       key: 'name',
       render: (text: string, record: any) => (
         <Space size="middle">
-            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center shadow-sm">
-                <RocketOutlined className="text-blue-500 text-lg" />
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shadow-sm">
+                <RocketOutlined className="text-primary text-lg" />
             </div>
             <div onClick={() => navigate(`/v1/pipeline/designer?id=${record.id}`)} className="cursor-pointer group">
-                <Text strong className="text-sm block group-hover:text-blue-500 transition-colors">
+                <Text strong className="text-sm block group-hover:text-primary transition-colors">
                     {text}
                 </Text>
                 <Text type="secondary" className="text-[10px] uppercase opacity-50">ID: {record.id}</Text>
@@ -142,7 +142,7 @@ const TemplateList = () => {
             icon={<PlayCircleOutlined />}
             onClick={() => executeMutation.mutate(record.id)}
             loading={executeMutation.isPending}
-            className="rounded-lg shadow-blue-100"
+            className="rounded-lg shadow-primary/10"
           >
             {t('pipeline.execute')}
           </Button>
@@ -278,7 +278,7 @@ export default function PipelinePage() {
             <Space size="middle">
                 <div 
                   style={{ background: token.colorPrimary }} 
-                  className="p-2 rounded-xl text-white items-center justify-center flex shadow-lg shadow-indigo-500/20"
+                  className="p-2 rounded-xl text-white items-center justify-center flex shadow-lg shadow-primary/20"
                 >
                     <ProjectOutlined className="text-xl" />
                 </div>
