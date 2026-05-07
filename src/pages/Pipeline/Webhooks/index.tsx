@@ -125,7 +125,7 @@ const PipelineWebhooks: React.FC = () => {
             ellipsis: true,
             render: (text: string, record: PipelineWebhook) => (
                 <Space>
-                    <GlobalOutlined style={{ color: '#722ed1' }} />
+                    <GlobalOutlined style={{ color: token.colorPrimary }} />
                     <Text strong>{text}</Text>
                 </Space>
             ),

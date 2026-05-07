@@ -56,7 +56,7 @@ const TaskTrendChart: React.FC<TaskTrendChartProps> = ({ data, isLoading }) => {
             type: 'value',
             splitLine: {
                 lineStyle: {
-                    color: isDark ? '#303030' : '#f0f0f0',
+                    color: isDark ? token.colorBorder : token.colorBorderSecondary,
                 }
             },
             axisLabel: {
@@ -68,15 +68,15 @@ const TaskTrendChart: React.FC<TaskTrendChartProps> = ({ data, isLoading }) => {
                 name: t('dashboard.success'),
                 type: 'line',
                 smooth: true,
-                itemStyle: { color: isDark ? '#34D399' : '#10b981' },
+                itemStyle: { color: token.colorSuccess },
                 areaStyle: {
                     color: {
                         type: 'linear',
                         x: 0, y: 0, x2: 0, y2: 1,
                         colorStops: [{
-                            offset: 0, color: isDark ? 'rgba(52,211,153,0.3)' : 'rgba(16,185,129,0.3)'
+                            offset: 0, color: `${token.colorSuccess}4d`
                         }, {
-                            offset: 1, color: isDark ? 'rgba(52,211,153,0.01)' : 'rgba(16,185,129,0.01)'
+                            offset: 1, color: `${token.colorSuccess}03`
                         }]
                     }
                 },
@@ -86,7 +86,7 @@ const TaskTrendChart: React.FC<TaskTrendChartProps> = ({ data, isLoading }) => {
                 name: t('dashboard.failed'),
                 type: 'line',
                 smooth: true,
-                itemStyle: { color: '#ef4444' },
+                itemStyle: { color: token.colorError },
                 data: trendData.map((d: any) => d.failed),
             }
         ]

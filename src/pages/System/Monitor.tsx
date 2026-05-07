@@ -42,7 +42,7 @@ const CeleryWorkerTable: React.FC<{ workers: any[] }> = ({ workers }) => {
     },
     { 
       title: t('monitor.workerActive'), dataIndex: 'active_count', key: 'active', width: 100,
-      render: (v: number) => <Text strong style={{ color: v > 0 ? '#10b981' : undefined }}>{v}</Text>
+      render: (v: number) => <Text strong style={{ color: v > 0 ? token.colorSuccess : undefined }}>{v}</Text>
     },
     { title: t('monitor.workerReserved'), dataIndex: 'reserved_count', key: 'reserved', width: 100 },
     { title: t('monitor.workerConcurrency'), dataIndex: 'concurrency', key: 'concurrency', width: 100 },
@@ -71,11 +71,11 @@ const SystemHealthTable: React.FC<{ components: HealthComponent[] }> = ({ compon
       width: 250,
       render: (_: any, record: HealthComponent) => (
         <Space size={12}>
-          <div 
+          <div
             className="p-2 rounded-lg flex items-center justify-center text-lg"
-            style={{ 
-              background: record.status === 'healthy' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
-              color: record.status === 'healthy' ? '#10b981' : '#ef4444' 
+            style={{
+              background: record.status === 'healthy' ? token.colorSuccessBg : token.colorErrorBg,
+              color: record.status === 'healthy' ? token.colorSuccess : token.colorError
             }}
           >
             {componentsIcons[record.icon] || <DashOutlined />}

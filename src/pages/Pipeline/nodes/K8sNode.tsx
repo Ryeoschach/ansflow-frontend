@@ -1,11 +1,13 @@
 import { memo } from 'react';
 import { NodeProps } from 'reactflow';
 import { ClusterOutlined } from '@ant-design/icons';
+import { theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 import BaseNode from './BaseNode';
 
 const K8sNode = ({ data, isConnectable, ...props }: NodeProps) => {
   const { t } = useTranslation();
+  const { token } = theme.useToken();
   return (
     <BaseNode
       {...props}
@@ -13,7 +15,7 @@ const K8sNode = ({ data, isConnectable, ...props }: NodeProps) => {
       icon={<ClusterOutlined />}
       data={data}
       isConnectable={isConnectable}
-      defaultColor="#326CE5"
+      defaultColor={token.colorPrimary}
     />
   );
 };
