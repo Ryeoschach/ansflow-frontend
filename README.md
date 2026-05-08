@@ -1,111 +1,80 @@
-# AnsFlow 前端
+# AnsFlow Frontend
 
-[English](./README_EN.md) | 中文说明
+English | [中文说明](./README_ZH.md)
 
-企业级 DevOps 流水线平台前端，基于 React 18 + TypeScript + Vite 构建。集成了 **AI 智能助手**、**SRE 告警中心**与 **AIGC 编排**。
+Enterprise-level DevOps pipeline platform frontend, built with React 18 + TypeScript + Vite. Integrated with **AI Assistant**, **SRE Alert Center**, and **AIGC Orchestration**.
 
-**当前版本**：v2.0.0  
-**核心能力**：智能问答 / 自动诊断 / 告警自愈 / 意图编排
+**Current Version**: v2.0.0  
+**Core Capabilities**: Intelligent Q&A / Auto Diagnosis / Alert Self-healing / Intent Orchestration
 
 ---
 
-## 技术栈
+## Tech Stack
 
-| 类别 | 技术 | 说明 |
+| Category | Technology | Description |
 |------|------|------|
-| 框架 | React 18 + TypeScript | 核心框架 |
-| UI 组件 | Ant Design 6 | 企业级 UI 组件库 |
-| 样式 | Tailwind CSS v4 | 原子化 CSS 驱动 |
-| 状态管理 | Zustand v5 | 全局与持久化状态管理 |
-| 数据请求 | TanStack Query v5 | 服务端状态同步 |
-| 流水线 | ReactFlow | DAG 流程图交互与展示 |
-| AI 交互 | Fetch ReadableStream | 实现流式（Streaming）对话响应 |
-| 内容渲染 | ReactMarkdown | 渲染 AI 诊断报告与代码块 |
+| Framework | React 18 + TypeScript | Core Framework |
+| UI Components | Ant Design 6 | Enterprise UI Library |
+| Styling | Tailwind CSS v4 | Utility-first CSS |
+| State Mgmt | Zustand v5 | Global & Persistent State |
+| Data Fetching | TanStack Query v5 | Server State Sync |
+| Pipeline | ReactFlow | DAG Flowchart Interaction |
+| AI Interaction | Fetch ReadableStream | Streaming Chat Responses |
+| Content Rendering | ReactMarkdown | Rendering AI Diagnosis & Code Blocks |
 
 ---
 
-## 智能运维模块详解
+## Intelligent Ops Modules
 
-### 1. AI 智能助手 (AIChatbot)
-- **全局入口**：右下角悬浮按钮，集成 **品牌色呼吸灯** 提醒。
-- **流式对话**：支持打字机效果的实时响应，提供沉浸式问答体验。
-- **自动收起**：支持点击外部自动最小化，保持界面整洁。
-- **主题适配**：深度集成 AntD 6 Token 系统，支持深浅色模式无缝切换。
+### 1. AI Intelligent Assistant (AIChatbot)
+- **Global Entry**: Bottom-right floating button with **Brand Color Breathing Light** indicator.
+- **Streaming Chat**: Implements typewriter effect for real-time AI responses.
+- **Auto-minimize**: Closes when clicking outside the dialog to keep the UI clean.
+- **Theme Sync**: Deeply integrated with AntD 6 Token system, supporting seamless Dark/Light mode switching.
 
-### 2. SRE 智能告警中心 (Alert Center)
-- **页面**：`/v1/sre/alerts`
-- **AI 分析**：实时展示告警的 AI 诊断报告，包含根因分析与修复建议。
-- **自愈闭环**：AI 自动匹配自愈流水线，支持运维人员在详情页一键触发修复。
-- **实时同步**：基于 TanStack Query 的自动轮询机制，确保告警状态实时更新。
+### 2. SRE Intelligent Alert Center
+- **Route**: `/v1/sre/alerts`
+- **AI Analysis**: Real-time AI diagnosis reports including root cause and remediation steps.
+- **Self-healing Loop**: AI automatically matches self-healing pipelines, allowing one-click triggers in the detail view.
+- **Auto-sync**: Periodic polling via TanStack Query ensures alert status is always up-to-date.
 
-### 3. AIGC 流水线编排
-- **意图驱动**：在流水线设计器（Designer）顶部集成 AI 编排输入框。
-- **自动建模**：通过自然语言描述需求（如“先打包镜像再部署到 K8s”），AI 自动在画布上生成节点与连线。
-- **双向联动**：AI 生成的 DAG 可由用户继续手动微调，实现“AI 辅助，人工把关”。
-
----
-
-## 功能模块详解（新增与增强）
-...
-### 8.6 系统监控 (System Monitor) - v1.7.0 重大更新
-
-**页面**：`/v1/system/monitor`
-
-**功能**：
-
-- **统一监控面板**：将数据库、Redis、K8s 等组件统一为表格化展示，提升信息密度。
-- **Celery 分布式任务监控**：
-  - **Worker 详情**：实时展示所有活动 Worker 的并发度、正在执行任务数、预留任务数及系统资源占用。
-  - **Beat 调度器状态**：追踪任务调度器的在线状态及最后一次运行（Last Run）时间戳。
-  - **队列积压监控**：实时查看各消息队列的堆积长度。
-- **自动刷新**：支持每 30 秒自动同步集群健康数据。
+### 3. AIGC Pipeline Orchestration
+- **Intent-driven**: AI search bar integrated into the Pipeline Designer toolbar.
+- **Auto-modeling**: Generate nodes and edges automatically by describing needs in plain text (e.g., "Build Docker image then deploy to K8s").
+- **Bidirectional Sync**: AI-generated DAGs remain fully editable by users for human-in-the-loop control.
 
 ---
 
-### 8.7 配置中心 (Config Center) - 体验优化
+## Getting Started
 
-**功能增强**：
+### Installation
 
-- **全量国际化**：所有统计项（分类总数/配置项总数）、通知选项（notify_on）及变更原因（Reason）均已支持中英文切换。
-- **稳定性增强**：针对 `notify_on` 等复杂配置项的解析逻辑进行了健壮性加固，防止非数组数据导致的渲染崩溃。
+```bash
+# Install dependencies
+pnpm install
+```
 
----
+### Development
 
-### 8.8 K8S 运维增强 (v1.8.0) - 重磅更新
+```bash
+# Start development server
+pnpm dev
+```
 
-**页面**：`/v1/k8s/center`
+### Build
 
-**功能**：
-
-- **交互式 WebTTY**：集成 `xterm.js`，实现与 K8s Pod 的实时交互终端，支持颜色高亮、按键转发与窗口自适应。
-- **Helm 仓库管理 (Repo Manager)**：新增仓库管理界面，支持添加私有 Helm 仓库、连通性测试以及 Chart 搜索选择。
-- **实时日志流 (Follow Logs)**：支持 Pod 日志实时滚动输出，告别手动刷新。
-- **Monaco YAML 编辑器**：全面升级 Helm Values 与 K8s 资源编辑器，支持语法高亮、自动对齐及深浅色主题适配。
-- **资源利用率可视化 (Metrics)**：
-  - **Node 指标**：直观展示节点 CPU 与内存的实时利用率进度条。
-  - **Pod 负载**：在 Pod 列表中实时展示容器级的 CPU (Core) 与内存 (MiB) 消耗。
-- **事件中心 (Events)**：在集群详情中提供全局事件视图，快速定位镜像拉取失败、OOMKill 等隐蔽问题。
-
----
-
-### 11. 系统健壮性 (Robustness)
-
-- **异常边界拦截**：升级了 `AppErrorBoundary`，能够精确捕获并上报运行时 `TypeError` 或组件引用异常。
-- **防御性编程**：在全项目范围内的 `.includes()` 及数组操作逻辑中增加了 `Array.isArray()` 的防御性检查，有效避免由于后端 API 数据结构不符导致的页面白屏。
+```bash
+# Build for production
+pnpm build
+```
 
 ---
 
-## 权限控制详解
+## Localization
 
-(此处保留原有 SmartRBAC 内容...)
-
----
-
-## 开发指南
-
-(此处保留原有 pnpm 开发指南...)
-
----
+Supported Languages:
+- Chinese (Simplified)
+- English (US)
 
 ## License
 
