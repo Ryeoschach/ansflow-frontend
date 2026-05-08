@@ -252,7 +252,7 @@ const AIChatbot: React.FC = () => {
                     setVisible(!visible);
                     if (!visible) initChat();
                 }}
-                className="fixed right-6 bottom-[75vh] transition-transform hover:scale-110 shadow-lg ai-float-button-breathe"
+                className="fixed right-6 bottom-[15vh] transition-transform hover:scale-110 shadow-lg ai-float-button-breathe"
                 badge={{ dot: true, color: token.colorSuccess }}
             />
 
