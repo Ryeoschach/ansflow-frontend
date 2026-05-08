@@ -1565,5 +1565,12 @@
     "darkMode": "Dark Mode",
     "language": "Language",
     "themeColor": "Theme Color"
+  },
+  "aiChatbot": {
+    "title": "AnsBrain AI Assistant",
+    "welcomeTitle": "I am AnsBrain AI Assistant",
+    "welcomeDesc": "I can help you troubleshoot errors, generate pipelines, and answer DevOps questions.",
+    "placeholder": "Please enter your question...",
+    "sendError": "AI response failed"
   }
 }

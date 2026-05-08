@@ -150,7 +150,7 @@ const Sidebar: React.FC = () => {
 
     // 渲染 Logo 区域
     const logoArea = (
-        <div className={`h-16 flex items-center justify-center m-4 bg-primary/5 rounded-2xl shrink-0`}>
+        <div className={`h-16 flex items-center justify-center m-4 bg-primary/5 rounded-2xl shrink-0 border-b border-solid border-primary/20`}>
             <Link to="/v1/dashboard">
                 <span className="text-xl font-bold text-amber-500 border-2 border-solid border-amber-500/20 rounded-xl px-4 py-2 cursor-pointer hover:bg-amber-500/5 transition-all duration-300 shadow-sm">
                     {collapsed ? 'A' : 'AnsFlow'}

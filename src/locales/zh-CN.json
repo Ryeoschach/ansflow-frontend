@@ -1565,5 +1565,12 @@
     "darkMode": "深色模式",
     "language": "语言",
     "themeColor": "配色方案"
+  },
+  "aiChatbot": {
+    "title": "AnsBrain AI 助手",
+    "welcomeTitle": "我是 AnsBrain 智能助手",
+    "welcomeDesc": "我可以帮你排查错误、生成流水线或解答运维问题。",
+    "placeholder": "请输入您的问题...",
+    "sendError": "AI 响应失败"
   }
 }

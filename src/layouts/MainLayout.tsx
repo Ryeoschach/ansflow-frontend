@@ -2,6 +2,7 @@ import React, { Suspense } from 'react';
 import { Layout, theme } from 'antd';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
+import AIChatbot from '../components/AIChatbot';
 import { Outlet } from 'react-router-dom';
 import { Footer } from 'antd/es/layout/layout';
 import { TableSkeleton } from '../components/Skeletons';
@@ -59,6 +60,7 @@ const MainLayout: React.FC<{ isLoading?: boolean }> = ({ isLoading }) => {
                     Ansflow ©{new Date().getFullYear()} Created by Creed · v{__APP_VERSION__} ({__GIT_HASH__})
                 </Footer>
             </Layout>
+            <AIChatbot />
         </Layout>
     );
 };
