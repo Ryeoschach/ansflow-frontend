@@ -1,36 +1,19 @@
 {
   "common": {
-    "submit": "Submit",
+    "confirm": "Confirm",
     "cancel": "Cancel",
     "save": "Save",
     "delete": "Delete",
     "edit": "Edit",
-    "add": "Add",
-    "search": "Search",
-    "reset": "Reset",
-    "confirm": "Confirm",
+    "create": "Create",
+    "execute": "Execute",
     "success": "Success",
     "error": "Error",
     "loading": "Loading...",
     "noData": "No Data",
-    "required": "is required",
-    "seconds": "seconds",
-    "status": "Status",
-    "active": "Active",
-    "inactive": "Inactive",
-    "createSuccess": "Created successfully",
-    "updateSuccess": "Updated successfully",
-    "deleteSuccess": "Deleted successfully",
-    "deleteConfirm": "Confirm delete?",
-    "operationFailed": "Operation failed",
-    "createTime": "Created At",
-    "actions": "Actions",
-    "total": "{{total}} items",
-    "refresh": "Refresh",
-    "permissionDenied": "You do not have permission to perform this action",
-    "systemError": "System error, please contact administrator",
-    "action": "Action",
-    "isActive": "Is Active"
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "close": "Close Detail"
   },
   "menu": {
     "dashboard": "Dashboard",
@@ -103,15 +86,28 @@
     "failed": "Failed"
   },
   "ai": {
-    "title": "AnsFlow AI Assistant",
-    "inputPlaceholder": "Type your question (Shift+Enter for new line)...",
-    "welcomeTitle": "Hello! I am AnsFlow Assistant",
-    "welcomeSubtitle": "I can help you analyze logs, troubleshoot K8s issues, or generate pipeline suggestions.",
-    "diagnosing": "🔍 Analyzing {{type}} (ID: {{id}}) execution logs...",
-    "responseError": "AI response failed",
+    "title": "AnsBrain AI",
+    "welcomeTitle": "I am AnsBrain AI Assistant",
+    "welcomeSubtitle": "I can help you troubleshoot errors, generate pipelines, and answer DevOps questions.",
+    "inputPlaceholder": "Please enter your question, press Enter to send...",
+    "diagnosing": "🔍 Generating intelligent diagnosis report for {type} (ID: {id})...",
     "diagnosisError": "Diagnosis request failed",
+    "responseError": "AI response failed",
     "pipeline": "Pipeline",
-    "task": "Task"
+    "task": "Task",
+    "personality": {
+      "professional": "Tech Expert",
+      "concise": "Concise Helper",
+      "humorous": "Humorous Agent"
+    },
+    "selfHealing": {
+      "title": "AI Self-Healing Suggestion",
+      "execute": "Execute Now",
+      "confirmTitle": "Confirm execution of AI-recommended fix?",
+      "confirmContent": "This action will be initiated by AI and recorded in audit logs.",
+      "success": "Self-healing task dispatched",
+      "error": "Dispatch failed"
+    }
   },
   "taskCenter": {
     "title": "Ansible Task Template Management",
@@ -1583,5 +1579,93 @@
     "welcomeDesc": "I can help you troubleshoot errors, generate pipelines, and answer DevOps questions.",
     "placeholder": "Please enter your question...",
     "sendError": "AI response failed"
+  },
+  "alertCenter": {
+    "title": "Alert Center",
+    "alertTab": "Alert Events",
+    "policyTab": "Healing Policies",
+    "alertName": "Alert Name",
+    "level": "Level",
+    "status": "Status",
+    "healingProgress": "Healing Progress",
+    "createTime": "Create Time",
+    "action": "Action",
+    "policyName": "Policy Name",
+    "matchKeywords": "Match Keywords (JSON)",
+    "boundPipeline": "Bound Pipeline",
+    "autoExecute": "Auto Execute",
+    "severity": {
+      "critical": "Critical",
+      "warning": "Warning",
+      "info": "Info"
+    },
+    "statusText": {
+      "firing": "Firing",
+      "resolved": "Resolved"
+    },
+    "healingStatus": {
+      "none": "Unprocessed",
+      "analyzing": "AI Analyzing",
+      "suggested": "Suggestion Ready",
+      "executing": "Self-Healing",
+      "success": "Healing Success",
+      "failed": "Healing Failed",
+      "ignored": "Ignored"
+    },
+    "actions": {
+      "ignore": "Ignore",
+      "viewDetail": "View Detail",
+      "edit": "Edit",
+      "delete": "Delete",
+      "execute": "Execute",
+      "createPolicy": "Create Policy",
+      "confirmDelete": "Are you sure to delete this policy?",
+      "executeHealing": "Execute Self-Healing Pipeline",
+      "refresh": "Refresh Data",
+      "configNotification": "Configure Notification Channel",
+      "executeNow": "Execute Now"
+    },
+    "pageTitle": "SRE Intelligent Operations Center",
+    "pageSubtitle": "Integrating alert monitoring, AI root cause analysis and automated self-healing closed-loop",
+    "confirmHealingTitle": "Confirm execution of self-healing task?",
+    "confirmHealingContent": "AI evaluated that this action can restore the service.",
+    "messages": {
+      "healingTriggered": "Healing pipeline triggered",
+      "policyUpdated": "Policy updated",
+      "policyCreated": "Policy created",
+      "policyDeleted": "Policy deleted"
+    },
+    "detail": {
+      "title": "Alert Detail",
+      "context": "Alert Context",
+      "severity": "Severity",
+      "fingerprint": "Fingerprint",
+      "status": "Status",
+      "healingStatus": "Healing Status",
+      "healingPolicy": "Related Policy",
+      "description": "Description",
+      "triggerTime": "Trigger Time",
+      "resolvedTime": "Resolved Time",
+      "diagnosisTitle": "Diagnosis Report",
+      "aiDiagnosisTitle": "AI Intelligent Diagnosis Report",
+      "analyzing": "AI is analyzing historical knowledge base and generating report...",
+      "recommendedRemediation": "AI Recommended Remediation",
+      "executeNow": "Execute Now"
+    },
+    "policy": {
+      "title": "Healing Policy Config",
+      "name": "Policy Name",
+      "description": "Description",
+      "matchRule": "Alert Match Rule (JSON Format)",
+      "matchRuleExtra": "Example: {\"alertname\": \"CPUUsageTooHigh\", \"severity\": \"critical\"}",
+      "pipeline": "Fix Pipeline",
+      "pipelinePlaceholder": "Please select a pipeline to execute the fix",
+      "autoExecute": "Auto Execute",
+      "enabled": "Enabled",
+      "namePlaceholder": "e.g., CPU High Load Self-Healing",
+      "jsonFormatError": "Match rule JSON format error",
+      "editTitle": "Edit Healing Policy",
+      "createTitle": "Create Healing Policy"
+    }
   }
 }

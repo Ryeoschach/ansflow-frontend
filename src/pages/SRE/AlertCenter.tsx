@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { 
-  Table, Card, Tag, Space, Button, Typography, App, Drawer, 
-  Descriptions, Divider, Badge, Tabs, Modal, Form, Input, 
-  Select, Switch, Tooltip, Popconfirm 
+import {
+  Table, Card, Tag, Space, Button, Typography, App, Drawer,
+  Descriptions, Divider, Badge, Tabs, Modal, Form, Input,
+  Select, Switch, Tooltip, Popconfirm, theme
 } from 'antd';
 import { 
   SyncOutlined, 
@@ -33,6 +33,7 @@ const { Text, Title } = Typography;
 
 const AlertCenter: React.FC = () => {
     const { t } = useTranslation();
+    const { token } = theme.useToken();
     const queryClient = useQueryClient();
     const { message, modal } = App.useApp();
     const [activeTab, setActiveTab] = useState('alerts');
@@ -71,7 +72,7 @@ const AlertCenter: React.FC = () => {
     const healingMutation = useMutation({
         mutationFn: (id: number) => executePipeline(id),
         onSuccess: () => {
-            message.success('自愈流水线已触发执行');
+            message.success(t('alertCenter.messages.healingTriggered'));
             queryClient.invalidateQueries({ queryKey: ['sre-alerts'] });
         }
     });
@@ -82,7 +83,7 @@ const AlertCenter: React.FC = () => {
             return createHealingPolicy(values);
         },
         onSuccess: () => {
-            message.success(editingPolicy ? '策略已更新' : '策略已创建');
+            message.success(editingPolicy ? t('alertCenter.messages.policyUpdated') : t('alertCenter.messages.policyCreated'));
             setPolicyModalVisible(false);
             queryClient.invalidateQueries({ queryKey: ['sre-policies'] });
         }
@@ -91,31 +92,31 @@ const AlertCenter: React.FC = () => {
     const deletePolicyMutation = useMutation({
         mutationFn: (id: number) => deleteHealingPolicy(id),
         onSuccess: () => {
-            message.success('策略已删除');
+            message.success(t('alertCenter.messages.policyDeleted'));
             queryClient.invalidateQueries({ queryKey: ['sre-policies'] });
         }
     });
 
     // --- 映射常量 ---
     const statusMap: any = {
-        'firing': { color: 'error', text: '告警中', icon: <WarningOutlined /> },
-        'resolved': { color: 'success', text: '已恢复', icon: <CheckCircleOutlined /> },
+        'firing': { color: 'error', text: t('alertCenter.statusText.firing'), icon: <WarningOutlined /> },
+        'resolved': { color: 'success', text: t('alertCenter.statusText.resolved'), icon: <CheckCircleOutlined /> },
     };
 
     const healingStatusMap: any = {
-        'none': { color: 'default', text: '未处理' },
-        'analyzing': { color: 'processing', text: 'AI 分析中', icon: <LoadingOutlined /> },
-        'suggested': { color: 'cyan', text: '已有建议', icon: <RobotOutlined /> },
-        'executing': { color: 'warning', text: '自愈中', icon: <SyncOutlined spin /> },
-        'success': { color: 'success', text: '自愈成功' },
-        'failed': { color: 'error', text: '自愈失败' },
-        'ignored': { color: 'default', text: '已忽略' },
+        'none': { color: 'default', text: t('alertCenter.healingStatus.none') },
+        'analyzing': { color: 'processing', text: t('alertCenter.healingStatus.analyzing'), icon: <LoadingOutlined /> },
+        'suggested': { color: 'cyan', text: t('alertCenter.healingStatus.suggested'), icon: <RobotOutlined /> },
+        'executing': { color: 'warning', text: t('alertCenter.healingStatus.executing'), icon: <SyncOutlined spin /> },
+        'success': { color: 'success', text: t('alertCenter.healingStatus.success') },
+        'failed': { color: 'error', text: t('alertCenter.healingStatus.failed') },
+        'ignored': { color: 'default', text: t('alertCenter.healingStatus.ignored') },
     };
 
     // --- 表格定义 ---
     const alertColumns = [
         {
-            title: '告警名称',
+            title: t('alertCenter.alertName'),
             dataIndex: 'alert_name',
             key: 'alert_name',
             render: (text: string, record: any) => (
@@ -126,18 +127,20 @@ const AlertCenter: React.FC = () => {
             )
         },
         {
-            title: '级别',
+            title: t('alertCenter.level'),
             dataIndex: 'severity',
             key: 'severity',
             render: (val: string) => {
                 let color = 'orange';
                 if (val === 'critical') color = 'red';
                 if (val === 'info') color = 'blue';
-                return <Tag color={color}>{val.toUpperCase()}</Tag>;
+                const severityKey = val as 'critical' | 'warning' | 'info';
+                const severityText = t(`alertCenter.severity.${severityKey}`, val);
+                return <Tag color={color}>{severityText}</Tag>;
             }
         },
         {
-            title: '状态',
+            title: t('alertCenter.status'),
             dataIndex: 'status',
             key: 'status',
             render: (val: string) => {
@@ -146,7 +149,7 @@ const AlertCenter: React.FC = () => {
             }
         },
         {
-            title: '自愈进度',
+            title: t('alertCenter.healingProgress'),
             dataIndex: 'healing_status',
             key: 'healing_status',
             render: (val: string) => {
@@ -155,25 +158,25 @@ const AlertCenter: React.FC = () => {
             }
         },
         {
-            title: '创建时间',
+            title: t('alertCenter.createTime'),
             dataIndex: 'create_time',
             key: 'create_time',
             render: (val: string) => new Date(val).toLocaleString()
         },
         {
-            title: '操作',
+            title: t('alertCenter.action'),
             key: 'action',
             render: (_: any, record: any) => (
-                <Button 
-                    type="link" 
+                <Button
+                    type="link"
                     size="small"
-                    icon={<InfoCircleOutlined />} 
+                    icon={<InfoCircleOutlined />}
                     onClick={() => {
                         setSelectedAlert(record);
                         setDetailVisible(true);
                     }}
                 >
-                    诊断详情
+                    {t('alertCenter.actions.viewDetail')}
                 </Button>
             )
         }
@@ -181,50 +184,50 @@ const AlertCenter: React.FC = () => {
 
     const policyColumns = [
         {
-            title: '策略名称',
+            title: t('alertCenter.policyName'),
             dataIndex: 'name',
             key: 'name',
             render: (text: string) => <Text strong>{text}</Text>
         },
         {
-            title: '匹配关键词 (JSON)',
+            title: t('alertCenter.matchKeywords'),
             dataIndex: 'alert_match_rule',
             key: 'alert_match_rule',
             render: (rule: any) => (
-                <div className="max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">
+                <div className="flex gap-1 flex-wrap max-w-[240px] overflow-x-auto">
                     {Object.entries(rule).map(([k, v]: any) => (
-                        <Tag key={k} color="blue" size="small">{k}: {v}</Tag>
+                        <Tag key={k} style={{ backgroundColor: token.colorPrimaryBg, color: token.colorPrimary, borderColor: token.colorPrimaryBorder }}>{k}: {v}</Tag>
                     ))}
                 </div>
             )
         },
         {
-            title: '绑定流水线',
+            title: t('alertCenter.boundPipeline'),
             dataIndex: 'pipeline_name',
             key: 'pipeline_name',
             render: (text: string, record: any) => <Tag color="cyan">{text || `ID: ${record.pipeline}`}</Tag>
         },
         {
-            title: '自动执行',
+            title: t('alertCenter.autoExecute'),
             dataIndex: 'is_auto_execute',
             key: 'is_auto_execute',
-            render: (val: boolean) => <Badge status={val ? 'success' : 'default'} text={val ? '开启' : '关闭'} />
+            render: (val: boolean) => <Badge status={val ? 'success' : 'default'} text={val ? t('common.enabled') : t('common.disabled')} />
         },
         {
-            title: '状态',
+            title: t('alertCenter.status'),
             dataIndex: 'is_active',
             key: 'is_active',
             render: (val: boolean) => <Switch checked={val} size="small" disabled />
         },
         {
-            title: '操作',
+            title: t('alertCenter.action'),
             key: 'action',
             render: (_: any, record: any) => (
                 <Space>
-                    <Button 
-                        type="link" 
+                    <Button
+                        type="link"
                         size="small"
-                        icon={<EditOutlined />} 
+                        icon={<EditOutlined />}
                         onClick={() => {
                             setEditingPolicy(record);
                             policyForm.setFieldsValue({
@@ -234,13 +237,13 @@ const AlertCenter: React.FC = () => {
                             setPolicyModalVisible(true);
                         }}
                     >
-                        编辑
+                        {t('alertCenter.actions.edit')}
                     </Button>
-                    <Popconfirm 
-                        title="确定删除此策略吗？" 
+                    <Popconfirm
+                        title={t('alertCenter.confirmDelete')}
                         onConfirm={() => deletePolicyMutation.mutate(record.id)}
                     >
-                        <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+                        <Button type="link" size="small" danger icon={<DeleteOutlined />}>{t('alertCenter.actions.delete')}</Button>
                     </Popconfirm>
                 </Space>
             )
@@ -251,19 +254,19 @@ const AlertCenter: React.FC = () => {
         <div className="flex flex-col gap-6">
             <div className="flex justify-between items-center px-4 pt-2">
                 <div>
-                    <Title level={3} className="m-0!">SRE 智能运维中心</Title>
-                    <Text type="secondary">集成告警监测、AI 根因分析与自动化自愈闭环</Text>
+                    <Title level={3} className="m-0!">{t('alertCenter.pageTitle')}</Title>
+                    <Text type="secondary">{t('alertCenter.pageSubtitle')}</Text>
                 </div>
                 <Space>
-                    <Tooltip title="配置通知渠道">
+                    <Tooltip title={t('alertCenter.actions.configNotification')}>
                         <Button shape="circle" icon={<BellOutlined />} />
                     </Tooltip>
-                    <Button 
-                        type="primary" 
-                        icon={<SyncOutlined />} 
+                    <Button
+                        type="primary"
+                        icon={<SyncOutlined />}
                         onClick={() => queryClient.invalidateQueries({ queryKey: [activeTab === 'alerts' ? 'sre-alerts' : 'sre-policies'] })}
                     >
-                        刷新数据
+                        {t('alertCenter.actions.refresh')}
                     </Button>
                 </Space>
             </div>
@@ -279,7 +282,7 @@ const AlertCenter: React.FC = () => {
                             label: (
                                 <Space>
                                     <WarningOutlined />
-                                    <span>实时告警</span>
+                                    <span>{t('alertCenter.alertTab')}</span>
                                     {alertData?.total ? <Badge count={alertData.total} overflowCount={99} size="small" offset={[5, 0]} /> : null}
                                 </Space>
                             ),
@@ -303,22 +306,22 @@ const AlertCenter: React.FC = () => {
                             label: (
                                 <Space>
                                     <SafetyCertificateOutlined />
-                                    <span>自愈策略</span>
+                                    <span>{t('alertCenter.policyTab')}</span>
                                 </Space>
                             ),
                             children: (
                                 <div className="pt-4">
                                     <div className="mb-4 flex justify-end">
-                                        <Button 
-                                            type="primary" 
-                                            icon={<PlusOutlined />} 
+                                        <Button
+                                            type="primary"
+                                            icon={<PlusOutlined />}
                                             onClick={() => {
                                                 setEditingPolicy(null);
                                                 policyForm.resetFields();
                                                 setPolicyModalVisible(true);
                                             }}
                                         >
-                                            新增策略
+                                            {t('alertCenter.actions.createPolicy')}
                                         </Button>
                                     </div>
                                     <Table 
@@ -344,30 +347,30 @@ const AlertCenter: React.FC = () => {
             <Drawer
                 title={
                     <Space>
-                        <RobotOutlined className="text-blue-600" />
-                        <span>AI 智能诊断报告</span>
+                        <RobotOutlined style={{ color: token.colorPrimary }} />
+                        <span>{t('alertCenter.detail.aiDiagnosisTitle')}</span>
                     </Space>
                 }
                 width={700}
                 onClose={() => setDetailVisible(false)}
                 open={detailVisible}
-                styles={{ body: { padding: '24px', backgroundColor: '#f8fafc' } }}
+                styles={{ body: { padding: '24px', backgroundColor: token.colorBgLayout } }}
             >
                 {selectedAlert && (
                     <div className="flex flex-col gap-6">
-                        <Descriptions title="告警上下文" bordered column={1} size="small" className="bg-white rounded-xl overflow-hidden">
-                            <Descriptions.Item label="告警名称">{selectedAlert.alert_name}</Descriptions.Item>
-                            <Descriptions.Item label="源">{selectedAlert.source}</Descriptions.Item>
-                            <Descriptions.Item label="严重程度"><Tag color="red">{selectedAlert.severity}</Tag></Descriptions.Item>
-                            <Descriptions.Item label="标签">
+                        <Descriptions title={t('alertCenter.detail.context')} bordered column={1} size="small" className="rounded-xl overflow-hidden" style={{ backgroundColor: token.colorBgContainer }}>
+                            <Descriptions.Item label={t('alertCenter.alertName')}>{selectedAlert.alert_name}</Descriptions.Item>
+                            <Descriptions.Item label={t('alertCenter.detail.source')}>{selectedAlert.source}</Descriptions.Item>
+                            <Descriptions.Item label={t('alertCenter.detail.severity')}><Tag color="red">{selectedAlert.severity}</Tag></Descriptions.Item>
+                            <Descriptions.Item label="Labels">
                                 {Object.entries(selectedAlert.labels).map(([k, v]: any) => (
                                     <Tag key={k} className="mb-1">{k}: {v}</Tag>
                                 ))}
                             </Descriptions.Item>
                         </Descriptions>
 
-                        <Card 
-                            title={<Space><RobotOutlined className="text-blue-600" /> 诊断结论</Space>} 
+                        <Card
+                            title={<Space><RobotOutlined style={{ color: token.colorPrimary }} /> {t('alertCenter.detail.diagnosisTitle')}</Space>} 
                             className="rounded-xl border-none shadow-md"
                             extra={selectedAlert.healing_status === 'analyzing' && <LoadingOutlined />}
                         >
@@ -378,40 +381,44 @@ const AlertCenter: React.FC = () => {
                                     </ReactMarkdown>
                                 </div>
                             ) : (
-                                <div className="py-10 text-center text-slate-400 italic">
-                                    {selectedAlert.healing_status === 'analyzing' ? 'AI 正在分析历史知识库并生成报告...' : '暂无分析报告'}
+                                <div className="py-10 text-center italic" style={{ color: token.colorTextTertiary }}>
+                                    {selectedAlert.healing_status === 'analyzing' ? t('alertCenter.detail.analyzing') : t('common.noData')}
                                 </div>
                             )}
                         </Card>
 
                         {selectedAlert.suggested_pipeline && (
-                            <div className="p-5 rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-200">
+                            <div
+                                className="p-5 rounded-2xl text-white shadow-lg"
+                                style={{ backgroundColor: token.colorPrimary, boxShadow: `0 8px 24px ${token.colorPrimary}40` }}
+                            >
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <div className="text-[10px] uppercase font-bold opacity-80 tracking-widest mb-1">Recommended Remediation</div>
-                                        <div className="text-lg font-bold">执行自愈流水线</div>
-                                        <div className="text-xs opacity-90 mt-1">流水线: {selectedAlert.suggested_pipeline_name || `ID: ${selectedAlert.suggested_pipeline}`}</div>
+                                        <div className="text-[10px] uppercase font-bold opacity-80 tracking-widest mb-1">{t('alertCenter.detail.recommendedRemediation')}</div>
+                                        <div className="text-lg font-bold">{t('alertCenter.actions.executeHealing')}</div>
+                                        <div className="text-xs opacity-90 mt-1">Pipeline: {selectedAlert.suggested_pipeline_name || `ID: ${selectedAlert.suggested_pipeline}`}</div>
                                     </div>
-                                    <Button 
+                                    <Button
                                         size="large"
-                                        className="h-12 px-8 rounded-xl font-bold bg-white text-blue-600 border-none hover:!bg-blue-50"
+                                        className="h-12 px-8 rounded-xl font-bold border-none"
+                                        style={{ backgroundColor: token.colorBgContainer, color: token.colorPrimary }}
                                         icon={<PlayCircleOutlined />}
                                         onClick={() => {
                                             modal.confirm({
-                                                title: '确认执行自愈任务？',
-                                                content: 'AI 评估此操作可以恢复业务。',
+                                                title: t('alertCenter.confirmHealingTitle'),
+                                                content: t('alertCenter.confirmHealingContent'),
                                                 onOk: () => healingMutation.mutate(selectedAlert.suggested_pipeline)
                                             });
                                         }}
                                     >
-                                        立即执行
+                                        {t('alertCenter.actions.executeNow')}
                                     </Button>
                                 </div>
                             </div>
                         )}
-                        
+
                         <div className="flex justify-end gap-3 mt-4">
-                            <Button icon={<CloseCircleOutlined />} onClick={() => setDetailVisible(false)}>关闭详情</Button>
+                            <Button icon={<CloseCircleOutlined />} onClick={() => setDetailVisible(false)}>{t('common.close')}</Button>
                         </div>
                     </div>
                 )}
@@ -419,56 +426,56 @@ const AlertCenter: React.FC = () => {
 
             {/* 策略编辑/创建弹窗 */}
             <Modal
-                title={editingPolicy ? "编辑自愈策略" : "新增自愈策略"}
+                title={editingPolicy ? t('alertCenter.policy.editTitle') : t('alertCenter.policy.createTitle')}
                 open={policyModalVisible}
                 onCancel={() => setPolicyModalVisible(false)}
                 onOk={() => policyForm.submit()}
                 width={600}
                 confirmLoading={policyMutation.isPending}
             >
-                <Form 
-                    form={policyForm} 
-                    layout="vertical" 
+                <Form
+                    form={policyForm}
+                    layout="vertical"
                     className="mt-4"
                     onFinish={(values) => {
                         try {
                             // 校验并转换 JSON 规则
-                            const rule = typeof values.alert_match_rule === 'string' 
-                                ? JSON.parse(values.alert_match_rule) 
+                            const rule = typeof values.alert_match_rule === 'string'
+                                ? JSON.parse(values.alert_match_rule)
                                 : values.alert_match_rule;
                             policyMutation.mutate({ ...values, alert_match_rule: rule });
                         } catch (e) {
-                            message.error('匹配规则 JSON 格式错误');
+                            message.error(t('alertCenter.policy.jsonFormatError'));
                         }
                     }}
                 >
-                    <Form.Item name="name" label="策略名称" rules={[{ required: true }]}>
-                        <Input placeholder="例如：CPU 高负载自愈" />
+                    <Form.Item name="name" label={t('alertCenter.policy.name')} rules={[{ required: true }]}>
+                        <Input placeholder={t('alertCenter.policy.namePlaceholder')} />
                     </Form.Item>
-                    
-                    <Form.Item 
-                        name="alert_match_rule" 
-                        label="告警匹配规则 (JSON 格式)" 
+
+                    <Form.Item
+                        name="alert_match_rule"
+                        label={t('alertCenter.policy.matchRule')}
                         rules={[{ required: true }]}
-                        extra='例如：{"alertname": "CPUUsageTooHigh", "severity": "critical"}'
+                        extra={t('alertCenter.policy.matchRuleExtra')}
                     >
                         <Input.TextArea rows={4} placeholder='{"key": "value"}' className="font-mono" />
                     </Form.Item>
 
-                    <Form.Item name="pipeline" label="关联自愈流水线" rules={[{ required: true }]}>
-                        <Select 
+                    <Form.Item name="pipeline" label={t('alertCenter.policy.pipeline')} rules={[{ required: true }]}>
+                        <Select
                             showSearch
-                            placeholder="请选择执行修复的流水线"
+                            placeholder={t('alertCenter.policy.pipelinePlaceholder')}
                             optionFilterProp="label"
                             options={(pipelinesData?.data || []).map((p: any) => ({ label: p.name, value: p.id }))}
                         />
                     </Form.Item>
 
                     <Space size={32}>
-                        <Form.Item name="is_auto_execute" label="是否自动执行" valuePropName="checked" initialValue={false}>
+                        <Form.Item name="is_auto_execute" label={t('alertCenter.policy.autoExecute')} valuePropName="checked" initialValue={false}>
                             <Switch />
                         </Form.Item>
-                        <Form.Item name="is_active" label="是否启用" valuePropName="checked" initialValue={true}>
+                        <Form.Item name="is_active" label={t('alertCenter.policy.enabled')} valuePropName="checked" initialValue={true}>
                             <Switch />
                         </Form.Item>
                     </Space>

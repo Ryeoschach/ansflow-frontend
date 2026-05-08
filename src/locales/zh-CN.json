@@ -1583,5 +1583,135 @@
     "welcomeDesc": "我可以帮你排查错误、生成流水线或解答运维问题。",
     "placeholder": "请输入您的问题...",
     "sendError": "AI 响应失败"
+  },
+  "ai": {
+    "title": "AnsBrain AI",
+    "welcomeTitle": "我是 AnsBrain 智能助手",
+    "welcomeSubtitle": "我可以帮你排查错误、生成流水线或解答运维问题。",
+    "inputPlaceholder": "请输入您的问题，按 Enter 发送...",
+    "diagnosing": "🔍 正在为 {type} (ID: {id}) 生成智能诊断报告...",
+    "diagnosisError": "诊断请求失败",
+    "responseError": "AI 响应失败",
+    "pipeline": "流水线",
+    "task": "任务",
+    "personality": {
+      "professional": "技术专家",
+      "concise": "简洁助手",
+      "humorous": "幽默特工"
+    },
+    "selfHealing": {
+      "title": "AI 自愈建议",
+      "execute": "立即执行",
+      "confirmTitle": "确认执行 AI 建议的修复方案？",
+      "confirmContent": "该动作将由 AI 发起并记录在审计日志中。",
+      "success": "自愈任务已下发",
+      "error": "下发失败"
+    }
+  },
+  "alertCenter": {
+    "title": "告警中心",
+    "alertTab": "告警事件",
+    "policyTab": "自愈策略",
+    "alertName": "告警名称",
+    "level": "级别",
+    "status": "状态",
+    "healingProgress": "自愈进度",
+    "createTime": "创建时间",
+    "action": "操作",
+    "policyName": "策略名称",
+    "matchKeywords": "匹配关键词 (JSON)",
+    "boundPipeline": "绑定流水线",
+    "autoExecute": "自动执行",
+    "severity": {
+      "critical": "严重",
+      "warning": "警告",
+      "info": "通知"
+    },
+    "statusText": {
+      "firing": "告警中",
+      "resolved": "已恢复"
+    },
+    "healingStatus": {
+      "none": "未处理",
+      "analyzing": "AI 分析中",
+      "suggested": "已有建议",
+      "executing": "自愈中",
+      "success": "自愈成功",
+      "failed": "自愈失败",
+      "ignored": "已忽略"
+    },
+    "actions": {
+      "ignore": "忽略",
+      "viewDetail": "查看详情",
+      "edit": "编辑",
+      "delete": "删除",
+      "execute": "执行",
+      "createPolicy": "创建策略",
+      "confirmDelete": "确定删除此策略吗？",
+      "executeHealing": "执行自愈流水线",
+      "refresh": "刷新数据",
+      "configNotification": "配置通知渠道",
+      "executeNow": "立即执行"
+    },
+    "pageTitle": "SRE 智能运维中心",
+    "pageSubtitle": "集成告警监测、AI 根因分析与自动化自愈闭环",
+    "confirmHealingTitle": "确认执行自愈任务？",
+    "confirmHealingContent": "AI 评估此操作可以恢复业务。",
+    "messages": {
+      "healingTriggered": "自愈流水线已触发执行",
+      "policyUpdated": "策略已更新",
+      "policyCreated": "策略已创建",
+      "policyDeleted": "策略已删除"
+    },
+    "detail": {
+      "title": "告警详情",
+      "context": "告警上下文",
+      "severity": "严重程度",
+      "source": "来源",
+      "labels": "标签",
+      "fingerprint": "指纹",
+      "status": "状态",
+      "healingStatus": "自愈状态",
+      "healingPolicy": "关联策略",
+      "description": "描述",
+      "triggerTime": "触发时间",
+      "resolvedTime": "恢复时间",
+      "diagnosisTitle": "诊断结论",
+      "aiDiagnosisTitle": "AI 智能诊断报告",
+      "analyzing": "AI 正在分析历史知识库并生成报告...",
+      "recommendedRemediation": "AI 推荐修复方案",
+      "executeNow": "立即执行"
+    },
+    "policy": {
+      "title": "自愈策略配置",
+      "name": "策略名称",
+      "description": "描述",
+      "matchRule": "告警匹配规则 (JSON 格式)",
+      "matchRuleExtra": "例如：{\"alertname\": \"CPUUsageTooHigh\", \"severity\": \"critical\"}",
+      "pipeline": "修复流水线",
+      "pipelinePlaceholder": "请选择执行修复的流水线",
+      "autoExecute": "自动执行",
+      "enabled": "启用状态",
+      "namePlaceholder": "例如：CPU 高负载自愈",
+      "jsonFormatError": "匹配规则 JSON 格式错误",
+      "editTitle": "编辑自愈策略",
+      "createTitle": "新增自愈策略"
+    }
+  },
+  "common": {
+    "confirm": "确认",
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "create": "创建",
+    "execute": "执行",
+    "success": "成功",
+    "error": "失败",
+    "loading": "加载中...",
+    "noData": "暂无数据",
+    "enabled": "开启",
+      "disabled": "关闭",
+      "close": "关闭详情"
   }
 }

@@ -48,20 +48,26 @@ const AIChatbot: React.FC = () => {
     const personalityItems: MenuProps['items'] = [
         {
             key: 'professional',
-            label: '技术专家',
+            label: t('ai.personality.professional'),
             icon: <RobotOutlined />,
         },
         {
             key: 'concise',
-            label: '简洁助手',
+            label: t('ai.personality.concise'),
             icon: <ThunderboltOutlined />,
         },
         {
             key: 'humorous',
-            label: '幽默特工',
+            label: t('ai.personality.humorous'),
             icon: <CoffeeOutlined />,
         },
     ];
+
+    const personalityLabels: Record<PersonalityKey, string> = {
+        professional: t('ai.personality.professional'),
+        concise: t('ai.personality.concise'),
+        humorous: t('ai.personality.humorous'),
+    };
 
     // 点击外部自动收起
     useEffect(() => {
@@ -288,10 +294,10 @@ const AIChatbot: React.FC = () => {
                                 >
                                     <Tag 
                                         icon={<UserSwitchOutlined />} 
-                                        className="cursor-pointer ml-2 hover:opacity-80 transition-opacity border-none bg-slate-100 dark:bg-slate-800 text-[10px]"
-                                        style={{ color: token.colorPrimary }}
+                                        className="cursor-pointer ml-2 hover:opacity-80 transition-opacity border-none text-[10px]"
+                                        style={{ color: token.colorPrimary, backgroundColor: token.colorPrimaryBg }}
                                     >
-                                        {personalityItems.find(i => i?.key === personality)?.label as string}
+                                        {personalityLabels[personality]}
                                     </Tag>
                                 </Dropdown>
                             </Space>
@@ -364,37 +370,38 @@ const AIChatbot: React.FC = () => {
                             {/* 渲染自愈建议按钮 */}
                             {suggestedPipelineId && !loading && (
                             <div className="mx-auto w-full px-5 animate-in zoom-in-95 duration-500">
-                            <Card 
-                                size="small" 
-                                className="border-blue-200 bg-blue-50/50 shadow-sm rounded-xl overflow-hidden"
+                            <Card
+                                size="small"
+                                className="rounded-xl overflow-hidden shadow-sm"
+                                style={{ borderColor: token.colorBorderSecondary, backgroundColor: token.colorPrimaryBg }}
                             >
                                 <Flex justify="space-between" align="center">
                                     <Space direction="vertical" size={0}>
-                                        <Text type="secondary" className="text-[10px] font-bold uppercase tracking-wider">AI 自愈建议</Text>
-                                        <Text strong className="text-blue-700 text-xs">执行修复流水线 (ID: {suggestedPipelineId})</Text>
+                                        <Text type="secondary" className="text-[10px] font-bold uppercase tracking-wider" style={{ color: token.colorTextTertiary }}>{t('ai.selfHealing.title')}</Text>
+                                        <Text strong className="text-xs" style={{ color: token.colorPrimary }}>ID: {suggestedPipelineId}</Text>
                                     </Space>
-                                    <Button 
-                                        type="primary" 
-                                        size="small" 
+                                    <Button
+                                        type="primary"
+                                        size="small"
                                         icon={<PlayCircleOutlined />}
                                         className="rounded-lg h-8 px-4"
                                         onClick={() => {
                                             modal.confirm({
-                                                title: '确认执行 AI 建议的修复方案？',
-                                                content: '该动作将由 AI 发起并记录在审计日志中。',
+                                                title: t('ai.selfHealing.confirmTitle'),
+                                                content: t('ai.selfHealing.confirmContent'),
                                                 onOk: async () => {
                                                     try {
                                                         await executePipeline(suggestedPipelineId);
-                                                        message.success('自愈任务已下发');
+                                                        message.success(t('ai.selfHealing.success'));
                                                         setSuggestedPipelineId(null);
                                                     } catch (e) {
-                                                        message.error('下发失败');
+                                                        message.error(t('ai.selfHealing.error'));
                                                     }
                                                 }
                                             });
                                         }}
                                     >
-                                        立即执行
+                                        {t('ai.selfHealing.execute')}
                                     </Button>
                                 </Flex>
                             </Card>

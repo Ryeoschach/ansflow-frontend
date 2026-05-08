@@ -311,7 +311,7 @@ const ViewerCore = () => {
           />
           <div className="flex flex-col">
             <div className="flex items-center gap-3">
-                <MonitorOutlined className="text-blue-500 text-lg" /> 
+                <MonitorOutlined style={{ color: token.colorPrimary }} className="text-lg" /> 
                 <Title level={5} style={{ margin: 0 }}>{payload?.pipeline_name || t('runViewer.detecting')}</Title>
                 {getStatusTag(payload?.status)}
             </div>
@@ -407,8 +407,8 @@ const ViewerCore = () => {
       <Drawer
         title={
             <Space size="middle">
-                <HistoryOutlined className="text-blue-600" />
-                <span className="text-slate-900 dark:text-slate-200 font-bold text-base">{t('runViewer.title')}</span>
+                <HistoryOutlined style={{ color: token.colorPrimary }} />
+                <span className="font-bold text-base" style={{ color: token.colorTextHeading }}>{t('runViewer.title')}</span>
             </Space>
         }
         placement="right"
@@ -427,14 +427,14 @@ const ViewerCore = () => {
             <Card size="small" className="border-none shadow-sm rounded-2xl">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-xs py-2">
                     <div className="flex flex-col gap-1">
-                        <Text type="secondary" className="uppercase text-[10px] tracking-widest font-bold text-slate-500 dark:text-slate-400">{t('runViewer.nodeAlias')}</Text>
-                        <Text strong className="text-sm text-slate-800 dark:text-slate-200">{selectedNodeData?.label || t('runViewer.unnamedHostNode')}</Text>
+                        <Text type="secondary" className="uppercase text-[10px] tracking-widest font-bold" style={{ color: token.colorTextTertiary }}>{t('runViewer.nodeAlias')}</Text>
+                        <Text strong className="text-sm" style={{ color: token.colorText }}>{selectedNodeData?.label || t('runViewer.unnamedHostNode')}</Text>
                     </div>
                     <div className="flex flex-col gap-1">
-                        <Text type="secondary" className="uppercase text-[10px] tracking-widest font-bold dark:text-slate-500">{t('runViewer.totalDuration')}</Text>
-                        <Space className="text-blue-600 dark:text-blue-400 font-mono">
+                        <Text type="secondary" className="uppercase text-[10px] tracking-widest font-bold" style={{ color: token.colorTextTertiary }}>{t('runViewer.totalDuration')}</Text>
+                        <Space className="font-mono" style={{ color: token.colorPrimary }}>
                             <ClockCircleOutlined />
-                            <Text strong className="dark:text-blue-400">
+                            <Text strong style={{ color: token.colorPrimary }}>
                                 {(() => {
                                     if (!selectedNodeData?.runStart) return '00:00:00';
                                     const start = new Date(selectedNodeData.runStart).getTime();
@@ -450,11 +450,11 @@ const ViewerCore = () => {
                     </div>
                 </div>
                 {selectedNodeData?.runStatus === 'failed' && (
-                  <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                    <Button 
-                      type="primary" 
-                      danger 
-                      icon={<RobotOutlined />} 
+                  <div className="mt-4 pt-4 border-t" style={{ borderColor: token.colorBorderSecondary }}>
+                    <Button
+                      type="primary"
+                      danger
+                      icon={<RobotOutlined />}
                       className="w-full flex items-center justify-center gap-2 h-10 rounded-xl"
                       onClick={() => {
                         setDrawerVisible(false);
@@ -494,7 +494,7 @@ const ViewerCore = () => {
 
           <div className="flex-1 px-6 pb-6 flex flex-col min-h-0">
              <div className="flex items-center justify-between mb-3 px-2">
-                <Text className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t('runViewer.terminalRealtimeEcho')}</Text>
+                <Text className="text-[11px] font-bold uppercase tracking-widest" style={{ color: token.colorTextTertiary }}>{t('runViewer.terminalRealtimeEcho')}</Text>
                 <Space size="middle">
                     <Tooltip title={t('runViewer.autoScrollToBottom')}>
                         <Button
