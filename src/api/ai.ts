@@ -43,6 +43,10 @@ export const createChatHistory = (data: { user_id: string; session_id: string; t
 export const getChatMessages = (historyId: number): Promise<ChatMessage[]> =>
   request.get(`/ai/chat-histories/${historyId}/messages/`) as any;
 
+// AIGC 生成流水线
+export const generatePipeline = (prompt: string): Promise<any> =>
+  request.post('/ai/chat-histories/generate-pipeline/', { prompt }) as any;
+
 // 诊断接口的 URL (主要用于 fetch 拼接)
 export const DIAGNOSE_URL = '/api/v1/ai/chat-histories/diagnose/';
 export const CHAT_URL_PREFIX = '/api/v1/ai/chat-histories/';

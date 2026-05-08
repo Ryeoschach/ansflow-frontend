@@ -31,20 +31,23 @@ import {
   PlayCircleOutlined,
   CodeOutlined,
   CloudServerOutlined,
-  ApiOutlined,
   SaveOutlined,
   GithubOutlined,
   ContainerOutlined,
   ArrowLeftOutlined,
   SettingOutlined,
+  RobotOutlined,
+  ThunderboltOutlined,
+  ApiOutlined
 } from '@ant-design/icons';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
+import { useQuery, useMutation } from '@tanstack/react-query';
+  import { useTranslation } from 'react-i18next';
 
 import { getAnsibleTasks } from '../../api/tasks';
 import { getK8sClusters, getHelmLocalCharts } from '../../api/k8s';
 import { createPipeline, updatePipeline, getPipeline, getCIEnvironments, executePipeline } from '../../api/pipeline';
+import { generatePipeline } from '../../api/ai';
 import { getRegistries } from '../../api/registry';
 import { getCredentials } from '../../api/credential';
 import useDesignerStore from '../../store/useDesignerStore';
@@ -145,6 +148,24 @@ const DesignerCore = () => {
   const navigate = useNavigate();
   const pipelineId = searchParams.get('id');
   const [pipelineInfo, setPipelineInfo] = useState<any>(null);
+
+  // AI 编排状态
+  const [aiPrompt, setAiPrompt] = useState('');
+  const aiMutation = useMutation({
+    mutationFn: (prompt: string) => generatePipeline(prompt),
+    onSuccess: (data) => {
+      if (data.nodes) {
+        // AI 生成成功，应用到画布
+        setNodes(data.nodes);
+        setEdges(data.edges || []);
+        message.success('AI 编排已完成，您可以继续微调');
+        setAiPrompt('');
+      }
+    },
+    onError: (err: any) => {
+      message.error(err.response?.data?.error || 'AI 编排失败');
+    }
+  });
 
   useEffect(() => {
     if (pipelineId && reactFlowInstance) {
@@ -351,11 +372,19 @@ const DesignerCore = () => {
           </div>
         </Space>
         <Space>
+          {/* AI 编排快捷入口 */}
+          <Input.Search
+             placeholder="描述流水线需求 (如: 自动部署 K8s)..."
+             enterButton={<><ThunderboltOutlined /> AI 编排</>}
+             size="middle"             loading={aiMutation.isPending}
+             onSearch={(val) => aiMutation.mutate(val)}
+             style={{ width: 300 }}
+             className="mr-4"
+           />
           {hasPermission('pipeline:template:execute') && <Button icon={<PlayCircleOutlined />} type="primary" onClick={handleRun} disabled={!pipelineId} className="shadow-blue-200">{t('pipelineDesigner.execute')}</Button>}
           {hasPermission('pipeline:template:edit') && <Button icon={<SaveOutlined />} onClick={handleSave}>{t('pipelineDesigner.save')}</Button>}
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/v1/pipeline/list')}>{t('pipelineDesigner.return')}</Button>
-        </Space>
-      </header>
+        </Space>      </header>
 
       <Layout className="flex-1 overflow-hidden" style={{ background: 'transparent' }}>
         <Sider 
