@@ -13,7 +13,10 @@
     "noData": "No Data",
     "enabled": "Enabled",
     "disabled": "Disabled",
-    "close": "Close Detail"
+    "close": "Close Detail",
+    "systemError": "System error, please contact administrator",
+    "permissionDenied": "Permission denied",
+    "required": "This field is required"
   },
   "menu": {
     "dashboard": "Dashboard",
@@ -1571,7 +1574,14 @@
     "preferencesTitle": "Personal Preferences",
     "darkMode": "Dark Mode",
     "language": "Language",
-    "themeColor": "Theme Color"
+    "themeColor": "Theme Color",
+    "themeName": {
+      "forest": "Forest Land",
+      "deepsea": "Deep Sea",
+      "teal": "Teal Gravel",
+      "nordic": "Nordic",
+      "pastel": "Pastel"
+    }
   },
   "aiChatbot": {
     "title": "AnsBrain AI Assistant",

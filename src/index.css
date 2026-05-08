@@ -126,6 +126,23 @@
   overflow: hidden !important;
 }
 
+/* Sidebar collapsed 状态下子菜单 hover 样式修复 - 亮色模式 */
+.ant-menu-inline-collapsed:not(.ant-menu-dark) .ant-menu-submenu-title:hover,
+.ant-menu-inline-collapsed:not(.ant-menu-dark) .ant-menu-item:hover {
+  color: var(--ant-color-primary) !important;
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+.ant-menu-inline-collapsed:not(.ant-menu-dark) .ant-menu-submenu-title:hover .ant-menu-item-icon,
+.ant-menu-inline-collapsed:not(.ant-menu-dark) .ant-menu-item:hover .ant-menu-item-icon {
+  color: var(--ant-color-primary) !important;
+}
+
+/* 弹出子菜单的样式 */
+.ant-menu-inline-collapsed .ant-menu-submenu .ant-menu-sub {
+  background-color: var(--ant-color-bg-container) !important;
+}
+
 /* 节点运行中背景动画 */
 @keyframes stripe-animation {
   0% { background-position: 0 0; }

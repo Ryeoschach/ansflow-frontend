@@ -30,7 +30,12 @@
     "permissionDenied": "您没有权限执行此操作",
     "systemError": "系统错误，请联系管理员",
     "action": "操作",
-    "isActive": "是否启用"
+    "isActive": "是否启用",
+    "create": "创建",
+    "execute": "执行",
+    "enabled": "开启",
+    "disabled": "关闭",
+    "close": "关闭详情"
   },
   "menu": {
     "dashboard": "仪表盘",
@@ -1575,7 +1580,14 @@
     "preferencesTitle": "个人偏好",
     "darkMode": "深色模式",
     "language": "语言",
-    "themeColor": "配色方案"
+    "themeColor": "配色方案",
+    "themeName": {
+      "forest": "森林大地",
+      "deepsea": "深海日落",
+      "teal": "青翠砂砾",
+      "nordic": "北欧极简",
+      "pastel": "温柔淡彩"
+    }
   },
   "aiChatbot": {
     "title": "AnsBrain AI 助手",
@@ -1697,21 +1709,5 @@
       "editTitle": "编辑自愈策略",
       "createTitle": "新增自愈策略"
     }
-  },
-  "common": {
-    "confirm": "确认",
-    "cancel": "取消",
-    "save": "保存",
-    "delete": "删除",
-    "edit": "编辑",
-    "create": "创建",
-    "execute": "执行",
-    "success": "成功",
-    "error": "失败",
-    "loading": "加载中...",
-    "noData": "暂无数据",
-    "enabled": "开启",
-      "disabled": "关闭",
-      "close": "关闭详情"
   }
 }

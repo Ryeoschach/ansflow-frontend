@@ -331,30 +331,30 @@ const ExecutionHistory: React.FC = () => {
                 open={logDrawerVisible}
                 styles={{ body: { position: 'relative', padding: '12px' } }}
             >
+                {activeExecution?.status === 'failed' && (
+                    <div className="mb-3 flex justify-end">
+                        <Button
+                            type="primary"
+                            danger
+                            ghost
+                            icon={<RobotOutlined />}
+                            onClick={() => {
+                                setLogDrawerVisible(false);
+                                useAppStore.getState().setAiDiagnosis({
+                                    target_type: 'task',
+                                    target_id: activeExecutionId!
+                                });
+                            }}
+                        >
+                            AI 诊断
+                        </Button>
+                    </div>
+                )}
                 <div
                     className="absolute left-0 top-0 bottom-0 w-1 cursor-w-resize hover:bg-blue-400 bg-transparent z-1001"
                     onMouseDown={handleMouseDown}
                 />
                 <div className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-auto h-full shadow-inner relative">
-                    {activeExecution?.status === 'failed' && (
-                        <div className="absolute right-4 top-4 z-10">
-                            <Button
-                                type="primary"
-                                danger
-                                ghost
-                                icon={<RobotOutlined />}
-                                size="small"
-                                onClick={() => {
-                                    useAppStore.getState().setAiDiagnosis({
-                                        target_type: 'task',
-                                        target_id: activeExecutionId!
-                                    });
-                                }}
-                            >
-                                AI 诊断
-                            </Button>
-                        </div>
-                    )}
                     {logsLoading ? (
                         <LogSkeleton />
                         // <div className="flex flex-col items-center justify-center h-full gap-2 text-slate-500">

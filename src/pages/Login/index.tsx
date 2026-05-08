@@ -64,6 +64,8 @@ const LoginPage: React.FC = () => {
             navigate('/v1/dashboard');
         },
         onError: (error: any) => {
+            // 500 等服务器错误已在 axios 拦截器显示 systemError，避免重复
+            if (error.response?.status >= 500) return;
             const errorMsg = error.response?.data?.detail || error.response?.data?.non_field_errors?.[0] || t('auth.loginError');
             message.error(errorMsg);
         }
@@ -79,6 +81,8 @@ const LoginPage: React.FC = () => {
             navigate('/v1/dashboard');
         },
         onError: (error: any) => {
+            // 500 等服务器错误已在 axios 拦截器显示 systemError，避免重复
+            if (error.response?.status >= 500) return;
             const errorMsg = error.response?.data?.detail || error.response?.data?.non_field_errors?.[0] || t('auth.loginError');
             message.error(errorMsg);
         }

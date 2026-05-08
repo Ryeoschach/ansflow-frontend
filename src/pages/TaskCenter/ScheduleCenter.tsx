@@ -269,7 +269,7 @@ const ScheduleCenter: React.FC = () => {
                     <Form.Item label={t('schedule.name')} name="name" rules={[{ required: true }]}>
                         <Input placeholder={t('schedule.namePlaceholder')} />
                     </Form.Item>
-                    <Form.Item label={t('schedule.task')} name="task" rules={[{ required: true }]}>
+                    <Form.Item label={t('schedule.taskName')} name="task" rules={[{ required: true }]}>
                         <Select
                             placeholder={t('schedule.selectTask')}
                             options={taskData?.data?.map((t: any) => ({ label: t.name, value: t.id }))}

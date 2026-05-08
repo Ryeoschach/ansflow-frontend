@@ -20,11 +20,11 @@ const Profile: React.FC = () => {
   const { i18n } = useTranslation();
 
   const themeOptions = [
-    { key: 'forest', name: '森林大地', colors: ['#606C38', '#283618', '#FEFAE0'] },
-    { key: 'deepsea', name: '深海日落', colors: ['#1B4965', '#0D1B2A', '#E0E1DD'] },
-    { key: 'teal', name: '青翠砂砾', colors: ['#599A8F', '#334752', '#F4F1DE'] },
-    { key: 'nordic', name: '北欧极简', colors: ['#D65454', '#263651', '#F6FBF4'] },
-    { key: 'pastel', name: '温柔淡彩', colors: ['#9E868D', '#5C4F51', '#DEE9E4'] },
+    { key: 'forest', name: t('profile.themeName.forest'), colors: ['#606C38', '#283618', '#FEFAE0'] },
+    { key: 'deepsea', name: t('profile.themeName.deepsea'), colors: ['#1B4965', '#0D1B2A', '#E0E1DD'] },
+    { key: 'teal', name: t('profile.themeName.teal'), colors: ['#599A8F', '#334752', '#F4F1DE'] },
+    { key: 'nordic', name: t('profile.themeName.nordic'), colors: ['#D65454', '#263651', '#F6FBF4'] },
+    { key: 'pastel', name: t('profile.themeName.pastel'), colors: ['#9E868D', '#5C4F51', '#DEE9E4'] },
   ];
 
   const { data: userInfo, isLoading, refetch } = useQuery({
