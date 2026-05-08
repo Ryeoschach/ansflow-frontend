@@ -63,6 +63,7 @@ const CIEnvironments = lazy(() => import("./pages/Pipeline/CIEnvironments"));
 const PipelineWebhooks = lazy(() => import("./pages/Pipeline/Webhooks"));
 const MonitorCenter = lazy(() => import("./pages/System/Monitor"));
 const BackupManagement = lazy(() => import("./pages/System/BackupManagement"));
+const AlertCenter = lazy(() => import("./pages/SRE/AlertCenter"));
 const Profile = lazy(() => import("./pages/Profile"));
 
 
@@ -454,8 +455,9 @@ function App() {
                 <Route path="v1/system/monitor" element={<MonitorCenter />} />
                 <Route path="v1/system/audit-logs" element={<AuditLog />} />
                 <Route path="v1/system/approvals" element={<ApprovalCenter />} />
-                <Route path="v1/system/config" element={<ConfigCenter />} />
-                <Route path="v1/system/backup" element={<BackupManagement />} />
+                <Route path="v1/system/monitor" element={<MonitorCenter />} />
+                <Route path="v1/sre/alerts" element={<AlertCenter />} />
+                <Route path="v1/system/backups" element={<BackupManagement />} />
                 <Route path="v1/system/vault" element={<CredentialVault />} />
                 {/*404*/}
                 <Route path="*" element={<div>^^如果uri不是你手动输入的或者你确定输入的uri是正确的，那就是该页面功能正在开发中^^</div>} />
