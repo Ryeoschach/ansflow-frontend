@@ -21,7 +21,8 @@ import {
   LineHeightOutlined,
   ForkOutlined,
   DownOutlined,
-  MinusCircleOutlined
+  MinusCircleOutlined,
+  RobotOutlined
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getPipelineRunDetail, stopPipelineRun, retryPipelineRun } from '../../api/pipeline';
@@ -55,9 +56,9 @@ const nodeTypes = {
  * [Performance Optimizer] ANSI Log Parser
  * 将 Ansible 的色彩代码 (ANSI Codes) 瞬间解析为 React 样式
  */
-const AnsiLog = React.memo(({ text }: { text: string }) => {
+const AnsiLog = React.memo(({ text, token }: { text: string; token: any }) => {
   if (!text) return null;
-  
+
   const parseAnsi = (str: string) => {
     // 基础 ANSI 颜色映射表
     const colorMap: Record<string, string> = {
@@ -448,6 +449,25 @@ const ViewerCore = () => {
                         </Space>
                     </div>
                 </div>
+                {selectedNodeData?.runStatus === 'failed' && (
+                  <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <Button 
+                      type="primary" 
+                      danger 
+                      icon={<RobotOutlined />} 
+                      className="w-full flex items-center justify-center gap-2 h-10 rounded-xl"
+                      onClick={() => {
+                        setDrawerVisible(false);
+                        useAppStore.getState().setAiDiagnosis({
+                          target_type: 'pipeline',
+                          target_id: runId!
+                        });
+                      }}
+                    >
+                      AI 智能诊断
+                    </Button>
+                  </div>
+                )}
             </Card>
           </div>
 

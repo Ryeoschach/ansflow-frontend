@@ -25,6 +25,7 @@ import {
     StopOutlined,
     FilterOutlined,
     LeftOutlined,
+    RobotOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -92,6 +93,8 @@ const ExecutionHistory: React.FC = () => {
             message.error(err.response?.data?.error || t('executionHistory.terminateFailed'));
         }
     });
+
+    const activeExecution = executionData?.data?.find((e: any) => e.id === activeExecutionId);
 
     const statusMap: any = {
         'pending': { color: 'default', text: t('executionHistory.pending'), icon: <SyncOutlined spin /> },
@@ -332,7 +335,26 @@ const ExecutionHistory: React.FC = () => {
                     className="absolute left-0 top-0 bottom-0 w-1 cursor-w-resize hover:bg-blue-400 bg-transparent z-1001"
                     onMouseDown={handleMouseDown}
                 />
-                <div className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-auto h-full shadow-inner">
+                <div className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-auto h-full shadow-inner relative">
+                    {activeExecution?.status === 'failed' && (
+                        <div className="absolute right-4 top-4 z-10">
+                            <Button
+                                type="primary"
+                                danger
+                                ghost
+                                icon={<RobotOutlined />}
+                                size="small"
+                                onClick={() => {
+                                    useAppStore.getState().setAiDiagnosis({
+                                        target_type: 'task',
+                                        target_id: activeExecutionId!
+                                    });
+                                }}
+                            >
+                                AI 诊断
+                            </Button>
+                        </div>
+                    )}
                     {logsLoading ? (
                         <LogSkeleton />
                         // <div className="flex flex-col items-center justify-center h-full gap-2 text-slate-500">

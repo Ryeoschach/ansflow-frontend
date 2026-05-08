@@ -102,6 +102,17 @@
     "success": "Success",
     "failed": "Failed"
   },
+  "ai": {
+    "title": "AnsFlow AI Assistant",
+    "inputPlaceholder": "Type your question (Shift+Enter for new line)...",
+    "welcomeTitle": "Hello! I am AnsFlow Assistant",
+    "welcomeSubtitle": "I can help you analyze logs, troubleshoot K8s issues, or generate pipeline suggestions.",
+    "diagnosing": "🔍 Analyzing {{type}} (ID: {{id}}) execution logs...",
+    "responseError": "AI response failed",
+    "diagnosisError": "Diagnosis request failed",
+    "pipeline": "Pipeline",
+    "task": "Task"
+  },
   "taskCenter": {
     "title": "Ansible Task Template Management",
     "searchPlaceholder": "Search task name or description...",

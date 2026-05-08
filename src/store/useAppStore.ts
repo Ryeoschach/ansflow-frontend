@@ -37,6 +37,9 @@ interface AppState {
   mobileSidebarOpen: boolean;
   setMobileSidebarOpen: (val: boolean) => void;
   toggleMobileSidebar: () => void;
+  // AI 诊断触发
+  aiDiagnosisConfig: { target_type: 'pipeline' | 'task'; target_id: number | string } | null;
+  setAiDiagnosis: (config: { target_type: 'pipeline' | 'task'; target_id: number | string } | null) => void;
 }
 
 interface PersistedState {
@@ -82,9 +85,11 @@ const useAppStore = create<AppState>()(
     isInitializing: true,
     setIsInitializing: (val) => set({ isInitializing: val }),
     mobileSidebarOpen: false,
-    setMobileSidebarOpen: (val) => set({ mobileSidebarOpen: val }),
+    setMobileSidebarOpen: (val: boolean) => set({ mobileSidebarOpen: val }),
     toggleMobileSidebar: () => set((state) => ({ mobileSidebarOpen: !state.mobileSidebarOpen })),
-  }), {
+    aiDiagnosisConfig: null,
+    setAiDiagnosis: (aiDiagnosisConfig) => set({ aiDiagnosisConfig }),
+    }), {
     name: 'ansflow-app-storage',
     partialize: (state): PersistedState => ({
       isDark: state.isDark,

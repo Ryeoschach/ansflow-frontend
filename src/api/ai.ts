@@ -42,3 +42,7 @@ export const createChatHistory = (data: { user_id: string; session_id: string; t
 // 获取对话详情
 export const getChatMessages = (historyId: number): Promise<ChatMessage[]> =>
   request.get(`/ai/chat-histories/${historyId}/messages/`) as any;
+
+// 诊断接口的 URL (主要用于 fetch 拼接)
+export const DIAGNOSE_URL = '/api/v1/ai/chat-histories/diagnose/';
+export const CHAT_URL_PREFIX = '/api/v1/ai/chat-histories/';
