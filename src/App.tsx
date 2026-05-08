@@ -441,6 +441,7 @@ function App() {
                 <Route path="v1/system/roles" element={<RoleManagement />} />
                 <Route path="v1/system/menus" element={<MenuManagement />} />
                 <Route path="v1/system/hosts" element={<HostManagement />} />
+                <Route path="v1/system/config" element={<ConfigCenter />} />
                 <Route path="v1/pipeline/list" element={<PipelineList />} />
                 <Route path="v1/pipeline/artifacts" element={<Artifacts />} />
                 <Route path="v1/pipeline/registries" element={<ImageRegistries />} />
