@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Input, Card, Space, Avatar, FloatButton, Typography, theme } from 'antd';
-import { RobotOutlined, UserOutlined, SendOutlined, MinusOutlined } from '@ant-design/icons';
+import { RobotOutlined, UserOutlined, SendOutlined, MinusOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { App } from 'antd';
 import { useTranslation } from 'react-i18next';
 import useAppStore from '@/store/useAppStore';
 import { createChatHistory } from '@/api/ai';
+import { executePipeline } from '@/api/pipeline';
 
 const { Text } = Typography;
 
@@ -23,7 +24,9 @@ const AIChatbot: React.FC = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(false);
     const [historyId, setHistoryId] = useState<number | null>(null);
+    const [suggestedPipelineId, setSuggestedPipelineId] = useState<number | null>(null);
     
+    const { modal } = App.useApp();
     const appToken = useAppStore(state => state.token);
     const currentUser = useAppStore(state => state.currentUser);
     const aiDiagnosisConfig = useAppStore(state => state.aiDiagnosisConfig);
@@ -84,6 +87,7 @@ const AIChatbot: React.FC = () => {
         const typeText = t(`ai.${type}`);
         setMessages([{ role: 'user', content: t('ai.diagnosing', { type: typeText, id }) }]);
         setLoading(true);
+        setSuggestedPipelineId(null);
         
         try {
             setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
@@ -106,7 +110,23 @@ const AIChatbot: React.FC = () => {
                 const { done, value } = await reader.read();
                 if (done) break;
                 const chunk = decoder.decode(value);
-                assistantReply += chunk;
+                
+                // 解析建议的流水线标识
+                if (chunk.includes('__SUGGESTION__:')) {
+                    const parts = chunk.split('\n');
+                    for (const part of parts) {
+                        if (part.startsWith('__SUGGESTION__:')) {
+                            try {
+                                const suggestion = JSON.parse(part.replace('__SUGGESTION__:', ''));
+                                setSuggestedPipelineId(suggestion.pipeline_id);
+                            } catch (e) { console.error('Failed to parse suggestion', e); }
+                        } else {
+                            assistantReply += part;
+                        }
+                    }
+                } else {
+                    assistantReply += chunk;
+                }
                 
                 setMessages(prev => {
                     const newMessages = [...prev];
@@ -287,11 +307,50 @@ const AIChatbot: React.FC = () => {
                                             />
                                         )}
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                        <div 
-                            className="p-4 border-t flex items-end gap-3" 
+                                    </div>
+                                    ))}
+
+                                    {/* 渲染自愈建议按钮 */}
+                                    {suggestedPipelineId && !loading && (
+                                    <div className="mx-auto w-full px-5 animate-in zoom-in-95 duration-500">
+                                    <Card 
+                                        size="small" 
+                                        className="border-blue-200 bg-blue-50/50 shadow-sm rounded-xl overflow-hidden"
+                                    >
+                                        <Flex justify="space-between" align="center">
+                                            <Space direction="vertical" size={0}>
+                                                <Text type="secondary" className="text-[10px] font-bold uppercase tracking-wider">AI 自愈建议</Text>
+                                                <Text strong className="text-blue-700 text-xs">执行修复流水线 (ID: {suggestedPipelineId})</Text>
+                                            </Space>
+                                            <Button 
+                                                type="primary" 
+                                                size="small" 
+                                                icon={<PlayCircleOutlined />}
+                                                className="rounded-lg h-8 px-4"
+                                                onClick={() => {
+                                                    modal.confirm({
+                                                        title: '确认执行 AI 建议的修复方案？',
+                                                        content: '该动作将由 AI 发起并记录在审计日志中。',
+                                                        onOk: async () => {
+                                                            try {
+                                                                await executePipeline(suggestedPipelineId);
+                                                                message.success('自愈任务已下发');
+                                                                setSuggestedPipelineId(null);
+                                                            } catch (e) {
+                                                                message.error('下发失败');
+                                                            }
+                                                        }
+                                                    });
+                                                }}
+                                            >
+                                                立即执行
+                                            </Button>
+                                        </Flex>
+                                    </Card>
+                                    </div>
+                                    )}
+                                    </div>
+                                    <div className="p-4 border-t flex items-end gap-3"  
                             style={{ backgroundColor: token.colorBgContainer, borderTopColor: token.colorBorderSecondary }}
                         >
                             <Input.TextArea

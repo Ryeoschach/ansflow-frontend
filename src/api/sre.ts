@@ -47,5 +47,17 @@ export const getHealingPolicies = (params?: any): Promise<PaginatedResponse<Self
   request.get('/sre/policies/', { params }) as any;
 
 // 创建自愈策略
-export const createHealingPolicy = (data: Partial<SelfHealingPolicy>): Promise<any> =>
+export const createHealingPolicy = (data: Partial<SelfHealingPolicy>): Promise<SelfHealingPolicy> =>
   request.post('/sre/policies/', data) as any;
+
+// 更新自愈策略
+export const updateHealingPolicy = (id: number, data: Partial<SelfHealingPolicy>): Promise<SelfHealingPolicy> =>
+  request.patch(`/sre/policies/${id}/`, data) as any;
+
+// 删除自愈策略
+export const deleteHealingPolicy = (id: number): Promise<any> =>
+  request.delete(`/sre/policies/${id}/`) as any;
+
+// AIGC 生成流水线
+export const generatePipeline = (prompt: string): Promise<any> =>
+  request.post('/ai/chat-histories/generate-pipeline/', { prompt }) as any;
