@@ -1,5 +1,7 @@
 # AnsFlow 前端
 
+[English](./README_EN.md) | 中文说明
+
 企业级 DevOps 流水线平台前端，基于 React 18 + TypeScript + Vite 构建。集成了 **AI 智能助手**、**SRE 告警中心**与 **AIGC 编排**。
 
 **当前版本**：v2.0.0  

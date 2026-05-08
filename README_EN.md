@@ -1,5 +1,7 @@
 # AnsFlow Frontend
 
+English | [中文说明](./README.md)
+
 Enterprise-level DevOps pipeline platform frontend, built with React 18 + TypeScript + Vite. Integrated with **AI Assistant**, **SRE Alert Center**, and **AIGC Orchestration**.
 
 **Current Version**: v2.0.0  
