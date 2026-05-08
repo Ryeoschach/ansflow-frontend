@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Input, Card, Space, Avatar, FloatButton, Typography, theme } from 'antd';
-import { RobotOutlined, UserOutlined, SendOutlined, MinusOutlined, PlayCircleOutlined } from '@ant-design/icons';
-import { App } from 'antd';
+import { Button, Input, Card, Space, Avatar, FloatButton, Typography, theme, Dropdown, MenuProps, Tag } from 'antd';
+import { RobotOutlined, UserOutlined, SendOutlined, MinusOutlined, PlayCircleOutlined, CoffeeOutlined, ThunderboltOutlined, UserSwitchOutlined } from '@ant-design/icons';
+import { App, Flex } from 'antd';
 import { useTranslation } from 'react-i18next';
 import useAppStore from '@/store/useAppStore';
 import { createChatHistory } from '@/api/ai';
@@ -14,6 +14,8 @@ interface Message {
     content: string;
 }
 
+type PersonalityKey = 'professional' | 'concise' | 'humorous';
+
 const AIChatbot: React.FC = () => {
     const { token } = theme.useToken();
     const { t } = useTranslation();
@@ -25,6 +27,9 @@ const AIChatbot: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [historyId, setHistoryId] = useState<number | null>(null);
     const [suggestedPipelineId, setSuggestedPipelineId] = useState<number | null>(null);
+    const [personality, setPersonality] = useState<PersonalityKey>(
+        (localStorage.getItem('ansflow-ai-personality') as PersonalityKey) || 'professional'
+    );
     
     const { modal } = App.useApp();
     const appToken = useAppStore(state => state.token);
@@ -35,11 +40,40 @@ const AIChatbot: React.FC = () => {
     const scrollRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
+    // 监听性格变化并持久化
+    useEffect(() => {
+        localStorage.setItem('ansflow-ai-personality', personality);
+    }, [personality]);
+
+    const personalityItems: MenuProps['items'] = [
+        {
+            key: 'professional',
+            label: '技术专家',
+            icon: <RobotOutlined />,
+        },
+        {
+            key: 'concise',
+            label: '简洁助手',
+            icon: <ThunderboltOutlined />,
+        },
+        {
+            key: 'humorous',
+            label: '幽默特工',
+            icon: <CoffeeOutlined />,
+        },
+    ];
+
     // 点击外部自动收起
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            const isClickOnButton = (event.target as HTMLElement).closest('.ant-float-btn');
-            if (containerRef.current && !containerRef.current.contains(event.target as Node) && !isClickOnButton) {
+            const target = event.target as HTMLElement;
+            
+            // 排除触发按钮
+            const isClickOnButton = target.closest('.ant-float-btn');
+            // 排除 Ant Design 的下拉菜单/弹出层（Dropdown 默认渲染在 body 下）
+            const isClickOnOverlay = target.closest('.ant-dropdown') || target.closest('.ant-select-dropdown');
+            
+            if (containerRef.current && !containerRef.current.contains(target) && !isClickOnButton && !isClickOnOverlay) {
                 setVisible(false);
             }
         };
@@ -98,7 +132,7 @@ const AIChatbot: React.FC = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${appToken}`
                 },
-                body: JSON.stringify({ target_type: type, target_id: id })
+                body: JSON.stringify({ target_type: type, target_id: id, personality })
             });
 
             if (!response.body) throw new Error('No body');
@@ -176,7 +210,7 @@ const AIChatbot: React.FC = () => {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${appToken}`
             },
-            body: JSON.stringify({ question })
+            body: JSON.stringify({ question, personality })
         });
 
         if (!response.body) return;
@@ -218,7 +252,7 @@ const AIChatbot: React.FC = () => {
                     setVisible(!visible);
                     if (!visible) initChat();
                 }}
-                className="fixed right-6 bottom-[15vh] transition-transform hover:scale-110 shadow-lg ai-float-button-breathe"
+                className="fixed right-6 bottom-[75vh] transition-transform hover:scale-110 shadow-lg ai-float-button-breathe"
                 badge={{ dot: true, color: token.colorSuccess }}
             />
 
@@ -243,6 +277,23 @@ const AIChatbot: React.FC = () => {
                             <Space style={{ color: token.colorTextHeading }}>
                                 <RobotOutlined style={{ color: token.colorPrimary }} />
                                 <span className="font-semibold">{t('ai.title')}</span>
+                                <Dropdown 
+                                    menu={{ 
+                                        items: personalityItems, 
+                                        selectable: true,
+                                        selectedKeys: [personality],
+                                        onClick: ({ key }) => setPersonality(key as PersonalityKey) 
+                                    }} 
+                                    trigger={['click']}
+                                >
+                                    <Tag 
+                                        icon={<UserSwitchOutlined />} 
+                                        className="cursor-pointer ml-2 hover:opacity-80 transition-opacity border-none bg-slate-100 dark:bg-slate-800 text-[10px]"
+                                        style={{ color: token.colorPrimary }}
+                                    >
+                                        {personalityItems.find(i => i?.key === personality)?.label as string}
+                                    </Tag>
+                                </Dropdown>
                             </Space>
                         }
                         extra={
@@ -307,50 +358,51 @@ const AIChatbot: React.FC = () => {
                                             />
                                         )}
                                     </div>
-                                    </div>
-                                    ))}
+                                </div>
+                            ))}
 
-                                    {/* 渲染自愈建议按钮 */}
-                                    {suggestedPipelineId && !loading && (
-                                    <div className="mx-auto w-full px-5 animate-in zoom-in-95 duration-500">
-                                    <Card 
+                            {/* 渲染自愈建议按钮 */}
+                            {suggestedPipelineId && !loading && (
+                            <div className="mx-auto w-full px-5 animate-in zoom-in-95 duration-500">
+                            <Card 
+                                size="small" 
+                                className="border-blue-200 bg-blue-50/50 shadow-sm rounded-xl overflow-hidden"
+                            >
+                                <Flex justify="space-between" align="center">
+                                    <Space direction="vertical" size={0}>
+                                        <Text type="secondary" className="text-[10px] font-bold uppercase tracking-wider">AI 自愈建议</Text>
+                                        <Text strong className="text-blue-700 text-xs">执行修复流水线 (ID: {suggestedPipelineId})</Text>
+                                    </Space>
+                                    <Button 
+                                        type="primary" 
                                         size="small" 
-                                        className="border-blue-200 bg-blue-50/50 shadow-sm rounded-xl overflow-hidden"
+                                        icon={<PlayCircleOutlined />}
+                                        className="rounded-lg h-8 px-4"
+                                        onClick={() => {
+                                            modal.confirm({
+                                                title: '确认执行 AI 建议的修复方案？',
+                                                content: '该动作将由 AI 发起并记录在审计日志中。',
+                                                onOk: async () => {
+                                                    try {
+                                                        await executePipeline(suggestedPipelineId);
+                                                        message.success('自愈任务已下发');
+                                                        setSuggestedPipelineId(null);
+                                                    } catch (e) {
+                                                        message.error('下发失败');
+                                                    }
+                                                }
+                                            });
+                                        }}
                                     >
-                                        <Flex justify="space-between" align="center">
-                                            <Space direction="vertical" size={0}>
-                                                <Text type="secondary" className="text-[10px] font-bold uppercase tracking-wider">AI 自愈建议</Text>
-                                                <Text strong className="text-blue-700 text-xs">执行修复流水线 (ID: {suggestedPipelineId})</Text>
-                                            </Space>
-                                            <Button 
-                                                type="primary" 
-                                                size="small" 
-                                                icon={<PlayCircleOutlined />}
-                                                className="rounded-lg h-8 px-4"
-                                                onClick={() => {
-                                                    modal.confirm({
-                                                        title: '确认执行 AI 建议的修复方案？',
-                                                        content: '该动作将由 AI 发起并记录在审计日志中。',
-                                                        onOk: async () => {
-                                                            try {
-                                                                await executePipeline(suggestedPipelineId);
-                                                                message.success('自愈任务已下发');
-                                                                setSuggestedPipelineId(null);
-                                                            } catch (e) {
-                                                                message.error('下发失败');
-                                                            }
-                                                        }
-                                                    });
-                                                }}
-                                            >
-                                                立即执行
-                                            </Button>
-                                        </Flex>
-                                    </Card>
-                                    </div>
-                                    )}
-                                    </div>
-                                    <div className="p-4 border-t flex items-end gap-3"  
+                                        立即执行
+                                    </Button>
+                                </Flex>
+                            </Card>
+                            </div>
+                            )}
+                        </div>
+                        <div 
+                            className="p-4 border-t flex items-end gap-3" 
                             style={{ backgroundColor: token.colorBgContainer, borderTopColor: token.colorBorderSecondary }}
                         >
                             <Input.TextArea
