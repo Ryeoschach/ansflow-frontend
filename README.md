@@ -1,10 +1,9 @@
 # AnsFlow 前端
 
-企业级 DevOps 流水线平台前端，基于 React 18 + TypeScript + Vite 构建。
+企业级 DevOps 流水线平台前端，基于 React 18 + TypeScript + Vite 构建。集成了 **AI 智能助手**、**SRE 告警中心**与 **AIGC 编排**。
 
-**当前版本**：v1.8.0  
-**在线 Demo**：https://ansflow.cyfee.com:10443  
-**默认账号**：admin / ansflow
+**当前版本**：v2.0.0  
+**核心能力**：智能问答 / 自动诊断 / 告警自愈 / 意图编排
 
 ---
 
@@ -13,47 +12,39 @@
 | 类别 | 技术 | 说明 |
 |------|------|------|
 | 框架 | React 18 + TypeScript | 核心框架 |
-| 构建 | Vite 5 | 快速开发与生产构建 |
 | UI 组件 | Ant Design 6 | 企业级 UI 组件库 |
-| 样式 | Tailwind CSS v4 + @ant-design/cssinjs | 原子化 CSS + 组件库样式集成 |
-| 编辑器 | Monaco Editor | 企业级代码/YAML 编辑体验 |
-| 终端 | xterm.js | 基于 WebSocket 的交互式终端 |
-| 状态管理 | Zustand v5 | 轻量级状态管理，支持 localStorage 持久化 |
-| 数据请求 | Axios + TanStack Query v5 | HTTP 请求封装 + 服务端状态缓存 |
-| 路由 | React Router v6 | SPA 路由，支持嵌套路由 |
-| 流水线可视化 | ReactFlow | DAG 流程图编辑与展示 |
-| WebSocket | react-use-websocket | 实时日志推送 |
-| 图表 | ECharts + echarts-for-react | 数据可视化 |
-| 国际化 | i18next + react-i18next | 中文 / English 双语支持 |
-| 监控体系 | Celery Stats API | 分布式任务引擎健康状态追踪 |
-| 包管理 | pnpm | 高性能包管理器 |
+| 样式 | Tailwind CSS v4 | 原子化 CSS 驱动 |
+| 状态管理 | Zustand v5 | 全局与持久化状态管理 |
+| 数据请求 | TanStack Query v5 | 服务端状态同步 |
+| 流水线 | ReactFlow | DAG 流程图交互与展示 |
+| AI 交互 | Fetch ReadableStream | 实现流式（Streaming）对话响应 |
+| 内容渲染 | ReactMarkdown | 渲染 AI 诊断报告与代码块 |
 
 ---
 
-## 项目结构
+## 智能运维模块详解
 
-```
-src/
-├── api/                          # API 请求封装（按模块划分）
-│   ├── ...
-│   ├── system.ts                 # 系统设置/备份/监控 API (新增 Celery Stats)
-│   └── ...
-├── components/                   # 公共组件
-│   ├── ErrorBoundary/            # 全局异常边界组件 (健壮性增强)
-│   └── ...
-├── pages/                        # 页面级组件
-│   ├── ...
-│   ├── System/                   # 系统管理
-│   │   ├── Monitor.tsx           # 系统监控面板 (全面重构：Worker/Beat/Queue)
-│   │   ├── ConfigCenter/          # 配置中心 (全面国际化支持)
-│   │   └── ...
-│   └── ...
-```
+### 1. AI 智能助手 (AIChatbot)
+- **全局入口**：右下角悬浮按钮，集成 **品牌色呼吸灯** 提醒。
+- **流式对话**：支持打字机效果的实时响应，提供沉浸式问答体验。
+- **自动收起**：支持点击外部自动最小化，保持界面整洁。
+- **主题适配**：深度集成 AntD 6 Token 系统，支持深浅色模式无缝切换。
+
+### 2. SRE 智能告警中心 (Alert Center)
+- **页面**：`/v1/sre/alerts`
+- **AI 分析**：实时展示告警的 AI 诊断报告，包含根因分析与修复建议。
+- **自愈闭环**：AI 自动匹配自愈流水线，支持运维人员在详情页一键触发修复。
+- **实时同步**：基于 TanStack Query 的自动轮询机制，确保告警状态实时更新。
+
+### 3. AIGC 流水线编排
+- **意图驱动**：在流水线设计器（Designer）顶部集成 AI 编排输入框。
+- **自动建模**：通过自然语言描述需求（如“先打包镜像再部署到 K8s”），AI 自动在画布上生成节点与连线。
+- **双向联动**：AI 生成的 DAG 可由用户继续手动微调，实现“AI 辅助，人工把关”。
 
 ---
 
 ## 功能模块详解（新增与增强）
-
+...
 ### 8.6 系统监控 (System Monitor) - v1.7.0 重大更新
 
 **页面**：`/v1/system/monitor`
