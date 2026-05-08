@@ -36,7 +36,7 @@ export const getChatHistories = (params?: Record<string, any>): Promise<Paginate
   request.get('/ai/chat-histories/', { params }) as any;
 
 // 创建新的对话会话
-export const createChatHistory = (data: { user_id: string; session_id: string; title?: string }): Promise<ChatHistory> =>
+export const createChatHistory = (data: { user_id: string; session_id: string; title?: string; personality?: string }): Promise<ChatHistory> =>
   request.post('/ai/chat-histories/', data) as any;
 
 // 获取对话详情

@@ -254,11 +254,11 @@ function App() {
       },
       Menu: {
         darkItemBg: isDark ? currentTheme.darkBg : currentTheme.heading,
-        darkSubMenuItemBg: isDark ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.05)',
-        popupBg: isDark ? currentTheme.darkBg : currentTheme.heading,
+        darkSubMenuItemBg: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.1)',
+        popupBg: isDark ? currentTheme.darkContainer : '#FFFFFF',
         itemBorderRadius: 8,
         // 核心修复：确保文字在深色背景下始终可见
-        darkItemColor: 'rgba(255, 255, 255, 0.65)',
+        darkItemColor: 'rgba(255, 255, 255, 0.85)',
         darkItemSelectedColor: '#FFFFFF', 
         darkItemSelectedBg: currentTheme.primary,
         itemSelectedColor: currentTheme.primary,
