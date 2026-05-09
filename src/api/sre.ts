@@ -12,8 +12,10 @@ export interface AlertEvent {
   annotations: Record<string, string>;
   healing_status: 'none' | 'analyzing' | 'suggested' | 'executing' | 'success' | 'failed' | 'ignored';
   ai_analysis: string | null;
+  is_exported: boolean;
   suggested_pipeline: number | null;
   suggested_pipeline_name?: string;
+  latest_run_id: number | null;
   create_time: string;
   update_time: string;
 }
@@ -41,6 +43,14 @@ export const getAlertEvent = (id: number): Promise<AlertEvent> =>
 // 忽略告警
 export const ignoreAlert = (id: number): Promise<any> =>
   request.patch(`/sre/alerts/${id}/`, { healing_status: 'ignored' }) as any;
+
+// 导出告警诊断到知识库
+export const exportAlertToKnowledge = (id: number): Promise<any> =>
+  request.post(`/sre/alerts/${id}/export-to-knowledge/`);
+
+// 触发自愈流水线
+export const triggerAlertHealing = (id: number): Promise<any> =>
+  request.post(`/sre/alerts/${id}/trigger-healing/`);
 
 // 获取自愈策略
 export const getHealingPolicies = (params?: any): Promise<PaginatedResponse<SelfHealingPolicy>> =>
