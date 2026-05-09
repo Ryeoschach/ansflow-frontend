@@ -27,21 +27,24 @@ Enterprise-level DevOps pipeline platform frontend, built with React 18 + TypeSc
 ## Intelligent Ops Modules
 
 ### 1. AI Intelligent Assistant (AIChatbot)
-- **Global Entry**: Bottom-right floating button with **Brand Color Breathing Light** indicator.
-- **Streaming Chat**: Implements typewriter effect for real-time AI responses.
-- **Auto-minimize**: Closes when clicking outside the dialog to keep the UI clean.
-- **Theme Sync**: Deeply integrated with AntD 6 Token system, supporting seamless Dark/Light mode switching.
+- **Global Entry**: Bottom-right floating button with **Multi-state Badges** (Analyzing/Success/Timeout) and brand breathing light.
+- **Knowledge Loop**: "Save to Knowledge" button integrated in AI responses and diagnosis reports for experience accumulation.
+- **Categorized History**: Supports **Tab-based Filtering** (Chat/Diagnosis) and real-time title search.
+- **Typing Animation**: Interactive three-dot jumping animation for a more dynamic AI thinking process.
+- **Semantic Cache**: Millisecond-level response for previously saved knowledge using vector similarity.
+- **Theme Optimization**: Enhanced contrast for Light mode and seamless theme switching.
 
 ### 2. SRE Intelligent Alert Center
 - **Route**: `/v1/sre/alerts`
-- **AI Analysis**: Real-time AI diagnosis reports including root cause and remediation steps.
-- **Self-healing Loop**: AI automatically matches self-healing pipelines, allowing one-click triggers in the detail view.
-- **Auto-sync**: Periodic polling via TanStack Query ensures alert status is always up-to-date.
+- **Full Tracking**: Integrated **Progress Bars** and live status updates during self-healing pipeline execution.
+- **Strong Sync**: Backend signal-driven status synchronization between pipelines and alert records.
+- **Trigger Awareness**: Accurate visual feedback for "Auto-Triggered" vs "Manual" remediation sources.
+- **AI Analysis**: Real-time AI diagnosis reports with one-click export to RAG knowledge base.
 
 ### 3. AIGC Pipeline Orchestration
-- **Intent-driven**: AI search bar integrated into the Pipeline Designer toolbar.
-- **Auto-modeling**: Generate nodes and edges automatically by describing needs in plain text (e.g., "Build Docker image then deploy to K8s").
-- **Bidirectional Sync**: AI-generated DAGs remain fully editable by users for human-in-the-loop control.
+- **Intent-driven**: AI input box integrated into the Pipeline Designer top bar.
+- **Auto-modeling**: Generate full DAG structures from natural language descriptions.
+- **Diagnosis Memory**: Automatically loads historical AI analysis in node trace views.
 
 ---
 
