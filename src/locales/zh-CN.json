@@ -107,17 +107,6 @@
     "success": "成功",
     "failed": "失败"
   },
-  "ai": {
-    "title": "AnsFlow AI 助手",
-    "inputPlaceholder": "输入问题 (Shift+Enter 换行)...",
-    "welcomeTitle": "您好！我是 AnsFlow 智能助手",
-    "welcomeSubtitle": "我可以帮您分析日志、排查 K8s 问题或生成流水线建议。",
-    "diagnosing": "🔍 正在分析 {{type}} (ID: {{id}}) 的执行日志...",
-    "responseError": "AI 响应失败",
-    "diagnosisError": "诊断请求失败",
-    "pipeline": "流水线",
-    "task": "任务"
-  },
   "taskCenter": {
     "title": "Ansible 任务模板管理",
     "searchPlaceholder": "搜索任务名称或描述...",
@@ -1601,7 +1590,7 @@
     "welcomeTitle": "我是 AnsBrain 智能助手",
     "welcomeSubtitle": "我可以帮你排查错误、生成流水线或解答运维问题。",
     "inputPlaceholder": "请输入您的问题，按 Enter 发送...",
-    "diagnosing": "🔍 正在为 {type} (ID: {id}) 生成智能诊断报告...",
+    "diagnosing": "🔍 正在为 {{type}} (ID: {{id}}) 生成智能诊断报告...",
     "diagnosisError": "诊断请求失败",
     "responseError": "AI 响应失败",
     "pipeline": "流水线",

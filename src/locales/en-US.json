@@ -93,7 +93,7 @@
     "welcomeTitle": "I am AnsBrain AI Assistant",
     "welcomeSubtitle": "I can help you troubleshoot errors, generate pipelines, and answer DevOps questions.",
     "inputPlaceholder": "Please enter your question, press Enter to send...",
-    "diagnosing": "🔍 Generating intelligent diagnosis report for {type} (ID: {id})...",
+    "diagnosing": "🔍 Generating intelligent diagnosis report for {{type}} (ID: {{id}})...",
     "diagnosisError": "Diagnosis request failed",
     "responseError": "AI response failed",
     "pipeline": "Pipeline",
