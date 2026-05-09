@@ -50,6 +50,7 @@ const AIChatbot: React.FC = () => {
     
     const appToken = useAppStore(state => state.token);
     const currentUser = useAppStore(state => state.currentUser);
+    const userAvatar = useAppStore(state => state.avatar);
     const aiDiagnosisConfig = useAppStore(state => state.aiDiagnosisConfig);
     const setAiDiagnosis = useAppStore(state => state.setAiDiagnosis);
     
@@ -576,7 +577,13 @@ const AIChatbot: React.FC = () => {
                             )}
                             {messages.map((msg, index) => (
                                 <div key={index} className={`flex gap-3 max-w-[90%] items-start ${msg.role === 'user' ? 'self-end flex-row-reverse' : 'self-start'}`}>
-                                    <Avatar size="small" className="flex-shrink-0" style={{ backgroundColor: msg.role === 'assistant' ? token.colorPrimary : token.colorSuccess }} icon={msg.role === 'assistant' ? <RobotOutlined /> : <UserOutlined />} />
+                                    <Avatar 
+                                        size="small" 
+                                        className="flex-shrink-0" 
+                                        style={{ backgroundColor: msg.role === 'assistant' ? token.colorPrimary : token.colorSuccess }} 
+                                        icon={msg.role === 'assistant' ? <RobotOutlined /> : (!userAvatar ? <UserOutlined /> : undefined)} 
+                                        src={msg.role === 'user' && userAvatar ? userAvatar : undefined}
+                                    />
                                     <div className="flex flex-col gap-1">
                                         <div className={`px-3.5 py-2.5 rounded-2xl text-[13.5px] leading-relaxed whitespace-pre-wrap break-words ${msg.role === 'assistant' ? 'ai-assistant-bubble' : 'shadow-sm'}`} style={{ backgroundColor: msg.role === 'user' ? token.colorPrimary : undefined, color: msg.role === 'user' ? '#fff' : token.colorText, borderRadius: msg.role === 'user' ? '12px 2px 12px 12px' : '2px 12px 12px 12px' }}>
                                             {msg.content}
