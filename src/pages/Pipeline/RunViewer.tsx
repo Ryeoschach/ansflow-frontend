@@ -450,22 +450,58 @@ const ViewerCore = () => {
                     </div>
                 </div>
                 {selectedNodeData?.runStatus === 'failed' && (
-                  <div className="mt-4 pt-4 border-t" style={{ borderColor: token.colorBorderSecondary }}>
-                    <Button
-                      type="primary"
-                      danger
-                      icon={<RobotOutlined />}
-                      className="w-full flex items-center justify-center gap-2 h-10 rounded-xl"
-                      onClick={() => {
-                        setDrawerVisible(false);
-                        useAppStore.getState().setAiDiagnosis({
-                          target_type: 'pipeline',
-                          target_id: runId!
-                        });
-                      }}
-                    >
-                      AI 智能诊断
-                    </Button>
+                  <div className="mt-4 pt-4 border-t flex gap-2" style={{ borderColor: token.colorBorderSecondary }}>
+                    {payload?.diagnosis_history_id ? (
+                      <>
+                        <Button
+                          type="primary"
+                          icon={<RobotOutlined />}
+                          className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl"
+                          onClick={() => {
+                            setDrawerVisible(false);
+                            useAppStore.getState().setAiDiagnosis({
+                              target_type: 'pipeline',
+                              target_id: runId!,
+                              target_name: payload?.pipeline_name,
+                              history_id: payload.diagnosis_history_id
+                            });
+                          }}
+                        >
+                          查看 AI 诊断结论
+                        </Button>
+                        <Tooltip title="重新分析">
+                          <Button
+                            icon={<SyncOutlined />}
+                            className="h-10 w-10 flex items-center justify-center rounded-xl"
+                            onClick={() => {
+                              setDrawerVisible(false);
+                              useAppStore.getState().setAiDiagnosis({
+                                target_type: 'pipeline',
+                                target_id: runId!,
+                                target_name: payload?.pipeline_name
+                              });
+                            }}
+                          />
+                        </Tooltip>
+                      </>
+                    ) : (
+                      <Button
+                        type="primary"
+                        danger
+                        icon={<RobotOutlined />}
+                        className="w-full flex items-center justify-center gap-2 h-10 rounded-xl"
+                        onClick={() => {
+                          setDrawerVisible(false);
+                          useAppStore.getState().setAiDiagnosis({
+                            target_type: 'pipeline',
+                            target_id: runId!,
+                            target_name: payload?.pipeline_name
+                          });
+                        }}
+                      >
+                        AI 智能诊断
+                      </Button>
+                    )}
                   </div>
                 )}
             </Card>

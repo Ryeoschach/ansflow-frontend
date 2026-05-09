@@ -15,6 +15,8 @@ export interface ChatHistory {
   user_id: string;
   session_id: string;
   title: string;
+  history_type: 'chat' | 'diagnose';
+  personality: string;
   create_time: string;
   update_time: string;
 }
@@ -36,12 +38,22 @@ export const getChatHistories = (params?: Record<string, any>): Promise<Paginate
   request.get('/ai/chat-histories/', { params }) as any;
 
 // 创建新的对话会话
-export const createChatHistory = (data: { user_id: string; session_id: string; title?: string; personality?: string }): Promise<ChatHistory> =>
+export const createChatHistory = (data: { 
+  user_id: string; 
+  session_id: string; 
+  title?: string; 
+  personality?: string;
+  history_type?: 'chat' | 'diagnose';
+}): Promise<ChatHistory> =>
   request.post('/ai/chat-histories/', data) as any;
 
 // 获取对话详情
 export const getChatMessages = (historyId: number): Promise<ChatMessage[]> =>
   request.get(`/ai/chat-histories/${historyId}/messages/`) as any;
+
+// 将消息保存到知识库
+export const saveMessageToKnowledge = (historyId: number, messageId: number): Promise<any> =>
+  request.post(`/ai/chat-histories/${historyId}/save-to-knowledge/`, { message_id: messageId });
 
 // AIGC 生成流水线
 export const generatePipeline = (prompt: string): Promise<any> =>

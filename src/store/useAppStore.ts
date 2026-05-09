@@ -38,8 +38,8 @@ interface AppState {
   setMobileSidebarOpen: (val: boolean) => void;
   toggleMobileSidebar: () => void;
   // AI 诊断触发
-  aiDiagnosisConfig: { target_type: 'pipeline' | 'task'; target_id: number | string } | null;
-  setAiDiagnosis: (config: { target_type: 'pipeline' | 'task'; target_id: number | string } | null) => void;
+  aiDiagnosisConfig: { target_type: 'pipeline' | 'task'; target_id: number | string; target_name?: string; history_id?: number } | null;
+  setAiDiagnosis: (config: { target_type: 'pipeline' | 'task'; target_id: number | string; target_name?: string; history_id?: number } | null) => void;
 }
 
 interface PersistedState {

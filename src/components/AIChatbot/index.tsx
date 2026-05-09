@@ -1,21 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Input, Card, Space, Avatar, FloatButton, Typography, theme, Dropdown, MenuProps, Tag, Drawer, List, Tooltip, Empty, Skeleton } from 'antd';
+import { Button, Input, Card, Space, Avatar, FloatButton, Typography, theme, Dropdown, MenuProps, Tag, Drawer, List, Tooltip, Empty, Skeleton, Tabs } from 'antd';
 import { 
     RobotOutlined, UserOutlined, SendOutlined, MinusOutlined, PlayCircleOutlined, 
     CoffeeOutlined, ThunderboltOutlined, UserSwitchOutlined, HistoryOutlined, 
-    PlusOutlined, MessageOutlined, DeleteOutlined 
+    PlusOutlined, MessageOutlined, DeleteOutlined, SearchOutlined, BookOutlined
 } from '@ant-design/icons';
 import { App, Flex } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import useAppStore from '@/store/useAppStore';
-import { createChatHistory, getChatHistories, getChatMessages } from '@/api/ai';
+import { createChatHistory, getChatHistories, getChatMessages, saveMessageToKnowledge } from '@/api/ai';
 import { executePipeline } from '@/api/pipeline';
 
 const { Text } = Typography;
 
 interface Message {
+    id?: number;
     role: 'user' | 'assistant';
     content: string;
+    is_exported?: boolean;
 }
 
 type PersonalityKey = 'professional' | 'concise' | 'humorous';
@@ -24,6 +27,7 @@ const AIChatbot: React.FC = () => {
     const { token } = theme.useToken();
     const { t } = useTranslation();
     const { message, modal } = App.useApp();
+    const queryClient = useQueryClient();
     
     // --- UI 状态 ---
     const [visible, setVisible] = useState(false);
@@ -32,9 +36,12 @@ const AIChatbot: React.FC = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(false);
     const [historyLoading, setHistoryLoading] = useState(false);
+    const [aiStatus, setAiStatus] = useState<'idle' | 'analyzing' | 'success' | 'error' | 'timeout'>('idle');
     
     // --- 数据状态 ---
     const [historyList, setHistoryList] = useState<any[]>([]);
+    const [historyTab, setHistoryTab] = useState<'chat' | 'diagnose'>('chat');
+    const [historySearch, setHistorySearch] = useState('');
     const [historyId, setHistoryId] = useState<number | null>(null);
     const [suggestedPipelineId, setSuggestedPipelineId] = useState<number | null>(null);
     const [personality, setPersonality] = useState<PersonalityKey>(
@@ -86,16 +93,27 @@ const AIChatbot: React.FC = () => {
     useEffect(() => {
         if (aiDiagnosisConfig) {
             setVisible(true);
-            handleDiagnose(aiDiagnosisConfig.target_type, aiDiagnosisConfig.target_id);
+            setHistoryVisible(false); // 强制关闭历史列表，进入对话视图
+            if (aiDiagnosisConfig.history_id) {
+                // 如果已经诊断过，直接加载历史
+                loadMessages(aiDiagnosisConfig.history_id);
+            } else {
+                // 否则开始新的诊断
+                handleDiagnose(aiDiagnosisConfig.target_type, aiDiagnosisConfig.target_id, aiDiagnosisConfig.target_name);
+            }
             setAiDiagnosis(null);
         }
     }, [aiDiagnosisConfig]);
 
     // 加载历史列表
-    const loadHistoryList = async () => {
+    const loadHistoryList = async (tab?: 'chat' | 'diagnose', search?: string) => {
         setHistoryLoading(true);
         try {
-            const res = await getChatHistories({ size: 50 });
+            const res = await getChatHistories({ 
+                history_type: tab || historyTab,
+                search: search !== undefined ? search : historySearch,
+                size: 100 
+            });
             setHistoryList(res.data || []);
         } catch (err) {
             console.error('Failed to load histories', err);
@@ -111,19 +129,38 @@ const AIChatbot: React.FC = () => {
         setMessages([]);
         
         // 查找并恢复当时的 AI 性格
-        const historyItem = historyList.find(h => h.id === hid);
-        if (historyItem && historyItem.personality) {
-            setPersonality(historyItem.personality as PersonalityKey);
+        if (historyList.length > 0) {
+            const historyItem = historyList.find(h => h.id === hid);
+            if (historyItem && historyItem.personality) {
+                setPersonality(historyItem.personality as PersonalityKey);
+            }
         }
 
         try {
             const res = await getChatMessages(hid);
-            setMessages(res.map((m: any) => ({ role: m.role, content: m.content })));
+            setMessages(res.map((m: any) => ({ 
+                id: m.id, 
+                role: m.role, 
+                content: m.content,
+                is_exported: m.is_exported
+            })));
             setHistoryVisible(false);
         } catch (err) {
             message.error('加载历史对话失败');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSaveKnowledge = async (msgId?: number) => {
+        if (!historyId || !msgId) return;
+        try {
+            await saveMessageToKnowledge(historyId, msgId);
+            message.success('已存入知识库');
+            // 本地更新状态，让按钮立即变化
+            setMessages(prev => prev.map(m => m.id === msgId ? { ...m, is_exported: true } : m));
+        } catch (err) {
+            message.error('保存失败');
         }
     };
 
@@ -133,21 +170,57 @@ const AIChatbot: React.FC = () => {
         setHistoryVisible(false);
     };
 
-    const handleDiagnose = async (type: 'pipeline' | 'task', id: number | string) => {
+    const handleDiagnose = async (type: 'pipeline' | 'task', id: number | string, targetName?: string) => {
         const typeText = t(`ai.${type}`);
-        setMessages([{ role: 'user', content: t('ai.diagnosing', { type: typeText, id }) }]);
+        const displayTitle = targetName ? `${typeText}: ${targetName}` : `${typeText} #${id}`;
+        
+        // 修正：将名称信息带入首条提示消息
+        const initialContent = t('ai.diagnosing', { 
+            type: targetName ? `${typeText}: ${targetName}` : typeText, 
+            id 
+        });
+        setMessages([{ role: 'user', content: initialContent }]);
+        
         setLoading(true);
+        setAiStatus('analyzing');
         setSuggestedPipelineId(null);
         
+        // 超时检测：如果 60 秒还没返回，标记为超时
+        const timeoutTimer = setTimeout(() => {
+            setAiStatus('timeout');
+        }, 60000);
+
         try {
+            // 首先创建一个专门用于记录诊断的历史会话
+            const sid = `diagnose_${type}_${id}_${Date.now()}`;
+            const historyRes = await createChatHistory({
+                user_id: currentUser || 'guest',
+                session_id: sid,
+                title: `故障诊断: ${displayTitle}`,
+                personality: personality,
+                history_type: 'diagnose'
+            });
+            const currentHid = historyRes.id;
+            setHistoryId(currentHid);
+
             setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
             const response = await fetch('/api/v1/ai/chat-histories/diagnose/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${appToken}` },
-                body: JSON.stringify({ target_type: type, target_id: id, personality })
+                body: JSON.stringify({ 
+                    target_type: type, 
+                    target_id: id, 
+                    personality,
+                    history_id: currentHid 
+                })
             });
 
-            if (!response.body) throw new Error('No body');
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Server responded with error');
+            }
+
+            if (!response.body) throw new Error('No response body');
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let assistantReply = '';
@@ -156,7 +229,19 @@ const AIChatbot: React.FC = () => {
                 const { done, value } = await reader.read();
                 if (done) break;
                 const chunk = decoder.decode(value);
-                if (chunk.includes('__SUGGESTION__:')) {
+                
+                if (chunk.includes('__MESSAGE_ID__:')) {
+                    const parts = chunk.split('__MESSAGE_ID__:');
+                    assistantReply += parts[0].trim();
+                    const msgId = parseInt(parts[1]);
+                    if (!isNaN(msgId)) {
+                        setMessages(prev => {
+                            const newMessages = [...prev];
+                            newMessages[newMessages.length - 1].id = msgId;
+                            return newMessages;
+                        });
+                    }
+                } else if (chunk.includes('__SUGGESTION__:')) {
                     const parts = chunk.split('\n');
                     for (const part of parts) {
                         if (part.startsWith('__SUGGESTION__:')) {
@@ -174,7 +259,21 @@ const AIChatbot: React.FC = () => {
                     return newMessages;
                 });
             }
-        } catch (err) { message.error(t('ai.diagnosisError')); } finally { setLoading(false); }
+            clearTimeout(timeoutTimer);
+            setAiStatus('success');
+
+            // 诊断成功后，触发相关数据的刷新，让按钮即时更新
+            if (type === 'pipeline') {
+                queryClient.invalidateQueries({ queryKey: ['pipeline_run', String(id)] });
+            }
+
+            // 3秒后恢复正常状态
+            setTimeout(() => setAiStatus('idle'), 3000);
+        } catch (err) { 
+            message.error(t('ai.diagnosisError')); 
+            setAiStatus('error');
+            clearTimeout(timeoutTimer);
+        } finally { setLoading(false); }
     };
 
     const handleSend = async () => {
@@ -183,6 +282,7 @@ const AIChatbot: React.FC = () => {
         setInput('');
         setMessages(prev => [...prev, { role: 'user', content: userQuestion }]);
         setLoading(true);
+        setAiStatus('analyzing');
 
         try {
             let currentHid = historyId;
@@ -192,15 +292,19 @@ const AIChatbot: React.FC = () => {
                     user_id: currentUser || 'guest',
                     session_id: sid,
                     title: userQuestion.slice(0, 20),
-                    personality: personality
+                    personality: personality,
+                    history_type: 'chat'
                 });
                 currentHid = res.id;
                 setHistoryId(res.id);
             }
             await streamResponse(currentHid, userQuestion);
+            setAiStatus('success');
+            setTimeout(() => setAiStatus('idle'), 3000);
         } catch (err) {
             message.error(t('ai.responseError'));
             setLoading(false);
+            setAiStatus('error');
         }
     };
 
@@ -220,7 +324,23 @@ const AIChatbot: React.FC = () => {
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            assistantReply += decoder.decode(value);
+            const chunk = decoder.decode(value);
+            
+            if (chunk.includes('__MESSAGE_ID__:')) {
+                const parts = chunk.split('__MESSAGE_ID__:');
+                assistantReply += parts[0].trim();
+                const msgId = parseInt(parts[1]);
+                if (!isNaN(msgId)) {
+                    setMessages(prev => {
+                        const newMessages = [...prev];
+                        newMessages[newMessages.length - 1].id = msgId;
+                        return newMessages;
+                    });
+                }
+            } else {
+                assistantReply += chunk;
+            }
+
             setMessages(prev => {
                 const newMessages = [...prev];
                 newMessages[newMessages.length - 1].content = assistantReply;
@@ -239,8 +359,38 @@ const AIChatbot: React.FC = () => {
                         70% { box-shadow: 0 0 0 12px ${token.colorPrimary}00; }
                         100% { box-shadow: 0 0 0 0 ${token.colorPrimary}00; }
                     }
+                    @keyframes ai-glow-analyzing {
+                        0% { box-shadow: 0 0 0 0 #faad1480; }
+                        50% { box-shadow: 0 0 0 15px #faad1400; }
+                        100% { box-shadow: 0 0 0 0 #faad1400; }
+                    }
                     .ai-float-button-breathe { animation: ai-glow-breathe 2s infinite; }
+                    .ai-float-button-analyzing { animation: ai-glow-analyzing 1s infinite; }
                     .ai-chat-messages::-webkit-scrollbar { width: 4px; }
+                    
+                    /* AI 打字中跳动动画 */
+                    .ai-typing {
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                        height: 20px;
+                    }
+                    .ai-typing-dot {
+                        width: 4px;
+                        height: 4px;
+                        background-color: ${token.colorPrimary};
+                        border-radius: 50%;
+                        opacity: 0.4;
+                        animation: ai-typing-bounce 1.4s infinite ease-in-out both;
+                    }
+                    .ai-typing-dot:nth-child(1) { animation-delay: -0.32s; }
+                    .ai-typing-dot:nth-child(2) { animation-delay: -0.16s; }
+                    
+                    @keyframes ai-typing-bounce {
+                        0%, 80%, 100% { transform: scale(0); }
+                        40% { transform: scale(1.0); opacity: 1; }
+                    }
+
                     .ai-chat-messages::-webkit-scrollbar-thumb { background: ${token.colorTextQuaternary}; border-radius: 10px; }
                     .ai-chat-messages::-webkit-scrollbar-track { background: transparent; }
                     .ai-assistant-bubble {
@@ -255,13 +405,34 @@ const AIChatbot: React.FC = () => {
             </style>
             <FloatButton
                 icon={<RobotOutlined />}
-                type="primary"
+                type={aiStatus === 'analyzing' ? 'default' : 'primary'}
                 onClick={() => {
                     setVisible(!visible);
                     if (!visible && messages.length === 0) startNewChat();
                 }}
-                className="fixed right-6 bottom-[75vh] transition-transform hover:scale-110 shadow-lg ai-float-button-breathe"
-                badge={{ dot: true, color: token.colorSuccess }}
+                className={`fixed right-6 bottom-[75vh] transition-transform hover:scale-110 shadow-lg ${
+                    aiStatus === 'analyzing' ? 'ai-float-button-analyzing' : 'ai-float-button-breathe'
+                }`}
+                style={{ 
+                    backgroundColor: aiStatus === 'analyzing' ? '#fffbe6' : undefined,
+                    borderColor: aiStatus === 'analyzing' ? '#ffe58f' : undefined 
+                }}
+                badge={{ 
+                    dot: aiStatus === 'idle',
+                    text: aiStatus !== 'idle' ? {
+                        'analyzing': '分析中...',
+                        'success': '完成',
+                        'error': '错误',
+                        'timeout': '超时'
+                    }[aiStatus] : undefined,
+                    color: {
+                        'idle': token.colorSuccess,
+                        'analyzing': '#faad14',
+                        'success': '#52c41a',
+                        'error': '#ff4d4f',
+                        'timeout': '#fa8c16'
+                    }[aiStatus]
+                }}
             />
 
             {visible && (
@@ -327,15 +498,42 @@ const AIChatbot: React.FC = () => {
                         {/* 历史对话抽屉 (内部模拟) */}
                         {historyVisible && (
                             <div className="absolute inset-0 z-50 animate-in slide-in-from-left duration-300 flex flex-col" style={{ backgroundColor: token.colorBgContainer }}>
-                                <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: token.colorBorderSecondary }}>
-                                    <Text strong style={{ color: token.colorText }}><HistoryOutlined /> 历史对话</Text>
-                                    <Button type="text" icon={<PlusOutlined />} onClick={startNewChat} style={{ color: token.colorPrimary }}>新对话</Button>
+                                <div className="px-4 pt-4 pb-2 border-b" style={{ borderColor: token.colorBorderSecondary }}>
+                                    <Flex justify="space-between" align="center" className="mb-3">
+                                        <Text strong style={{ color: token.colorText }}><HistoryOutlined /> 历史记录</Text>
+                                        <Button type="primary" ghost size="small" icon={<PlusOutlined />} onClick={startNewChat}>新对话</Button>
+                                    </Flex>
+                                    <Input 
+                                        placeholder="搜索历史标题..." 
+                                        prefix={<SearchOutlined style={{ color: token.colorTextQuaternary }} />}
+                                        value={historySearch}
+                                        onChange={e => {
+                                            setHistorySearch(e.target.value);
+                                            loadHistoryList(historyTab, e.target.value);
+                                        }}
+                                        allowClear
+                                        size="small"
+                                        className="mb-2"
+                                    />
+                                    <Tabs 
+                                        size="small"
+                                        activeKey={historyTab}
+                                        onChange={(key) => {
+                                            const tab = key as 'chat' | 'diagnose';
+                                            setHistoryTab(tab);
+                                            loadHistoryList(tab);
+                                        }}
+                                        items={[
+                                            { key: 'chat', label: '智能对话' },
+                                            { key: 'diagnose', label: '故障诊断' },
+                                        ]}
+                                    />
                                 </div>
                                 <div className="flex-1 overflow-y-auto ai-chat-messages">
                                     {historyLoading ? (
                                         <div className="p-5"><Skeleton active /></div>
                                     ) : historyList.length === 0 ? (
-                                        <Empty className="mt-20" description="暂无历史对话" />
+                                        <Empty className="mt-20" description={historySearch ? "未找到相关历史" : "暂无历史记录"} />
                                     ) : (
                                         <div className="flex flex-col">
                                             {historyList.map((item: any) => (
@@ -348,7 +546,7 @@ const AIChatbot: React.FC = () => {
                                                     }}
                                                     onClick={() => loadMessages(item.id)}
                                                 >
-                                                    <MessageOutlined className="mt-1" style={{ color: token.colorPrimary }} />
+                                                    {item.history_type === 'diagnose' ? <ThunderboltOutlined className="mt-1" style={{ color: token.colorWarning }} /> : <MessageOutlined className="mt-1" style={{ color: token.colorPrimary }} />}
                                                     <div className="flex-1 min-w-0">
                                                         <div className="text-xs font-medium truncate" style={{ color: token.colorText }}>
                                                             {item.title || '无标题对话'}
@@ -363,7 +561,7 @@ const AIChatbot: React.FC = () => {
                                     )}
                                 </div>
                                 <div className="p-4 border-t" style={{ borderColor: token.colorBorderSecondary }}>
-                                    <Button block onClick={() => setHistoryVisible(false)}>返回对话</Button>
+                                    <Button block onClick={() => setHistoryVisible(false)}>返回当前对话</Button>
                                 </div>
                             </div>
                         )}
@@ -379,10 +577,32 @@ const AIChatbot: React.FC = () => {
                             {messages.map((msg, index) => (
                                 <div key={index} className={`flex gap-3 max-w-[90%] items-start ${msg.role === 'user' ? 'self-end flex-row-reverse' : 'self-start'}`}>
                                     <Avatar size="small" className="flex-shrink-0" style={{ backgroundColor: msg.role === 'assistant' ? token.colorPrimary : token.colorSuccess }} icon={msg.role === 'assistant' ? <RobotOutlined /> : <UserOutlined />} />
-                                    <div className={`px-3.5 py-2.5 rounded-2xl text-[13.5px] leading-relaxed whitespace-pre-wrap break-words ${msg.role === 'assistant' ? 'ai-assistant-bubble' : 'shadow-sm'}`} style={{ backgroundColor: msg.role === 'user' ? token.colorPrimary : undefined, color: msg.role === 'user' ? '#fff' : token.colorText, borderRadius: msg.role === 'user' ? '12px 2px 12px 12px' : '2px 12px 12px 12px' }}>
-                                        {msg.content}
-                                        {loading && index === messages.length - 1 && msg.role === 'assistant' && !msg.content && (
-                                            <span className="inline-block w-1.5 h-4 animate-pulse align-middle ml-1" style={{ backgroundColor: token.colorPrimary }} />
+                                    <div className="flex flex-col gap-1">
+                                        <div className={`px-3.5 py-2.5 rounded-2xl text-[13.5px] leading-relaxed whitespace-pre-wrap break-words ${msg.role === 'assistant' ? 'ai-assistant-bubble' : 'shadow-sm'}`} style={{ backgroundColor: msg.role === 'user' ? token.colorPrimary : undefined, color: msg.role === 'user' ? '#fff' : token.colorText, borderRadius: msg.role === 'user' ? '12px 2px 12px 12px' : '2px 12px 12px 12px' }}>
+                                            {msg.content}
+                                            {loading && index === messages.length - 1 && msg.role === 'assistant' && !msg.content && (
+                                                <div className="ai-typing">
+                                                    <div className="ai-typing-dot" />
+                                                    <div className="ai-typing-dot" />
+                                                    <div className="ai-typing-dot" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        {msg.role === 'assistant' && msg.id && (
+                                            <div className="flex justify-start">
+                                                <Tooltip title={msg.is_exported ? "已在知识库中" : "存入知识库"}>
+                                                    <Button 
+                                                        type="text" 
+                                                        size="small" 
+                                                        icon={msg.is_exported ? <BookOutlined style={{ color: token.colorSuccess }} /> : <BookOutlined />} 
+                                                        className={`text-[10px] p-0 h-auto flex items-center gap-1 ${msg.is_exported ? 'text-green-500 opacity-100' : 'opacity-40 hover:opacity-100'}`}
+                                                        onClick={() => !msg.is_exported && handleSaveKnowledge(msg.id)}
+                                                        disabled={msg.is_exported}
+                                                    >
+                                                        {msg.is_exported ? '已存入知识库' : '存入知识库'}
+                                                    </Button>
+                                                </Tooltip>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
