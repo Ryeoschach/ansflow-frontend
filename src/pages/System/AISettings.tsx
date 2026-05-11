@@ -7,6 +7,7 @@ import {
   PlusOutlined, EditOutlined, DeleteOutlined, 
   ApiOutlined, RocketOutlined, SettingOutlined 
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useAppStore from '../../store/useAppStore';
 import { 
@@ -17,10 +18,12 @@ import {
 } from '../../api/ai';
 
 const { Title, Text } = Typography;
+
 const AISettings: React.FC = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('config');
-  
+
   // -- Providers State --
   const [isProviderModalOpen, setIsProviderModalOpen] = useState(false);
   const [editingProvider, setEditingProvider] = useState<AIProvider | null>(null);
@@ -68,7 +71,7 @@ const AISettings: React.FC = () => {
       ? updateAIProvider(editingProvider.id, values) 
       : createAIProvider(values),
     onSuccess: () => {
-      message.success('供应商已保存');
+      message.success(t('ai.settings.saveSuccess'));
       setIsProviderModalOpen(false);
       queryClient.invalidateQueries({ queryKey: ['aiProviders'] });
     }
@@ -77,17 +80,17 @@ const AISettings: React.FC = () => {
   const syncModelsMutation = useMutation({
     mutationFn: (id: number) => syncAIProviderModels(id),
     onSuccess: (res) => {
-      message.success(res.message || '模型同步成功');
+      message.success(res.message || t('ai.settings.syncSuccess'));
       queryClient.invalidateQueries({ queryKey: ['aiProviders'] });
       queryClient.invalidateQueries({ queryKey: ['aiModels'] });
     },
-    onError: (err: any) => message.error(err.response?.data?.error || '同步失败')
+    onError: (err: any) => message.error(err.response?.data?.error || t('ai.settings.syncFailed'))
   });
 
   const configMutation = useMutation({
     mutationFn: (values: any) => updateAIConfig(configData!.id, values),
     onSuccess: () => {
-      message.success('配置已更新');
+      message.success(t('ai.settings.saveSuccess'));
       queryClient.invalidateQueries({ queryKey: ['aiConfig'] });
     }
   });
@@ -225,8 +228,8 @@ const AISettings: React.FC = () => {
     return (
       <div className="max-w-2xl space-y-6">
         <Alert 
-          message="配置建议" 
-          description="RAG 架构下，Embedding 模型的变更会导致之前的知识库索引失效。切换后请务必重新导入知识。" 
+          message={t('ai.settings.suggestion')} 
+          description={t('ai.settings.ragWarning')} 
           type="info" 
           showIcon 
         />
@@ -235,7 +238,7 @@ const AISettings: React.FC = () => {
           layout="vertical" 
           onFinish={configMutation.mutate}
         >
-          <Form.Item label="默认分析模型 (LLM)" name="default_llm" tooltip="系统全局默认使用的聊天和诊断模型">
+          <Form.Item label={t('ai.settings.defaultLlm')} name="default_llm" tooltip={t('ai.settings.defaultLlmTip')}>
             <Select placeholder="选择默认 LLM">
               {llmModels.map(m => (
                 <Select.Option key={m.id} value={m.id}>{m.display_name} ({m.provider_name})</Select.Option>
@@ -243,7 +246,7 @@ const AISettings: React.FC = () => {
             </Select>
           </Form.Item>
           
-          <Form.Item label="默认向量模型 (Embedding)" name="default_embedding" tooltip="系统全局默认使用的知识库向量化模型">
+          <Form.Item label={t('ai.settings.defaultEmbedding')} name="default_embedding" tooltip={t('ai.settings.defaultEmbeddingTip')}>
             <Select placeholder="选择默认 Embedding">
               {embModels.map(m => (
                 <Select.Option key={m.id} value={m.id}>{m.display_name} ({m.provider_name})</Select.Option>
@@ -253,7 +256,7 @@ const AISettings: React.FC = () => {
 
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={configMutation.isPending}>
-              保存全局配置
+              {t('ai.settings.saveConfig')}
             </Button>
           </Form.Item>
         </Form>
@@ -263,17 +266,17 @@ const AISettings: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <Title level={4}>AI 模型配置中心</Title>
+      <Title level={4}>{t('ai.settings.pageTitle')}</Title>
       
       <Card>
         <Tabs activeKey={activeTab} onChange={setActiveTab}>
-          <Tabs.TabPane tab={<span><SettingOutlined />全局配置</span>} key="config">
+          <Tabs.TabPane tab={<span><SettingOutlined />{t('ai.settings.globalConfig')}</span>} key="config">
             {renderConfigTab()}
           </Tabs.TabPane>
-          <Tabs.TabPane tab={<span><ApiOutlined />供应商管理</span>} key="providers">
+          <Tabs.TabPane tab={<span><ApiOutlined />{t('ai.settings.providers')}</span>} key="providers">
             {renderProviderTab()}
           </Tabs.TabPane>
-          <Tabs.TabPane tab={<span><RocketOutlined />模型管理</span>} key="models">
+          <Tabs.TabPane tab={<span><RocketOutlined />{t('ai.settings.models')}</span>} key="models">
             {renderModelTab()}
           </Tabs.TabPane>
         </Tabs>
@@ -281,17 +284,17 @@ const AISettings: React.FC = () => {
 
       {/* Provider Modal */}
       <Modal
-        title={editingProvider ? "编辑供应商" : "添加供应商"}
+        title={editingProvider ? t('ai.settings.editProvider') : t('ai.settings.addProvider')}
         open={isProviderModalOpen}
         onCancel={() => setIsProviderModalOpen(false)}
         onOk={() => providerForm.submit()}
         confirmLoading={providerMutation.isPending}
       >
         <Form form={providerForm} layout="vertical" onFinish={providerMutation.mutate}>
-          <Form.Item name="name" label="供应商名称" rules={[{ required: true }]}>
+          <Form.Item name="name" label={t('ai.settings.providerName')} rules={[{ required: true }]}>
             <Input placeholder="如 DeepSeek 官方" />
           </Form.Item>
-          <Form.Item name="provider_type" label="供应商类型" rules={[{ required: true }]}>
+          <Form.Item name="provider_type" label={t('ai.settings.providerType')} rules={[{ required: true }]}>
             <Select>
               <Select.Option value="openai">OpenAI</Select.Option>
               <Select.Option value="deepseek">DeepSeek</Select.Option>
@@ -300,21 +303,21 @@ const AISettings: React.FC = () => {
               <Select.Option value="other">Other (OpenAI Compatible)</Select.Option>
             </Select>
           </Form.Item>
-          <Form.Item name="base_url" label="API 地址" rules={[{ required: true }]}>
+          <Form.Item name="base_url" label={t('ai.settings.apiUrl')} rules={[{ required: true }]}>
             <Input placeholder="https://api.deepseek.com" />
           </Form.Item>
-          <Form.Item name="api_key" label="API Key">
+          <Form.Item name="api_key" label={t('ai.settings.apiKey')}>
             <Input.Password placeholder="输入 API Key" />
           </Form.Item>
-          <Form.Item name="is_active" valuePropName="checked">
-            <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+          <Form.Item name="is_active" label={t('ai.settings.isActive')} valuePropName="checked">
+            <Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} />
           </Form.Item>
         </Form>
       </Modal>
 
       {/* Model Modal */}
       <Modal
-        title={editingModel ? "编辑模型" : "添加模型"}
+        title={editingModel ? t('ai.settings.editModel') : t('ai.settings.addModel')}
         open={isModelModalOpen}
         onCancel={() => setIsModelModalOpen(false)}
         onOk={() => modelForm.submit()}
@@ -324,32 +327,32 @@ const AISettings: React.FC = () => {
             ? updateAIModel(editingModel.id, values) 
             : createAIModel(values);
           m.then(() => {
-            message.success('模型已保存');
+            message.success(t('ai.settings.saveSuccess'));
             setIsModelModalOpen(false);
             queryClient.invalidateQueries({ queryKey: ['aiModels'] });
           });
         }}>
-          <Form.Item name="provider" label="所属供应商" rules={[{ required: true }]}>
+          <Form.Item name="provider" label={t('ai.settings.belongProvider')} rules={[{ required: true }]}>
             <Select placeholder="选择供应商">
               {(Array.isArray(providersData) ? providersData : (providersData as any)?.data || (providersData as any)?.results || []).map((p: any) => (
                 <Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>
               ))}
             </Select>
           </Form.Item>
-          <Form.Item name="display_name" label="显示名称" rules={[{ required: true }]}>
+          <Form.Item name="display_name" label={t('ai.settings.displayName')} rules={[{ required: true }]}>
             <Input placeholder="如 DeepSeek Chat V3" />
           </Form.Item>
-          <Form.Item name="name" label="模型标识 (Model ID)" rules={[{ required: true }]}>
+          <Form.Item name="name" label={t('ai.settings.modelId')} rules={[{ required: true }]}>
             <Input placeholder="如 deepseek-chat" />
           </Form.Item>
-          <Form.Item name="model_type" label="模型类型" rules={[{ required: true }]}>
+          <Form.Item name="model_type" label={t('ai.settings.modelType')} rules={[{ required: true }]}>
             <Select>
-              <Select.Option value="llm">分析模型 (LLM)</Select.Option>
-              <Select.Option value="embedding">向量模型 (Embedding)</Select.Option>
+              <Select.Option value="llm">{t('ai.settings.llm')}</Select.Option>
+              <Select.Option value="embedding">{t('ai.settings.embedding')}</Select.Option>
             </Select>
           </Form.Item>
-          <Form.Item name="is_active" valuePropName="checked">
-            <Switch checkedChildren="启用" unCheckedChildren="禁用" />
+          <Form.Item name="is_active" label={t('ai.settings.isActive')} valuePropName="checked">
+            <Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} />
           </Form.Item>
         </Form>
       </Modal>
