@@ -504,7 +504,7 @@ const DesignerCore = () => {
             />
             <div className="flex flex-col">
               <Title level={5} className="m-0!">{pipelineInfo?.name || t('pipelineDesigner.newPipelineEditor')}</Title>
-              {pipelineId && <Text type="secondary" className="text-[10px] uppercase opacity-60">Blueprint ID: {pipelineId}</Text>}
+              {pipelineId && <Text type="secondary" className="text-[10px] uppercase opacity-60">ID: {pipelineId}</Text>}
             </div>
           </Space>
           <Space>
@@ -536,9 +536,17 @@ const DesignerCore = () => {
           }}
         >
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-solid border-purple-100 dark:border-purple-900/30">
-              <RobotOutlined className="text-purple-500" />
-              <Text strong className="text-xs text-purple-600 uppercase tracking-wider">AI Copilot</Text>
+            <div 
+              className="flex items-center gap-2 px-3 py-1 rounded-lg shadow-sm border border-solid transition-colors"
+              style={{ 
+                backgroundColor: token.colorBgContainer,
+                borderColor: `${token.colorPrimary}20`,
+              }}
+            >
+              <RobotOutlined style={{ color: token.colorPrimary }} />
+              <Text strong className="text-xs uppercase tracking-wider" style={{ color: token.colorPrimary }}>
+                {t('aiChatbot.title')}
+              </Text>
             </div>
             
             <Select
@@ -566,9 +574,14 @@ const DesignerCore = () => {
             />
 
             <Button 
-              icon={<RobotOutlined />} 
+              icon={<RobotOutlined style={{ color: token.colorPrimary }} />} 
               onClick={handleExplain}
-              className="border-purple-300 text-purple-600 hover:text-purple-700 hover:border-purple-400 bg-white/50"
+              style={{ 
+                borderColor: `${token.colorPrimary}40`,
+                color: token.colorPrimary,
+                backgroundColor: token.colorBgContainer
+              }}
+              className="hover:opacity-80 transition-opacity"
             >
               {t('pipelineDesigner.aiSimulation')}
             </Button>
@@ -682,13 +695,16 @@ const DesignerCore = () => {
         extra={
             <Space>
                 {hasPermission('pipeline:template:edit') && (
-                    <Button 
-                        icon={<RobotOutlined />} 
-                        onClick={handleNodeAI} 
+                    <Button
+                        icon={<RobotOutlined style={{ color: token.colorPrimary }} />}
+                        onClick={handleNodeAI}
                         loading={isNodeAILoading}
-                        className="border-purple-300 text-purple-600 hover:text-purple-700 hover:border-purple-400"
+                        style={{ 
+                            borderColor: `${token.colorPrimary}40`,
+                            color: token.colorPrimary
+                        }}
                     >
-                        AI 助手
+                        {t('aiChatbot.title')}
                     </Button>
                 )}
                 {hasPermission('pipeline:template:edit') && (

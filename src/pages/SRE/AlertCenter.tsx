@@ -192,7 +192,7 @@ const AlertCenter: React.FC = () => {
                     return (
                         <Tooltip title={`运行 ID: #${record.latest_run_id}`}>
                             <Space direction="vertical" size={2} className="w-24">
-                                <Badge status="warning" text="自愈中..." />
+                                <Badge status="warning" text={t('alertCenter.healingInProgress')} />
                                 <Progress percent={record.healing_status === 'success' ? 100 : 30} size={[80, 4]} showInfo={false} status="active" />
                             </Space>
                         </Tooltip>
@@ -440,7 +440,7 @@ const AlertCenter: React.FC = () => {
                                             }}
                                             className="text-xs"
                                         >
-                                            深度诊断与编排
+                                            {t('alertCenter.deepDiagnosis')}
                                         </Button>
                                         <Button 
                                             type="text" 
@@ -451,7 +451,7 @@ const AlertCenter: React.FC = () => {
                                             onClick={() => exportAlertMutation.mutate(selectedAlert.id)}
                                             className="text-xs"
                                         >
-                                            {selectedAlert.is_exported ? '已存入知识库' : '存入知识库'}
+                                            {selectedAlert.is_exported ? t('alertCenter.alreadyExported') : t('alertCenter.exportToKnowledge')}
                                         </Button>
                                     </div>
                                 </>

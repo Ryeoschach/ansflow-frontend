@@ -115,23 +115,32 @@ const AISettings: React.FC = () => {
     const providers = Array.isArray(rawData) ? rawData : (rawData?.data || rawData?.results || []);
 
     const columns = [
-// ... (保持 columns 定义不变)
-      { title: '名称', dataIndex: 'name', key: 'name' },
+      { title: t('ai.settings.providerName'), dataIndex: 'name', key: 'name' },
       { 
-        title: '类型', 
+        title: t('ai.settings.providerType'), 
         dataIndex: 'provider_type', 
         key: 'provider_type',
-        render: (t: string) => <Tag color="blue">{t.toUpperCase()}</Tag>
+        render: (type: string) => {
+          const colorMap: Record<string, string> = {
+            openai: 'green',
+            deepseek: 'cyan',
+            ollama: 'blue',
+            local: 'purple',
+            anthropic: 'volcano',
+            zhipu: 'orange'
+          };
+          return <Tag color={colorMap[type] || 'default'}>{type.toUpperCase()}</Tag>;
+        }
       },
-      { title: 'API 地址', dataIndex: 'base_url', key: 'base_url', ellipsis: true },
+      { title: t('ai.settings.apiUrl'), dataIndex: 'base_url', key: 'base_url', ellipsis: true },
       { 
-        title: '状态', 
+        title: t('common.status'), 
         dataIndex: 'is_active', 
         key: 'is_active',
-        render: (active: boolean) => <Switch checked={active} disabled />
+        render: (active: boolean) => <Switch checked={active} size="small" disabled />
       },
       {
-        title: '操作',
+        title: t('common.action'),
         key: 'action',
         render: (_: any, record: AIProvider) => (
           <Space>
@@ -141,12 +150,12 @@ const AISettings: React.FC = () => {
               loading={syncModelsMutation.isPending && syncModelsMutation.variables === record.id}
               onClick={() => syncModelsMutation.mutate(record.id)}
             >
-              同步模型
+              {t('ai.settings.syncModels')}
             </Button>
             <Button size="small" icon={<EditOutlined />} onClick={() => handleEditProvider(record)} />
             <Button size="small" danger icon={<DeleteOutlined />} onClick={() => {
               Modal.confirm({
-                title: '确认删除?',
+                title: t('ai.settings.confirmDelete'),
                 onOk: () => deleteAIProvider(record.id).then(() => queryClient.invalidateQueries({ queryKey: ['aiProviders'] }))
               });
             }} />
@@ -158,14 +167,15 @@ const AISettings: React.FC = () => {
     return (
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <Text type="secondary">配置 AI 模型供应商（如 OpenAI, DeepSeek, Ollama 等）</Text>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => handleEditProvider()}>添加供应商</Button>
+          <Text type="secondary">{t('ai.settings.providerTip')}</Text>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => handleEditProvider()}>{t('ai.settings.addProvider')}</Button>
         </div>
         <Table 
           dataSource={providers} 
           columns={columns} 
           rowKey="id" 
           loading={providersLoading}
+          pagination={{ size: 'small' }}
         />
       </div>
     );
@@ -176,25 +186,28 @@ const AISettings: React.FC = () => {
     const models = Array.isArray(rawData) ? rawData : (rawData?.data || rawData?.results || []);
 
     const columns = [
-// ... (保持 columns 不变)
-      { title: '显示名称', dataIndex: 'display_name', key: 'display_name' },
-      { title: '模型标识', dataIndex: 'name', key: 'name' },
-      { title: '供应商', dataIndex: 'provider_name', key: 'provider_name' },
+      { title: t('ai.settings.displayName'), dataIndex: 'display_name', key: 'display_name' },
+      { title: t('ai.settings.modelId'), dataIndex: 'name', key: 'name' },
+      { title: t('ai.settings.belongProvider'), dataIndex: 'provider_name', key: 'provider_name' },
       { 
-        title: '类型', 
+        title: t('ai.settings.modelType'), 
         dataIndex: 'model_type', 
         key: 'model_type',
-        render: (t: string) => <Tag color={t === 'llm' ? 'green' : 'orange'}>{t === 'llm' ? 'LLM' : 'Embedding'}</Tag>
+        render: (type: string) => (
+          <Tag color={type === 'llm' ? 'gold' : 'magenta'}>
+            {type === 'llm' ? t('ai.settings.llm') : t('ai.settings.embedding')}
+          </Tag>
+        )
       },
       {
-        title: '操作',
+        title: t('common.action'),
         key: 'action',
         render: (_: any, record: AIModel) => (
           <Space>
             <Button size="small" icon={<EditOutlined />} onClick={() => handleEditModel(record)} />
             <Button size="small" danger icon={<DeleteOutlined />} onClick={() => {
               Modal.confirm({
-                title: '确认删除?',
+                title: t('ai.settings.confirmDelete'),
                 onOk: () => deleteAIModel(record.id).then(() => queryClient.invalidateQueries({ queryKey: ['aiModels'] }))
               });
             }} />
@@ -206,14 +219,15 @@ const AISettings: React.FC = () => {
     return (
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <Text type="secondary">管理各供应商下的具体模型实例</Text>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => handleEditModel()}>添加模型</Button>
+          <Text type="secondary">{t('ai.settings.modelTip')}</Text>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => handleEditModel()}>{t('ai.settings.addModel')}</Button>
         </div>
         <Table 
           dataSource={models} 
           columns={columns} 
           rowKey="id" 
           loading={modelsLoading}
+          pagination={{ size: 'small' }}
         />
       </div>
     );
@@ -295,16 +309,36 @@ const AISettings: React.FC = () => {
             <Input placeholder="如 DeepSeek 官方" />
           </Form.Item>
           <Form.Item name="provider_type" label={t('ai.settings.providerType')} rules={[{ required: true }]}>
-            <Select>
+            <Select onChange={(val) => {
+              // 如果是本地模型，清空或设置默认提示的 URL
+              if (val === 'local') {
+                providerForm.setFieldValue('base_url', 'http://localhost');
+              }
+            }}>
               <Select.Option value="openai">OpenAI</Select.Option>
               <Select.Option value="deepseek">DeepSeek</Select.Option>
               <Select.Option value="anthropic">Anthropic</Select.Option>
               <Select.Option value="ollama">Ollama (Local)</Select.Option>
+              <Select.Option value="local">FastEmbed (Local)</Select.Option>
               <Select.Option value="other">Other (OpenAI Compatible)</Select.Option>
             </Select>
           </Form.Item>
-          <Form.Item name="base_url" label={t('ai.settings.apiUrl')} rules={[{ required: true }]}>
-            <Input placeholder="https://api.deepseek.com" />
+          <Form.Item 
+            noStyle
+            shouldUpdate={(prev, curr) => prev.provider_type !== curr.provider_type}
+          >
+            {({ getFieldValue }) => (
+              <Form.Item 
+                name="base_url" 
+                label={t('ai.settings.apiUrl')} 
+                rules={[{ required: getFieldValue('provider_type') !== 'local' }]}
+              >
+                <Input 
+                  placeholder={getFieldValue('provider_type') === 'local' ? "本地模式无需配置" : "https://api.deepseek.com"} 
+                  disabled={getFieldValue('provider_type') === 'local'}
+                />
+              </Form.Item>
+            )}
           </Form.Item>
           <Form.Item name="api_key" label={t('ai.settings.apiKey')}>
             <Input.Password placeholder="输入 API Key" />
