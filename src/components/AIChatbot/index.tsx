@@ -3,13 +3,17 @@ import { Button, Input, Card, Space, Avatar, FloatButton, Typography, theme, Dro
 import { 
     RobotOutlined, UserOutlined, SendOutlined, MinusOutlined, PlayCircleOutlined, 
     CoffeeOutlined, ThunderboltOutlined, UserSwitchOutlined, HistoryOutlined, 
-    PlusOutlined, MessageOutlined, DeleteOutlined, SearchOutlined, BookOutlined
+    PlusOutlined, MessageOutlined, DeleteOutlined, SearchOutlined, BookOutlined,
+    RocketOutlined
 } from '@ant-design/icons';
 import { App, Flex } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import useAppStore from '@/store/useAppStore';
-import { createChatHistory, getChatHistories, getChatMessages, saveMessageToKnowledge } from '@/api/ai';
+import { 
+    createChatHistory, getChatHistories, getChatMessages, 
+    saveMessageToKnowledge, getAIModels, getCurrentAIConfig, AIModel 
+} from '@/api/ai';
 import { executePipeline } from '@/api/pipeline';
 
 const { Text } = Typography;
@@ -47,6 +51,8 @@ const AIChatbot: React.FC = () => {
     const [personality, setPersonality] = useState<PersonalityKey>(
         (localStorage.getItem('ansflow-ai-personality') as PersonalityKey) || 'professional'
     );
+    const [llmModels, setLlmModels] = useState<AIModel[]>([]);
+    const [selectedLLMId, setSelectedLLMId] = useState<number | undefined>(undefined);
     
     const appToken = useAppStore(state => state.token);
     const currentUser = useAppStore(state => state.currentUser);
@@ -61,6 +67,19 @@ const AIChatbot: React.FC = () => {
     useEffect(() => {
         localStorage.setItem('ansflow-ai-personality', personality);
     }, [personality]);
+
+    // 加载可用模型和默认配置
+    useEffect(() => {
+        if (!useAppStore.getState().isInitializing && appToken) {
+            getAIModels({ model_type: 'llm' }).then(res => {
+                const models = Array.isArray(res) ? res : ((res as any).data || (res as any).results || []);
+                setLlmModels(models);
+            });
+            getCurrentAIConfig().then(config => {
+                if (config && config.default_llm) setSelectedLLMId(config.default_llm);
+            });
+        }
+    }, [appToken]);
 
     const personalityItems: MenuProps['items'] = [
         { key: 'professional', label: '技术专家', icon: <RobotOutlined /> },
@@ -205,14 +224,15 @@ const AIChatbot: React.FC = () => {
             setHistoryId(currentHid);
 
             setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-            const response = await fetch('/api/v1/ai/chat-histories/diagnose/', {
+            const response = await fetch(`/api/v1/ai/chat-histories/${currentHid}/diagnose/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${appToken}` },
                 body: JSON.stringify({ 
                     target_type: type, 
                     target_id: id, 
                     personality,
-                    history_id: currentHid 
+                    history_id: currentHid,
+                    llm_id: selectedLLMId
                 })
             });
 
@@ -314,7 +334,11 @@ const AIChatbot: React.FC = () => {
         const response = await fetch(`/api/v1/ai/chat-histories/${hid}/chat/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${appToken}` },
-            body: JSON.stringify({ question, personality })
+            body: JSON.stringify({ 
+                question, 
+                personality,
+                llm_id: selectedLLMId
+            })
         });
 
         if (!response.body) return;
@@ -480,6 +504,28 @@ const AIChatbot: React.FC = () => {
                                         style={{ color: token.colorPrimary, backgroundColor: token.colorPrimaryBg }}
                                     >
                                         {personalityItems.find(i => i?.key === personality)?.label as string}
+                                    </Tag>
+                                </Dropdown>
+                                
+                                <Dropdown 
+                                    menu={{ 
+                                        items: llmModels.map(m => ({
+                                            key: String(m.id),
+                                            label: m.display_name,
+                                            icon: <RocketOutlined />
+                                        })), 
+                                        selectable: true,
+                                        selectedKeys: [String(selectedLLMId)],
+                                        onClick: ({ key }) => setSelectedLLMId(Number(key)) 
+                                    }} 
+                                    trigger={['click']}
+                                >
+                                    <Tag 
+                                        icon={<RocketOutlined />} 
+                                        className="cursor-pointer hover:opacity-80 transition-opacity border-none text-[10px]" 
+                                        style={{ color: token.colorWarning, backgroundColor: '#fffbe6' }}
+                                    >
+                                        {llmModels.find(m => m.id === selectedLLMId)?.display_name || '选择模型'}
                                     </Tag>
                                 </Dropdown>
                             </Space>

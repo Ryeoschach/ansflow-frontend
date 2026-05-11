@@ -50,7 +50,7 @@ request.interceptors.response.use(
         const { config, response } = error;
         
         // 如果请求本身就是刷新 Token 请求且报错，直接清空状态并跳转登录
-        if (config.url === '/auth/refresh/' || config.url === '/api/v1/auth/refresh/') {
+        if (config?.url === '/auth/refresh/' || config?.url === '/api/v1/auth/refresh/') {
             isRefreshing = false;
             requestsQueue = [];
             useAppStore.getState().setToken(null);

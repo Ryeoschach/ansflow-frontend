@@ -26,18 +26,45 @@ export interface ChatMessage {
   history: number;
   role: 'user' | 'assistant' | 'system';
   content: string;
+  is_exported?: boolean;
   create_time: string;
 }
 
-// 获取所有知识库
+export interface AIProvider {
+  id: number;
+  name: string;
+  provider_type: string;
+  base_url: string;
+  api_key?: string;
+  is_active: boolean;
+  create_time: string;
+}
+
+export interface AIModel {
+  id: number;
+  provider: number;
+  provider_name: string;
+  name: string;
+  display_name: string;
+  model_type: 'llm' | 'embedding';
+  is_active: boolean;
+}
+
+export interface AIConfig {
+  id: number;
+  name: string;
+  default_llm: number | null;
+  default_embedding: number | null;
+}
+
+// 知识库
 export const getKnowledgeBases = (params?: Record<string, any>): Promise<PaginatedResponse<KnowledgeBase>> =>
   request.get('/ai/knowledge-bases/', { params }) as any;
 
-// 获取对话历史
+// 对话历史
 export const getChatHistories = (params?: Record<string, any>): Promise<PaginatedResponse<ChatHistory>> =>
   request.get('/ai/chat-histories/', { params }) as any;
 
-// 创建新的对话会话
 export const createChatHistory = (data: { 
   user_id: string; 
   session_id: string; 
@@ -47,18 +74,53 @@ export const createChatHistory = (data: {
 }): Promise<ChatHistory> =>
   request.post('/ai/chat-histories/', data) as any;
 
-// 获取对话详情
 export const getChatMessages = (historyId: number): Promise<ChatMessage[]> =>
   request.get(`/ai/chat-histories/${historyId}/messages/`) as any;
+
+// 供应商管理
+export const getAIProviders = (): Promise<PaginatedResponse<AIProvider>> =>
+  request.get('/ai/providers/') as any;
+
+export const createAIProvider = (data: Partial<AIProvider>): Promise<AIProvider> =>
+  request.post('/ai/providers/', data) as any;
+
+export const updateAIProvider = (id: number, data: Partial<AIProvider>): Promise<AIProvider> =>
+  request.patch(`/ai/providers/${id}/`, data) as any;
+
+export const deleteAIProvider = (id: number): Promise<void> =>
+  request.delete(`/ai/providers/${id}/`) as any;
+
+export const syncAIProviderModels = (id: number): Promise<any> =>
+  request.post(`/ai/providers/${id}/sync_models/`);
+
+// 模型管理
+export const getAIModels = (params?: { model_type?: string }): Promise<PaginatedResponse<AIModel>> =>
+  request.get('/ai/models/', { params }) as any;
+
+export const createAIModel = (data: Partial<AIModel>): Promise<AIModel> =>
+  request.post('/ai/models/', data) as any;
+
+export const updateAIModel = (id: number, data: Partial<AIModel>): Promise<AIModel> =>
+  request.patch(`/ai/models/${id}/`, data) as any;
+
+export const deleteAIModel = (id: number): Promise<void> =>
+  request.delete(`/ai/models/${id}/`) as any;
+
+// 配置管理
+export const getCurrentAIConfig = (): Promise<AIConfig> =>
+  request.get('/ai/configs/current/') as any;
+
+export const updateAIConfig = (id: number, data: Partial<AIConfig>): Promise<AIConfig> =>
+  request.patch(`/ai/configs/${id}/`, data) as any;
 
 // 将消息保存到知识库
 export const saveMessageToKnowledge = (historyId: number, messageId: number): Promise<any> =>
   request.post(`/ai/chat-histories/${historyId}/save-to-knowledge/`, { message_id: messageId });
 
 // AIGC 生成流水线
-export const generatePipeline = (prompt: string): Promise<any> =>
-  request.post('/ai/chat-histories/generate-pipeline/', { prompt }) as any;
+export const generatePipeline = (prompt: string, llmId?: number): Promise<any> =>
+  request.post('/ai/chat-histories/generate-pipeline/', { prompt, llm_id: llmId }) as any;
 
 // 诊断接口的 URL (主要用于 fetch 拼接)
-export const DIAGNOSE_URL = '/api/v1/ai/chat-histories/diagnose/';
+export const DIAGNOSE_URL = '/api/v1/ai/chat-histories/';
 export const CHAT_URL_PREFIX = '/api/v1/ai/chat-histories/';
