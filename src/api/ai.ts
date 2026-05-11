@@ -57,9 +57,35 @@ export interface AIConfig {
   default_embedding: number | null;
 }
 
+export interface KnowledgeDocument {
+  id: number;
+  kb: number;
+  title: string;
+  content: string;
+  source_type: 'manual' | 'file' | 'ai_export';
+  metadata: any;
+  create_time: string;
+}
+
 // 知识库
 export const getKnowledgeBases = (params?: Record<string, any>): Promise<PaginatedResponse<KnowledgeBase>> =>
   request.get('/ai/knowledge-bases/', { params }) as any;
+
+export const createKnowledgeBase = (data: Partial<KnowledgeBase>): Promise<KnowledgeBase> =>
+  request.post('/ai/knowledge-bases/', data) as any;
+
+export const updateKnowledgeBase = (id: number, data: Partial<KnowledgeBase>): Promise<KnowledgeBase> =>
+  request.patch(`/ai/knowledge-bases/${id}/`, data) as any;
+
+export const reindexKnowledgeBase = (id: number): Promise<any> =>
+  request.post(`/ai/knowledge-bases/${id}/reindex/`);
+
+// 知识文档
+export const getKnowledgeDocuments = (params?: { kb?: number }): Promise<PaginatedResponse<KnowledgeDocument>> =>
+  request.get('/ai/documents/', { params }) as any;
+
+export const deleteKnowledgeDocument = (id: number): Promise<void> =>
+  request.delete(`/ai/documents/${id}/`) as any;
 
 // 对话历史
 export const getChatHistories = (params?: Record<string, any>): Promise<PaginatedResponse<ChatHistory>> =>
