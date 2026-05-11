@@ -68,6 +68,10 @@ export const updateHealingPolicy = (id: number, data: Partial<SelfHealingPolicy>
 export const deleteHealingPolicy = (id: number): Promise<any> =>
   request.delete(`/sre/policies/${id}/`) as any;
 
+// 绑定建议自愈流水线到告警
+export const bindHealingPipeline = (alertId: number, data: { pipeline_id: number; make_policy?: boolean }): Promise<any> =>
+  request.post(`/sre/alerts/${alertId}/bind-healing-pipeline/`, data);
+
 // AIGC 生成流水线
 export const generatePipeline = (prompt: string): Promise<any> =>
   request.post('/ai/chat-histories/generate-pipeline/', { prompt }) as any;

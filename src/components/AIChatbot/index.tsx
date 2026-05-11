@@ -14,7 +14,9 @@ import {
     createChatHistory, getChatHistories, getChatMessages, 
     saveMessageToKnowledge, getAIModels, getCurrentAIConfig, AIModel 
 } from '@/api/ai';
+import { useNavigate } from 'react-router-dom';
 import { executePipeline } from '@/api/pipeline';
+import useDesignerStore from '@/store/useDesignerStore';
 
 const { Text } = Typography;
 
@@ -48,6 +50,7 @@ const AIChatbot: React.FC = () => {
     const [historySearch, setHistorySearch] = useState('');
     const [historyId, setHistoryId] = useState<number | null>(null);
     const [suggestedPipelineId, setSuggestedPipelineId] = useState<number | null>(null);
+    const [pipelineDraft, setPipelineDraft] = useState<any | null>(null);
     const [personality, setPersonality] = useState<PersonalityKey>(
         (localStorage.getItem('ansflow-ai-personality') as PersonalityKey) || 'professional'
     );
@@ -60,8 +63,14 @@ const AIChatbot: React.FC = () => {
     const aiDiagnosisConfig = useAppStore(state => state.aiDiagnosisConfig);
     const setAiDiagnosis = useAppStore(state => state.setAiDiagnosis);
     
+    const { setNodes, setEdges, setEditingId, setSourceAlertId } = useDesignerStore();
+    const navigate = useNavigate();
+
     const scrollRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    
+    // 追踪当前诊断的告警 ID
+    const [diagnosedAlertId, setDiagnosedAlertId] = useState<number | null>(null);
 
     // 监听性格变化并持久化
     useEffect(() => {
@@ -190,10 +199,17 @@ const AIChatbot: React.FC = () => {
         setHistoryVisible(false);
     };
 
-    const handleDiagnose = async (type: 'pipeline' | 'task', id: number | string, targetName?: string) => {
+    const handleDiagnose = async (type: 'pipeline' | 'task' | 'alert', id: number | string, targetName?: string) => {
         const typeText = t(`ai.${type}`);
         const displayTitle = targetName ? `${typeText}: ${targetName}` : `${typeText} #${id}`;
         
+        // 记录告警 ID
+        if (type === 'alert') {
+            setDiagnosedAlertId(Number(id));
+        } else {
+            setDiagnosedAlertId(null);
+        }
+
         // 修正：将名称信息带入首条提示消息
         const initialContent = t('ai.diagnosing', { 
             type: targetName ? `${typeText}: ${targetName}` : typeText, 
@@ -204,6 +220,7 @@ const AIChatbot: React.FC = () => {
         setLoading(true);
         setAiStatus('analyzing');
         setSuggestedPipelineId(null);
+        setPipelineDraft(null);
         
         // 超时检测：如果 60 秒还没返回，标记为超时
         const timeoutTimer = setTimeout(() => {
@@ -250,30 +267,57 @@ const AIChatbot: React.FC = () => {
                 const { done, value } = await reader.read();
                 if (done) break;
                 const chunk = decoder.decode(value);
+                assistantReply += chunk;
+
+                // --- 增强型解析逻辑：从累积文本中提取标记 ---
                 
-                if (chunk.includes('__MESSAGE_ID__:')) {
-                    const parts = chunk.split('__MESSAGE_ID__:');
-                    assistantReply += parts[0].trim();
-                    const msgId = parseInt(parts[1]);
-                    if (!isNaN(msgId)) {
+                // 1. 提取消息 ID
+                if (assistantReply.includes('__MESSAGE_ID__:')) {
+                    const match = assistantReply.match(/__MESSAGE_ID__:(\d+)/);
+                    if (match) {
+                        const msgId = parseInt(match[1]);
                         setMessages(prev => {
                             const newMessages = [...prev];
                             newMessages[newMessages.length - 1].id = msgId;
                             return newMessages;
                         });
+                        // 从显示文本中移除标记
+                        assistantReply = assistantReply.replace(/__MESSAGE_ID__:\d+/, '').trim();
                     }
-                } else if (chunk.includes('__SUGGESTION__:')) {
-                    const parts = chunk.split('\n');
-                    for (const part of parts) {
-                        if (part.startsWith('__SUGGESTION__:')) {
-                            try {
-                                const suggestion = JSON.parse(part.replace('__SUGGESTION__:', ''));
-                                setSuggestedPipelineId(suggestion.pipeline_id);
-                            } catch (e) {}
-                        } else { assistantReply += part; }
+                }
+
+                // 2. 提取建议流水线 ID
+                if (assistantReply.includes('__SUGGESTION__:')) {
+                    const match = assistantReply.match(/__SUGGESTION__:(\{.*?\})/);
+                    if (match) {
+                        try {
+                            const suggestion = JSON.parse(match[1]);
+                            setSuggestedPipelineId(suggestion.pipeline_id);
+                            assistantReply = assistantReply.replace(/__SUGGESTION__:\{.*?\}/, '').trim();
+                        } catch (e) {}
                     }
-                } else { assistantReply += chunk; }
-                
+                }
+
+                // 3. 提取流水线草案 (JSON)
+                if (assistantReply.includes('__PIPELINE_DRAFT__:')) {
+                    // 使用更健壮的匹配：从标记开始，寻找最外层的最后一个花括号
+                    const startIndex = assistantReply.indexOf('__PIPELINE_DRAFT__:');
+                    const jsonStart = assistantReply.indexOf('{', startIndex);
+                    const jsonEnd = assistantReply.lastIndexOf('}');
+                    
+                    if (jsonStart !== -1 && jsonEnd > jsonStart) {
+                        const jsonStr = assistantReply.substring(jsonStart, jsonEnd + 1);
+                        try {
+                            const draft = JSON.parse(jsonStr);
+                            setPipelineDraft(draft);
+                            // 匹配成功后，从展示文本中彻底移除标记和 JSON 部分
+                            assistantReply = (assistantReply.substring(0, startIndex) + assistantReply.substring(jsonEnd + 1)).trim();
+                        } catch (e) {
+                            // JSON 可能还在传输中，不完整，等待下一个 chunk
+                        }
+                    }
+                }
+
                 setMessages(prev => {
                     const newMessages = [...prev];
                     newMessages[newMessages.length - 1].content = assistantReply;
@@ -331,6 +375,8 @@ const AIChatbot: React.FC = () => {
 
     const streamResponse = async (hid: number, question: string) => {
         setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+        setPipelineDraft(null); // Reset draft for new query
+        
         const response = await fetch(`/api/v1/ai/chat-histories/${hid}/chat/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${appToken}` },
@@ -350,20 +396,36 @@ const AIChatbot: React.FC = () => {
             const { done, value } = await reader.read();
             if (done) break;
             const chunk = decoder.decode(value);
-            
-            if (chunk.includes('__MESSAGE_ID__:')) {
-                const parts = chunk.split('__MESSAGE_ID__:');
-                assistantReply += parts[0].trim();
-                const msgId = parseInt(parts[1]);
-                if (!isNaN(msgId)) {
+            assistantReply += chunk;
+
+            // 1. 提取消息 ID
+            if (assistantReply.includes('__MESSAGE_ID__:')) {
+                const match = assistantReply.match(/__MESSAGE_ID__:(\d+)/);
+                if (match) {
+                    const msgId = parseInt(match[1]);
                     setMessages(prev => {
                         const newMessages = [...prev];
                         newMessages[newMessages.length - 1].id = msgId;
                         return newMessages;
                     });
+                    assistantReply = assistantReply.replace(/__MESSAGE_ID__:\d+/, '').trim();
                 }
-            } else {
-                assistantReply += chunk;
+            }
+
+            // 2. 提取流水线草案 (JSON)
+            if (assistantReply.includes('__PIPELINE_DRAFT__:')) {
+                const startIndex = assistantReply.indexOf('__PIPELINE_DRAFT__:');
+                const jsonStart = assistantReply.indexOf('{', startIndex);
+                const jsonEnd = assistantReply.lastIndexOf('}');
+                
+                if (jsonStart !== -1 && jsonEnd > jsonStart) {
+                    const jsonStr = assistantReply.substring(jsonStart, jsonEnd + 1);
+                    try {
+                        const draft = JSON.parse(jsonStr);
+                        setPipelineDraft(draft);
+                        assistantReply = (assistantReply.substring(0, startIndex) + assistantReply.substring(jsonEnd + 1)).trim();
+                    } catch (e) {}
+                }
             }
 
             setMessages(prev => {
@@ -660,7 +722,7 @@ const AIChatbot: React.FC = () => {
                                     </div>
                                 </div>
                             ))}
-                            {suggestedPipelineId && !loading && (
+                            {suggestedPipelineId && (
                                 <div className="mx-auto w-full px-5 animate-in zoom-in-95 duration-500">
                                     <Card 
                                         size="small" 
@@ -685,6 +747,68 @@ const AIChatbot: React.FC = () => {
                                                     }
                                                 });
                                             }}>立即执行</Button>
+                                        </Flex>
+                                    </Card>
+                                </div>
+                            )}
+
+                            {pipelineDraft && (
+                                <div className="mx-auto w-full px-5 animate-in zoom-in-95 duration-500">
+                                    <Card 
+                                        size="small" 
+                                        className="shadow-sm rounded-xl overflow-hidden" 
+                                        style={{ backgroundColor: '#f9f0ff', borderColor: '#d3adf7' }}
+                                    >
+                                        <Flex justify="space-between" align="center">
+                                            <Space direction="vertical" size={0}>
+                                                <Text type="secondary" className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#722ed1' }}>AI 深度联动</Text>
+                                                <Text strong className="text-xs" style={{ color: token.colorText }}>已为您生成修复流水线草案</Text>
+                                            </Space>
+                                            <Button 
+                                                type="primary" 
+                                                size="small" 
+                                                icon={<RocketOutlined />} 
+                                                style={{ backgroundColor: '#722ed1' }}
+                                                className="rounded-lg h-8 px-4" 
+                                                onClick={() => {
+                                                    // 深度防御：彻底重构节点结构，确保 ReactFlow 必需字段绝对存在且有效
+                                                    const safeNodes = (pipelineDraft.nodes || []).map((node: any, idx: number) => {
+                                                        const defaultX = idx * 300;
+                                                        const defaultY = 100;
+                                                        
+                                                        return {
+                                                            ...node,
+                                                            // 确保 id 是字符串
+                                                            id: String(node.id || `node_${idx}`),
+                                                            // 强制覆盖 position，确保 x 和 y 都有值
+                                                            position: {
+                                                                x: typeof node.position?.x === 'number' ? node.position.x : defaultX,
+                                                                y: typeof node.position?.y === 'number' ? node.position.y : defaultY
+                                                            },
+                                                            // 确保 data 对象存在且包含 label
+                                                            data: { 
+                                                                ...node.data, 
+                                                                label: node.data?.label || node.label || `节点 ${idx + 1}` 
+                                                            }
+                                                        };
+                                                    });
+                                                    
+                                                    setNodes(safeNodes);
+                                                    setEdges(pipelineDraft.edges || []);
+                                                    setEditingId(null);
+                                                    
+                                                    // 设置来源告警 ID，用于自愈闭环
+                                                    if (diagnosedAlertId) {
+                                                        setSourceAlertId(diagnosedAlertId);
+                                                    } else {
+                                                        setSourceAlertId(null);
+                                                    }
+
+                                                    navigate('/v1/pipeline/designer');
+                                                    setVisible(false);
+                                                    message.success('已载入流水线设计器');
+                                                }}
+                                            >去设计</Button>
                                         </Flex>
                                     </Card>
                                 </div>

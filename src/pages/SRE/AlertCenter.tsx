@@ -20,11 +20,13 @@ import {
   BellOutlined,
   BookOutlined,
   ArrowRightOutlined,
-  UserOutlined
+  UserOutlined,
+  ThunderboltOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import useAppStore from '@/store/useAppStore';
 import { 
   getAlertEvents, ignoreAlert, getHealingPolicies, 
   createHealingPolicy, updateHealingPolicy, deleteHealingPolicy,
@@ -41,6 +43,7 @@ const AlertCenter: React.FC = () => {
     const { token } = theme.useToken();
     const queryClient = useQueryClient();
     const { message, modal } = App.useApp();
+    const setAiDiagnosis = useAppStore(state => state.setAiDiagnosis);
     const [activeTab, setActiveTab] = useState('alerts');
 
     // --- 告警事件相关状态 ---
@@ -423,7 +426,22 @@ const AlertCenter: React.FC = () => {
                                             {selectedAlert.ai_analysis}
                                         </ReactMarkdown>
                                     </div>
-                                    <div className="flex justify-end py-3 border-t -mx-6 px-6 bg-gray-50/50 dark:bg-white/5">
+                                    <div className="flex justify-end items-center py-3 border-t -mx-6 px-6 bg-gray-50/50 dark:bg-white/5 gap-2">
+                                        <Button 
+                                            type="link" 
+                                            size="small" 
+                                            icon={<ThunderboltOutlined />}
+                                            onClick={() => {
+                                                setAiDiagnosis({
+                                                    target_type: 'alert',
+                                                    target_id: selectedAlert.id,
+                                                    target_name: selectedAlert.alert_name
+                                                });
+                                            }}
+                                            className="text-xs"
+                                        >
+                                            深度诊断与编排
+                                        </Button>
                                         <Button 
                                             type="text" 
                                             size="small" 

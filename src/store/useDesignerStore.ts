@@ -12,6 +12,9 @@ interface DesignerState {
   // 当前处于编辑状态的 Pipeline ID
   editingId: string | null;
   setEditingId: (id: string | null) => void;
+  // 记录来源告警 ID，用于自愈闭环
+  sourceAlertId: number | null;
+  setSourceAlertId: (id: number | null) => void;
   // 重置画布
   resetDesigner: () => void;
 }
@@ -29,7 +32,9 @@ const useDesignerStore = create<DesignerState>()(
       setEdges: (edges) => set({ edges }),
       editingId: null,
       setEditingId: (editingId) => set({ editingId }),
-      resetDesigner: () => set({ nodes: [], edges: [], editingId: null }),
+      sourceAlertId: null,
+      setSourceAlertId: (sourceAlertId) => set({ sourceAlertId }),
+      resetDesigner: () => set({ nodes: [], edges: [], editingId: null, sourceAlertId: null }),
     }),
     {
       name: 'ansflow-designer-snapshot', // 存储 Key

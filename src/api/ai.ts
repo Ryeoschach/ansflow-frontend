@@ -119,7 +119,33 @@ export const saveMessageToKnowledge = (historyId: number, messageId: number): Pr
 
 // AIGC 生成流水线
 export const generatePipeline = (prompt: string, llmId?: number): Promise<any> =>
-  request.post('/ai/chat-histories/generate-pipeline/', { prompt, llm_id: llmId }) as any;
+  request.post('/ai/chat-histories/generate-pipeline/', { prompt, llm_id: llmId }, { timeout: 60000 }) as any;
+
+// AIGC 修正流水线
+export const refinePipeline = (data: { 
+  prompt: string; 
+  nodes: any[]; 
+  edges: any[]; 
+  llm_id?: number 
+}): Promise<any> =>
+  request.post('/ai/chat-histories/refine-pipeline/', data, { timeout: 60000 }) as any;
+
+// AIGC 建议节点参数
+export const suggestNodeParams = (data: {
+  type: string;
+  data: any;
+  context: any[];
+  llm_id?: number;
+}): Promise<any> =>
+  request.post('/ai/chat-histories/suggest-node-params/', data, { timeout: 60000 }) as any;
+
+// AI 模拟说明
+export const explainPipeline = (data: {
+  nodes: any[];
+  edges: any[];
+  llm_id?: number;
+}): Promise<{ explanation: string }> =>
+  request.post('/ai/chat-histories/explain-pipeline/', data, { timeout: 60000 }) as any;
 
 // 诊断接口的 URL (主要用于 fetch 拼接)
 export const DIAGNOSE_URL = '/api/v1/ai/chat-histories/';

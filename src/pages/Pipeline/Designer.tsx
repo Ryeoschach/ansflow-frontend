@@ -25,7 +25,9 @@ import {
     Select,
     Card,
     InputNumber,
-    Flex
+    Flex,
+    Checkbox,
+    Divider
 } from 'antd';
 import {
   PlayCircleOutlined,
@@ -47,12 +49,15 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { getAnsibleTasks } from '../../api/tasks';
 import { getK8sClusters, getHelmLocalCharts } from '../../api/k8s';
 import { createPipeline, updatePipeline, getPipeline, getCIEnvironments, executePipeline } from '../../api/pipeline';
-import { generatePipeline } from '../../api/ai';
+import { bindHealingPipeline } from '../../api/sre';
+import { generatePipeline, refinePipeline, suggestNodeParams, getAIModels, getCurrentAIConfig, explainPipeline } from '../../api/ai';
 import { getRegistries } from '../../api/registry';
 import { getCredentials } from '../../api/credential';
 import useDesignerStore from '../../store/useDesignerStore';
 import useAppStore from '../../store/useAppStore';
 import { useBreakpoint } from '@/utils/useBreakpoint';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import AnsibleNode from './nodes/AnsibleNode';
 import K8sNode from './nodes/K8sNode';
@@ -87,7 +92,7 @@ const DesignerCore = () => {
   const { t } = useTranslation();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
-  const { nodes, setNodes, edges, setEdges } = useDesignerStore();
+  const { nodes, setNodes, edges, setEdges, sourceAlertId, setSourceAlertId } = useDesignerStore();
   const [nodesState, setNodesState, onNodesChange] = useNodesState([]);
   const [edgesState, setEdgesState, onEdgesChange] = useEdgesState([]);
 
@@ -151,14 +156,73 @@ const DesignerCore = () => {
 
   // AI 编排状态
   const [aiPrompt, setAiPrompt] = useState('');
+  const [llmModels, setLlmModels] = useState<any[]>([]);
+  const [selectedLLMId, setSelectedLLMId] = useState<number | undefined>(undefined);
+  const [isNodeAILoading, setIsNodeAILoading] = useState(false);
+
+  useEffect(() => {
+    if (authToken) {
+      getAIModels({ model_type: 'llm' }).then(res => {
+        const models = Array.isArray(res) ? res : ((res as any).data || (res as any).results || []);
+        setLlmModels(models);
+      });
+      getCurrentAIConfig().then(config => {
+        if (config && config.default_llm) setSelectedLLMId(config.default_llm);
+      });
+    }
+  }, [authToken]);
+
+  const handleNodeAI = async () => {
+    if (!selectedNode) return;
+    setIsNodeAILoading(true);
+    try {
+      const res = await suggestNodeParams({
+        type: selectedNode.type!,
+        data: form.getFieldsValue(),
+        context: nodes, // 提供全量节点作为上下文
+        llm_id: selectedLLMId
+      });
+      form.setFieldsValue(res);
+      message.success('AI 已为您推荐配置参数');
+    } catch (e: any) {
+      message.error(`AI 辅助失败: ${e.message || '未知错误'}`);
+    } finally {
+      setIsNodeAILoading(false);
+    }
+  };
+
   const aiMutation = useMutation({
-    mutationFn: (prompt: string) => generatePipeline(prompt),
+    mutationFn: async (prompt: string) => {
+      // 核心逻辑：如果画布已有节点，走“修正”流程；否则走“生成”流程
+      if (nodes.length > 0) {
+        return refinePipeline({
+          prompt,
+          nodes,
+          edges,
+          llm_id: selectedLLMId
+        });
+      }
+      return generatePipeline(prompt, selectedLLMId);
+    },
     onSuccess: (data) => {
       if (data.nodes) {
-        // AI 生成成功，应用到画布
-        setNodes(data.nodes);
+        // 安全补丁：确保 AI 返回的节点具有 ReactFlow 所需的 position 和 data
+        const safeNodes = data.nodes.map((node: any, idx: number) => ({
+          ...node,
+          id: String(node.id || `ai_node_${idx}`),
+          position: {
+            x: typeof node.position?.x === 'number' ? node.position.x : idx * 300,
+            y: typeof node.position?.y === 'number' ? node.position.y : 100
+          },
+          data: {
+            ...node.data,
+            label: node.data?.label || node.label || `AI 节点 ${idx + 1}`
+          }
+        }));
+        
+        setNodes(safeNodes);
         setEdges(data.edges || []);
-        message.success('AI 编排已完成，您可以继续微调');
+        message.success(nodes.length > 0 ? '流水线已按指令优化' : '流水线已生成');
         setAiPrompt('');
       }
     },
@@ -245,6 +309,7 @@ const DesignerCore = () => {
   };
 
   const handleSave = async () => {
+    let makePolicy = true; // 默认开启
     modal.confirm({
         title: t('pipelineDesigner.title'),
         width: 500,
@@ -261,18 +326,32 @@ const DesignerCore = () => {
                 <div className="bg-slate-50 dark:bg-white/5 p-3 rounded-lg border border-dashed border-slate-200 dark:border-slate-700">
                     <Text type="secondary" className="text-[11px] block">{t('pipelineDesigner.cronFormatTip')}</Text>
                 </div>
+
+                {sourceAlertId && (
+                    <div className="bg-primary/5 p-3 rounded-lg border border-primary/20">
+                        <Checkbox 
+                            defaultChecked={true} 
+                            onChange={(e) => { makePolicy = e.target.checked; }}
+                        >
+                            <span className="text-xs font-medium text-primary">{t('pipelineDesigner.associateWithAlert')}</span>
+                        </Checkbox>
+                        <Text type="secondary" className="text-[10px] block mt-1 ml-6">
+                            {t('pipelineDesigner.associateWithAlertTip')}
+                        </Text>
+                    </div>
+                )}
             </div>
         ),
         onOk: () => {
             const nameInput = document.getElementById('pipeline-name-input') as HTMLInputElement;
             const cronInput = document.getElementById('pipeline-cron-input') as HTMLInputElement;
             if (!nameInput.value) { message.warning(t('pipelineDesigner.mustEnterName')); return Promise.reject(); }
-            submitPipeline(nameInput.value, cronInput.value);
+            submitPipeline(nameInput.value, cronInput.value, sourceAlertId ? makePolicy : undefined);
         }
     });
   };
 
-  const submitPipeline = async (name: string, schedule_cron?: string) => {
+  const submitPipeline = async (name: string, schedule_cron?: string, makePolicy?: boolean) => {
     const graphData = {
         nodes: nodesState,
         edges: edgesState,
@@ -285,14 +364,66 @@ const DesignerCore = () => {
         is_active: true
     };
     try {
-        if (pipelineId) await updatePipeline(Number(pipelineId), payload);
-        else {
+        let savedPipelineId: number;
+        if (pipelineId) {
+            await updatePipeline(Number(pipelineId), payload);
+            savedPipelineId = Number(pipelineId);
+        } else {
             const res = await createPipeline(payload);
-            const newId = res.id || res.data?.id;
-            navigate(`/v1/pipeline/designer?id=${newId}`);
+            savedPipelineId = res.id || res.data?.id;
+            navigate(`/v1/pipeline/designer?id=${savedPipelineId}`);
         }
+
+        // 如果是从告警诊断跳转来的，且用户确认绑定
+        if (sourceAlertId && makePolicy !== undefined) {
+            await bindHealingPipeline(sourceAlertId, {
+                pipeline_id: savedPipelineId,
+                make_policy: makePolicy
+            });
+            message.success(t('pipelineDesigner.healingPolicyCreated'));
+            setSourceAlertId(null); // 完成闭环，重置状态
+        }
+
         message.success(t('pipelineDesigner.pipelineScheduleSyncSuccess'));
     } catch(e: any) { message.error(e.message); }
+  };
+
+  const handleExplain = async () => {
+    if (nodes.length === 0) {
+      message.warning(t('pipelineDesigner.addNodesFirst'));
+      return;
+    }
+    
+    const hide = message.loading(t('pipelineDesigner.generatingSimulation'), 0);
+    try {
+      const res = await explainPipeline({
+        nodes,
+        edges,
+        llm_id: selectedLLMId
+      });
+      hide();
+      
+      modal.info({
+        title: t('pipelineDesigner.aiSimulationTitle'),
+        width: 700,
+        content: (
+          <div className="mt-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+             <div className="prose prose-slate max-w-none prose-sm">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {res.explanation}
+                </ReactMarkdown>
+             </div>
+          </div>
+        ),
+        okText: t('pipelineDesigner.confirmAndRun'),
+        cancelText: t('pipelineDesigner.close'),
+        closable: true,
+        onOk: () => handleRun()
+      });
+    } catch (e: any) {
+      hide();
+      message.error(t('pipelineDesigner.simulationFailed') + ': ' + e.message);
+    }
   };
 
   const handleRun = async () => {
@@ -355,36 +486,110 @@ const DesignerCore = () => {
     <div style={{ background: token.colorBgLayout }} className="h-full w-full flex flex-col overflow-hidden antialiased">
       {/* Header Bar */}
       <header 
-        style={{ background: token.colorBgContainer, borderBottom: `1px solid ${token.colorBorderSecondary}` }}
-        className="h-16 px-6 flex items-center justify-between z-10 transition-colors"
+        style={{ 
+          background: token.colorBgContainer, 
+          borderBottom: `1px solid ${token.colorBorderSecondary}`,
+          padding: '12px 24px'
+        }}
+        className="flex flex-col gap-3 z-10 transition-colors"
       >
-        <Space size="middle">
-          <Button 
-            type="text" 
-            icon={<ArrowLeftOutlined />} 
-            onClick={() => navigate('/v1/pipeline/list')} 
-          />
-          <div className="flex flex-col">
-            <Title level={5} className="m-0!">{pipelineInfo?.name || t('pipelineDesigner.newPipelineEditor')}</Title>
-            {/*<Text type="secondary" className="text-[10px] uppercase tracking-widest font-bold">*/}
-            {/*  {pipelineId ? `BLUEPRINT ID: ${pipelineId}` : 'NEW BLUEPRINT DRAFT'}*/}
-            {/*</Text>*/}
+        {/* Row 1: Title and Basic Actions */}
+        <div className="flex items-center justify-between">
+          <Space size="middle">
+            <Button 
+              type="text" 
+              icon={<ArrowLeftOutlined />} 
+              onClick={() => navigate('/v1/pipeline/list')} 
+              className="hover:bg-slate-100 dark:hover:bg-white/10"
+            />
+            <div className="flex flex-col">
+              <Title level={5} className="m-0!">{pipelineInfo?.name || t('pipelineDesigner.newPipelineEditor')}</Title>
+              {pipelineId && <Text type="secondary" className="text-[10px] uppercase opacity-60">Blueprint ID: {pipelineId}</Text>}
+            </div>
+          </Space>
+          <Space>
+            {hasPermission('pipeline:template:edit') && (
+              <Button 
+                icon={<SaveOutlined />} 
+                type="dashed"
+                onClick={handleSave}
+                className="border-primary/50 text-primary hover:border-primary"
+              >
+                {t('pipelineDesigner.save')}
+              </Button>
+            )}
+            <Button 
+              icon={<ArrowLeftOutlined />} 
+              onClick={() => navigate('/v1/pipeline/list')}
+            >
+              {t('pipelineDesigner.return')}
+            </Button>
+          </Space>
+        </div>
+
+        {/* Row 2: AI Co-pilot Toolbar */}
+        <div 
+          className="flex items-center justify-between p-2 rounded-xl border border-solid transition-all"
+          style={{ 
+            backgroundColor: token.colorFillAlter,
+            borderColor: token.colorBorderSecondary 
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-solid border-purple-100 dark:border-purple-900/30">
+              <RobotOutlined className="text-purple-500" />
+              <Text strong className="text-xs text-purple-600 uppercase tracking-wider">AI Copilot</Text>
+            </div>
+            
+            <Select
+              placeholder="AI 模型"
+              style={{ width: 160 }}
+              value={selectedLLMId}
+              onChange={setSelectedLLMId}
+              options={llmModels.map(m => ({ label: m.display_name, value: m.id }))}
+              variant="filled"
+              className="rounded-lg"
+            />
+
+            <Input.Search
+              placeholder={nodes.length > 0 ? "描述修改需求 (如: 在最后加个通知节点)..." : "描述流水线需求 (如: 自动部署 K8s)..."}
+              enterButton={
+                <Space>
+                  <ThunderboltOutlined />
+                  <span>AI {nodes.length > 0 ? '修正' : '编排'}</span>
+                </Space>
+              }
+              size="middle"
+              loading={aiMutation.isPending}
+              onSearch={(val) => aiMutation.mutate(val)}
+              style={{ width: 400 }}
+            />
+
+            <Button 
+              icon={<RobotOutlined />} 
+              onClick={handleExplain}
+              className="border-purple-300 text-purple-600 hover:text-purple-700 hover:border-purple-400 bg-white/50"
+            >
+              {t('pipelineDesigner.aiSimulation')}
+            </Button>
           </div>
-        </Space>
-        <Space>
-          {/* AI 编排快捷入口 */}
-          <Input.Search
-             placeholder="描述流水线需求 (如: 自动部署 K8s)..."
-             enterButton={<><ThunderboltOutlined /> AI 编排</>}
-             size="middle"             loading={aiMutation.isPending}
-             onSearch={(val) => aiMutation.mutate(val)}
-             style={{ width: 300 }}
-             className="mr-4"
-           />
-          {hasPermission('pipeline:template:execute') && <Button icon={<PlayCircleOutlined />} type="primary" onClick={handleRun} disabled={!pipelineId} className="shadow-blue-200">{t('pipelineDesigner.execute')}</Button>}
-          {hasPermission('pipeline:template:edit') && <Button icon={<SaveOutlined />} onClick={handleSave}>{t('pipelineDesigner.save')}</Button>}
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/v1/pipeline/list')}>{t('pipelineDesigner.return')}</Button>
-        </Space>      </header>
+
+          <Space>
+            <Divider type="vertical" className="h-8 border-slate-300 dark:border-slate-600" />
+            {hasPermission('pipeline:template:execute') && (
+              <Button 
+                icon={<PlayCircleOutlined />} 
+                type="primary" 
+                onClick={handleRun} 
+                disabled={!pipelineId} 
+                className="shadow-md h-9 px-6 rounded-lg"
+              >
+                {t('pipelineDesigner.execute')}
+              </Button>
+            )}
+          </Space>
+        </div>
+      </header>
 
       <Layout className="flex-1 overflow-hidden" style={{ background: 'transparent' }}>
         <Sider 
@@ -474,7 +679,25 @@ const DesignerCore = () => {
         onClose={() => setDrawerVisible(false)}
         open={drawerVisible}
         size={450}
-        extra={hasPermission('pipeline:template:edit') ? <Button type="primary" size="small" onClick={onDrawerSave}>{t('pipelineDesigner.saveConfig')}</Button> : null}
+        extra={
+            <Space>
+                {hasPermission('pipeline:template:edit') && (
+                    <Button 
+                        icon={<RobotOutlined />} 
+                        onClick={handleNodeAI} 
+                        loading={isNodeAILoading}
+                        className="border-purple-300 text-purple-600 hover:text-purple-700 hover:border-purple-400"
+                    >
+                        AI 助手
+                    </Button>
+                )}
+                {hasPermission('pipeline:template:edit') && (
+                    <Button type="primary" size="small" onClick={onDrawerSave}>
+                        {t('pipelineDesigner.saveConfig')}
+                    </Button>
+                )}
+            </Space>
+        }
         className="custom-drawer"
       >
         <Form form={form} layout="vertical" className="px-1 pt-4">
