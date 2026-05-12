@@ -70,9 +70,13 @@ export interface KnowledgeDocument {
 }
 
 export interface DocumentChunk {
-  index: number;
+  id: number;
+  document: number;
   content: string;
-  length: number;
+  index: number;
+  is_active: boolean;
+  metadata: any;
+  length?: number;
 }
 
 // 知识库
@@ -87,6 +91,9 @@ export const updateKnowledgeBase = (id: number, data: Partial<KnowledgeBase>): P
 
 export const reindexKnowledgeBase = (id: number): Promise<any> =>
   request.post(`/ai/knowledge-bases/${id}/reindex/`);
+
+export const testSearchKnowledgeBase = (id: number, query: string): Promise<any[]> =>
+  request.post(`/ai/knowledge-bases/${id}/test_search/`, { query }) as any;
 
 // 知识文档
 export const getKnowledgeDocuments = (params?: { kb?: number }): Promise<PaginatedResponse<KnowledgeDocument>> =>
@@ -107,6 +114,12 @@ export const uploadKnowledgeDocument = (kbId: number, file: File): Promise<any> 
 
 export const getDocumentChunks = (id: number): Promise<DocumentChunk[]> =>
   request.get(`/ai/documents/${id}/chunks/`) as any;
+
+export const updateKnowledgeChunk = (id: number, data: Partial<DocumentChunk>): Promise<DocumentChunk> =>
+  request.patch(`/ai/chunks/${id}/`, data) as any;
+
+export const deleteKnowledgeChunk = (id: number): Promise<void> =>
+  request.delete(`/ai/chunks/${id}/`) as any;
 
 // 对话历史
 export const getChatHistories = (params?: Record<string, any>): Promise<PaginatedResponse<ChatHistory>> =>
