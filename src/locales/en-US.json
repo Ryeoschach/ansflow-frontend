@@ -9,6 +9,7 @@
     "edit": "Edit",
     "create": "Create",
     "execute": "Execute",
+    "upload": "Upload",
     "success": "Success",
     "error": "Error",
     "loading": "Loading...",
@@ -176,7 +177,22 @@
       "docSource": "Source",
       "docContent": "Content Detail",
       "docView": "View Content",
-      "docDelete": "Delete Document"
+      "docDelete": "Delete Document",
+      "chunkCount": "Chunk Count",
+      "cleanPreview": "Clean Preview",
+      "ragTopK": "Recall Count (Top-K)",
+      "ragTopKTip": "Number of relevant chunks returned per retrieval",
+      "ragScoreThreshold": "Similarity Threshold",
+      "ragScoreThresholdTip": "Results below this score will be filtered (between 0-1, 0.4-0.6 recommended)",
+      "ragVectorWeight": "Vector Search Weight",
+      "ragBm25_Weight": "Keyword Search Weight (BM25)",
+      "ragWeightTip": "Weighting ratio between Vector and Keyword search",
+      "searchScore": "Search Score",
+      "retrievalStrategy": "Retrieval Strategy",
+      "hybridSearch": "Hybrid Search",
+      "ocrTip": "Smart Tip",
+      "ocrDescription": "For scanned or image-based PDFs without a text layer, the system will automatically trigger OCR (Optical Character Recognition) for high-precision parsing.",
+      "uploadHint": "Supports PDF, Markdown (.md), and Text (.txt) formats."
     }
   },
   "taskCenter": {

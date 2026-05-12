@@ -35,6 +35,7 @@
     "isActive": "是否启用",
     "create": "创建",
     "execute": "执行",
+    "upload": "上传",
     "enabled": "开启",
     "disabled": "关闭",
     "close": "关闭详情"
@@ -1693,7 +1694,22 @@
       "docSource": "来源",
       "docContent": "内容详情",
       "docView": "查看内容",
-      "docDelete": "删除文档"
+      "docDelete": "删除文档",
+      "chunkCount": "分块数量",
+      "cleanPreview": "分块清洗",
+      "ragTopK": "检索召回数量 (Top-K)",
+      "ragTopKTip": "每次检索返回的相关分块数量",
+      "ragScoreThreshold": "相似度阈值",
+      "ragScoreThresholdTip": "低于此分数的检索结果将被过滤（0-1 之间，建议 0.4-0.6）",
+      "ragVectorWeight": "向量检索权重",
+      "ragBm25_Weight": "关键词检索权重 (BM25)",
+      "ragWeightTip": "向量检索与关键词检索的加权比例",
+      "searchScore": "检索评分",
+      "retrievalStrategy": "检索策略",
+      "hybridSearch": "混合检索",
+      "ocrTip": "智能提示",
+      "ocrDescription": "对于无文本层的扫描件或图片型 PDF，系统将自动触发 OCR (光学字符识别) 进行高精度解析。",
+      "uploadHint": "支持 PDF, Markdown (.md), Text (.txt) 格式。"
     }
   },
   "alertCenter": {

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
   Card, Tabs, Table, Button, Space, Modal, Form, 
-  Input, Select, Switch, message, Tag, Typography, Alert, Drawer, Divider, List, Badge, Upload, UploadProps, Popconfirm, Tooltip, Empty
+  Input, Select, Switch, message, Tag, Typography, Alert, Drawer, Divider, List, Badge, Upload, UploadProps, Popconfirm, Tooltip, Empty,
+  Slider, Row, Col
 } from 'antd';
 import { 
   PlusOutlined, EditOutlined, DeleteOutlined, 
@@ -190,9 +191,9 @@ const AISettings: React.FC = () => {
       { title: t('ai.settings.apiUrl'), dataIndex: 'base_url', key: 'base_url', ellipsis: true },
       { title: t('common.status'), dataIndex: 'is_active', key: 'is_active', render: (active: boolean) => <Switch checked={active} size="small" disabled /> },
       {
-        title: t('common.action'), key: 'action',
+        title: t('common.action'), key: 'action', width: 200,
         render: (_: any, record: AIProvider) => (
-          <Space>
+          <Space wrap>
             <Button size="small" icon={<ApiOutlined />} loading={syncModelsMutation.isPending && syncModelsMutation.variables === record.id} onClick={() => syncModelsMutation.mutate(record.id)}>{t('ai.settings.syncModels')}</Button>
             <Button size="small" icon={<EditOutlined />} onClick={() => handleEditProvider(record)} />
             <Button size="small" danger icon={<DeleteOutlined />} onClick={() => { Modal.confirm({ title: t('ai.settings.confirmDelete'), onOk: () => deleteAIProvider(record.id).then(() => queryClient.invalidateQueries({ queryKey: ['aiProviders'] })) }); }} />
@@ -217,9 +218,9 @@ const AISettings: React.FC = () => {
       { title: t('ai.settings.belongProvider'), dataIndex: 'provider_name', key: 'provider_name' },
       { title: t('ai.settings.modelType'), dataIndex: 'model_type', key: 'model_type', render: (type: string) => (<Tag color={type === 'llm' ? 'gold' : 'magenta'}>{type === 'llm' ? t('ai.settings.llm') : t('ai.settings.embedding')}</Tag>) },
       {
-        title: t('common.action'), key: 'action',
+        title: t('common.action'), key: 'action', width: 120,
         render: (_: any, record: AIModel) => (
-          <Space><Button size="small" icon={<EditOutlined />} onClick={() => handleEditModel(record)} /><Button size="small" danger icon={<DeleteOutlined />} onClick={() => { Modal.confirm({ title: t('ai.settings.confirmDelete'), onOk: () => deleteAIModel(record.id).then(() => queryClient.invalidateQueries({ queryKey: ['aiModels'] })) }); }} /></Space>
+          <Space wrap><Button size="small" icon={<EditOutlined />} onClick={() => handleEditModel(record)} /><Button size="small" danger icon={<DeleteOutlined />} onClick={() => { Modal.confirm({ title: t('ai.settings.confirmDelete'), onOk: () => deleteAIModel(record.id).then(() => queryClient.invalidateQueries({ queryKey: ['aiModels'] })) }); }} /></Space>
         ),
       },
     ];
@@ -238,12 +239,21 @@ const AISettings: React.FC = () => {
     const columns = [
       { title: t('ai.settings.kbName'), key: 'name', width: 150, render: (_: any, record: KnowledgeBase) => (<span>{isEn ? (record.name_en || record.name) : record.name}</span>) },
       { title: t('ai.settings.kbDesc'), key: 'description', width: 200, ellipsis: true, render: (_: any, record: KnowledgeBase) => (<span title={isEn ? (record.description_en || record.description) : record.description}>{isEn ? (record.description_en || record.description) : record.description}</span>) },
-      { title: "检索策略", key: "retrieval", width: 150, render: () => (<Tooltip title="BM25 (0.3) + Vector (0.7) 混合加权"><Tag color="geekblue" icon={<SyncOutlined spin />}>Hybrid Search</Tag></Tooltip>) },
+      { 
+        title: t('ai.settings.retrievalStrategy'), 
+        key: "retrieval", 
+        width: 150, 
+        render: () => (
+          <Tooltip title={`BM25 (${configData?.rag_bm25_weight ?? 0.3}) + Vector (${configData?.rag_vector_weight ?? 0.7}) 混合加权`}>
+            <Tag color="geekblue" icon={<SyncOutlined spin />}>{t('ai.settings.hybridSearch')}</Tag>
+          </Tooltip>
+        ) 
+      },
       { title: t('ai.settings.kbCollection'), dataIndex: 'collection_name', key: 'collection_name', width: 150 },
       {
-        title: t('common.action'), key: 'action',
+        title: t('common.action'), key: 'action', width: 450,
         render: (_: any, record: KnowledgeBase) => (
-          <Space size="small">
+          <Space size="small" wrap>
             <Button size="small" icon={<DatabaseOutlined />} onClick={() => { setSelectedKB(record); setIsDocDrawerOpen(true); }}>{t('ai.settings.docManagement')}</Button>
             <Button size="small" icon={<BugOutlined />} onClick={() => { setSelectedKB(record); setIsPlaygroundOpen(true); setSearchResults([]); setSearchQuery(""); }}>Playground</Button>
             <Button size="small" icon={<EditOutlined />} onClick={() => { setEditingKB(record); kbForm.setFieldsValue(record); setIsKBModalOpen(true); }} />
@@ -291,10 +301,22 @@ const AISettings: React.FC = () => {
               renderItem={(item) => (
                 <List.Item>
                   <Card size="small" className="w-full border-l-4 border-l-blue-500 shadow-sm" 
-                    title={<div className="flex justify-between items-center"><Tag color="blue">Rank #{item.index}</Tag><Text type="secondary" className="text-[10px]">{item.source}</Text></div>}
+                    title={
+                      <div className="flex justify-between items-center">
+                        <Space>
+                          <Tag color="blue">Rank #{item.index}</Tag>
+                          {item.score && <Tag color="orange">{t('ai.settings.searchScore')}: {item.score}</Tag>}
+                        </Space>
+                        <Text type="secondary" className="text-[10px]">
+                          <Tag icon={<FileTextOutlined />} style={{ border: 'none', background: 'transparent' }}>
+                            {item.source} (ID: {item.metadata?.document_id || 'N/A'})
+                          </Tag>
+                        </Text>
+                      </div>
+                    }
                   >
                     <pre className="text-xs whitespace-pre-wrap font-sans text-gray-700 m-0">{item.content}</pre>
-                    <div className="mt-3 flex gap-2">
+                    <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
                        {Object.entries(item.metadata).map(([k, v]: [string, any]) => (
                          <Tag key={k} style={{ fontSize: '10px' }}>{k}: {String(v)}</Tag>
                        ))}
@@ -309,30 +331,63 @@ const AISettings: React.FC = () => {
         <Modal title={editingKB ? t('ai.settings.editKnowledgeBase') : t('ai.settings.addKnowledgeBase')} open={isKBModalOpen} onOk={() => kbForm.submit()} onCancel={() => { setIsKBModalOpen(false); setEditingKB(null); }} confirmLoading={kbMutation.isPending}><Form form={kbForm} layout="vertical" onFinish={kbMutation.mutate}><Form.Item name="name" label={t('ai.settings.kbNameCN')} rules={[{ required: true }]}><Input placeholder={t('ai.settings.kbNamePlaceholder')} /></Form.Item><Form.Item name="name_en" label={t('ai.settings.kbNameEn')}><Input placeholder="English Name" /></Form.Item><Form.Item name="collection_name" label={t('ai.settings.kbCollection')} rules={[{ required: true }]}><Input placeholder={t('ai.settings.kbCollectionPlaceholder')} readOnly={!!editingKB} /></Form.Item><Form.Item name="description" label={t('ai.settings.kbDescCN')}><Input.TextArea placeholder={t('ai.settings.kbDescPlaceholder')} /></Form.Item><Form.Item name="description_en" label={t('ai.settings.kbDescEn')}><Input.TextArea placeholder="English Description" /></Form.Item></Form></Modal>
 
         {/* Document Management Drawer */}
-        <Drawer title={`${t('ai.settings.docManagement')} - ${isEn ? (selectedKB?.name_en || selectedKB?.name) : selectedKB?.name}`} width={900} onClose={() => setIsDocDrawerOpen(false)} open={isDocDrawerOpen} extra={<Button type="primary" icon={<UploadOutlined />} onClick={() => setUploadVisible(true)}>{t('common.upload') || '上传文档'}</Button>}>
+        <Drawer title={`${t('ai.settings.docManagement')} - ${isEn ? (selectedKB?.name_en || selectedKB?.name) : selectedKB?.name}`} width={900} onClose={() => setIsDocDrawerOpen(false)} open={isDocDrawerOpen} extra={<Button type="primary" icon={<UploadOutlined />} onClick={() => setUploadVisible(true)}>{t('common.upload')}</Button>}>
           <Table size="small" loading={docsLoading} dataSource={docsData?.results || docsData?.data || (Array.isArray(docsData) ? docsData : [])} rowKey="id" columns={[
             { title: t('ai.settings.docTitle'), dataIndex: 'title', key: 'title', ellipsis: true },
             { 
-              title: t('common.status') || '状态', dataIndex: 'status', key: 'status', width: 100,
+              title: t('common.status'), dataIndex: 'status', key: 'status', width: 100,
               render: (status: string) => {
                 const map: any = { pending: { color: 'default', text: '待处理' }, processing: { color: 'processing', text: '处理中' }, ready: { color: 'success', text: '就绪' }, error: { color: 'error', text: '错误' } };
                 const config = map[status] || map.ready;
                 return <Badge status={config.color} text={config.text} />;
               }
             },
-            { title: t('ai.settings.chunkCount') || '分块', dataIndex: 'chunk_count', key: 'chunks', width: 80 },
+            { title: t('ai.settings.chunkCount'), dataIndex: 'chunk_count', key: 'chunks', width: 80 },
             { 
-              title: t('common.action'), key: 'action', width: 220,
-              render: (_: any, record: KnowledgeDocument) => (<Space><Button type="link" size="small" icon={<EyeOutlined />} onClick={() => setViewingDoc(record)}>{t('ai.settings.docView')}</Button><Button type="link" size="small" icon={<SettingOutlined />} onClick={() => { setPreviewDoc(record); setIsPreviewDrawerOpen(true); }}>{t('ai.settings.cleanPreview') || '分块清洗'}</Button><Button type="link" size="small" danger onClick={() => { Modal.confirm({ title: t('ai.settings.confirmDelete'), onOk: () => deleteDocMutation.mutate(record.id) }); }}>{t('common.delete')}</Button></Space>)
+              title: t('common.action'), key: 'action', width: 300,
+              render: (_: any, record: KnowledgeDocument) => (<Space wrap><Button type="link" size="small" icon={<EyeOutlined />} onClick={() => setViewingDoc(record)}>{t('ai.settings.docView')}</Button><Button type="link" size="small" icon={<SettingOutlined />} onClick={() => { setPreviewDoc(record); setIsPreviewDrawerOpen(true); }}>{t('ai.settings.cleanPreview')}</Button><Button type="link" size="small" danger onClick={() => { Modal.confirm({ title: t('ai.settings.confirmDelete'), onOk: () => deleteDocMutation.mutate(record.id) }); }}>{t('common.delete')}</Button></Space>)
             }
           ]} />
-          <Modal title={t('common.upload') || '上传知识文档'} open={uploadVisible} onCancel={() => setUploadVisible(false)} footer={null}><Dragger {...uploadProps}><p className="ant-upload-drag-icon"><InboxOutlined /></p><p className="ant-upload-text">点击或拖拽文件到此区域进行上传</p><p className="ant-upload-hint">支持 PDF, Markdown (.md), Text (.txt) 格式。上传后将在后台异步进行向量化与 BM25 索引构建。</p></Dragger></Modal>
+          <Modal title={t('common.upload')} open={uploadVisible} onCancel={() => setUploadVisible(false)} footer={null}>
+            <Dragger {...uploadProps}>
+              <p className="ant-upload-drag-icon"><InboxOutlined /></p>
+              <p className="ant-upload-text">点击或拖拽文件到此区域进行上传</p>
+              <p className="ant-upload-hint">
+                {t('ai.settings.uploadHint')}
+                <br />
+                <span className="text-blue-500 font-medium italic">{t('ai.settings.ocrTip')}：</span>
+                {t('ai.settings.ocrDescription')}
+              </p>
+            </Dragger>
+          </Modal>
         </Drawer>
 
         {/* Chunk Cleaning & Preview Drawer */}
         <Drawer title={<Space><SafetyCertificateOutlined /><span>知识清洗工作台: {previewDoc?.title}</span></Space>} width={750} onClose={() => { setIsPreviewDrawerOpen(false); setEditingChunkId(null); }} open={isPreviewDrawerOpen}><Alert message="知识分块管理 (Hybrid Search)" description="此处支持对文档切片进行细粒度管理。禁用或修改分块内容将实时同步至向量库和 BM25 语料库。" type="warning" showIcon style={{ marginBottom: 16 }} /><List loading={chunksLoading} dataSource={chunksData} renderItem={(item: DocumentChunk) => (
           <List.Item><Card size="small" className={`w-full ${!item.is_active ? 'opacity-50 grayscale' : 'bg-gray-50 border-gray-200'}`} title={<div className="flex justify-between items-center text-xs"><Space><Tag color={item.is_active ? "blue" : "default"}>Chunk #{item.index + 1}</Tag>{!item.is_active && <Tag icon={<StopOutlined />}>已禁用</Tag>}</Space><Space>{editingChunkId === item.id ? (<><Button size="small" type="primary" icon={<SaveOutlined />} onClick={() => chunkUpdateMutation.mutate({ id: item.id, content: chunkEditContent })} loading={chunkUpdateMutation.isPending}>保存</Button><Button size="small" onClick={() => setEditingChunkId(null)}>取消</Button></>) : (<><Button size="small" icon={<EditOutlined />} onClick={() => { setEditingChunkId(item.id); setChunkEditContent(item.content); }}>编辑</Button><Switch size="small" checked={item.is_active} onChange={(checked) => chunkUpdateMutation.mutate({ id: item.id, is_active: checked })} loading={chunkUpdateMutation.isPending && chunkUpdateMutation.variables?.id === item.id} /><Popconfirm title="确定彻底删除此知识块？(不可恢复)" onConfirm={() => chunkDeleteMutation.mutate(item.id)}><Button size="small" danger icon={<DeleteOutlined />} /></Popconfirm></>)}</Space></div>}>{editingChunkId === item.id ? (<Input.TextArea rows={6} value={chunkEditContent} onChange={e => setChunkEditContent(e.target.value)} className="text-xs font-sans" />) : (<pre className="text-xs whitespace-pre-wrap font-sans text-gray-700 m-0">{item.content}</pre>)}<div className="mt-2 text-[10px] text-gray-400">Length: {item.content?.length || 0} chars</div></Card></List.Item>
         )} /></Drawer>
+
+        {/* View Document Content Modal */}
+        <Modal
+          title={viewingDoc?.title}
+          open={!!viewingDoc}
+          onCancel={() => setViewingDoc(null)}
+          footer={[
+            <Button key="close" onClick={() => setViewingDoc(null)}>{t('common.close')}</Button>
+          ]}
+          width={800}
+        >
+          <div className="max-h-[60vh] overflow-y-auto">
+            <div className="mb-4 flex gap-4">
+              <Tag icon={<FileTextOutlined />}>{t('ai.settings.docSource')}: {viewingDoc?.source_type}</Tag>
+              <Tag>{t('ai.settings.chunkCount')}: {viewingDoc?.chunk_count}</Tag>
+            </div>
+            <Divider orientation="left">{t('ai.settings.docContent')}</Divider>
+            <pre className="whitespace-pre-wrap font-sans text-gray-700 bg-gray-50 p-4 rounded text-sm">
+              {viewingDoc?.content || t('common.noData')}
+            </pre>
+          </div>
+        </Modal>
       </div>
     );
   };
@@ -342,7 +397,57 @@ const AISettings: React.FC = () => {
     const allModels: AIModel[] = Array.isArray(rawData) ? rawData : (rawData?.data || rawData?.results || []);
     const llmModels = allModels.filter(m => m.model_type === 'llm');
     const embModels = allModels.filter(m => m.model_type === 'embedding');
-    return (<div className="max-w-2xl space-y-6"><Alert message={t('ai.settings.suggestion')} description={t('ai.settings.ragWarning')} type="info" showIcon /><Form form={configForm} layout="vertical" onFinish={configMutation.mutate}><Form.Item label={t('ai.settings.defaultLlm')} name="default_llm" tooltip={t('ai.settings.defaultLlmTip')}><Select placeholder="选择默认 LLM">{llmModels.map(m => (<Select.Option key={m.id} value={m.id}>{m.display_name} ({m.provider_name})</Select.Option>))}</Select></Form.Item><Form.Item label={t('ai.settings.defaultEmbedding')} name="default_embedding" tooltip={t('ai.settings.defaultEmbeddingTip')}><Select placeholder="选择默认 Embedding">{embModels.map(m => (<Select.Option key={m.id} value={m.id}>{m.display_name} ({m.provider_name})</Select.Option>))}</Select></Form.Item><Form.Item><Button type="primary" htmlType="submit" loading={configMutation.isPending}>{t('ai.settings.saveConfig')}</Button></Form.Item></Form></div>);
+    
+    return (
+      <div className="max-w-4xl space-y-6">
+        <Alert message={t('ai.settings.suggestion')} description={t('ai.settings.ragWarning')} type="info" showIcon />
+        <Form form={configForm} layout="vertical" onFinish={configMutation.mutate}>
+          <Row gutter={24}>
+            <Col span={12}>
+              <Card size="small" title={t('ai.settings.globalConfig')} className="h-full">
+                <Form.Item label={t('ai.settings.defaultLlm')} name="default_llm" tooltip={t('ai.settings.defaultLlmTip')}>
+                  <Select placeholder="选择默认 LLM">
+                    {llmModels.map(m => (<Select.Option key={m.id} value={m.id}>{m.display_name} ({m.provider_name})</Select.Option>))}
+                  </Select>
+                </Form.Item>
+                <Form.Item label={t('ai.settings.defaultEmbedding')} name="default_embedding" tooltip={t('ai.settings.defaultEmbeddingTip')}>
+                  <Select placeholder="选择默认 Embedding">
+                    {embModels.map(m => (<Select.Option key={m.id} value={m.id}>{m.display_name} ({m.provider_name})</Select.Option>))}
+                  </Select>
+                </Form.Item>
+              </Card>
+            </Col>
+            
+            <Col span={12}>
+              <Card size="small" title="RAG 参数调优 (Advanced Tuning)" className="h-full">
+                <Form.Item label={t('ai.settings.ragTopK')} name="rag_top_k" tooltip={t('ai.settings.ragTopKTip')}>
+                  <Slider min={1} max={20} marks={{ 1: '1', 5: '5', 10: '10', 20: '20' }} />
+                </Form.Item>
+                <Form.Item label={t('ai.settings.ragScoreThreshold')} name="rag_score_threshold" tooltip={t('ai.settings.ragScoreThresholdTip')}>
+                  <Slider min={0} max={1} step={0.05} marks={{ 0: '0', 0.4: '0.4', 0.6: '0.6', 1: '1' }} />
+                </Form.Item>
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item label={t('ai.settings.ragVectorWeight')} name="rag_vector_weight" tooltip={t('ai.settings.ragWeightTip')}>
+                      <Input type="number" step={0.1} min={0} max={1} />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item label={t('ai.settings.ragBm25_Weight')} name="rag_bm25_weight">
+                      <Input type="number" step={0.1} min={0} max={1} />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Card>
+            </Col>
+          </Row>
+          
+          <Form.Item className="mt-6">
+            <Button type="primary" htmlType="submit" loading={configMutation.isPending}>{t('ai.settings.saveConfig')}</Button>
+          </Form.Item>
+        </Form>
+      </div>
+    );
   };
 
   return (
