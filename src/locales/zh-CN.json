@@ -1627,6 +1627,7 @@
       "concise": "简洁助手",
       "humorous": "幽默特工"
     },
+    "currentModel": "当前模型",
     "selfHealing": {
       "title": "AI 自愈建议",
       "execute": "立即执行",

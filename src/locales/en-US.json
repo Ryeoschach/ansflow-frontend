@@ -110,6 +110,7 @@
       "concise": "Concise Helper",
       "humorous": "Humorous Agent"
     },
+    "currentModel": "Current Model",
     "selfHealing": {
       "title": "AI Self-Healing Suggestion",
       "execute": "Execute Now",

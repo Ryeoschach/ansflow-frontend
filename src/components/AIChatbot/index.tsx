@@ -540,57 +540,76 @@ const AIChatbot: React.FC = () => {
                     </style>
                     <Card
                         title={
-                            <Space style={{ color: token.colorTextHeading }}>
-                                <Button 
-                                    type="text" 
-                                    size="small" 
-                                    icon={<HistoryOutlined />} 
-                                    onClick={() => {
-                                        setHistoryVisible(!historyVisible);
-                                        if (!historyVisible) loadHistoryList();
-                                    }}
-                                />
-                                <span className="font-semibold">{t('ai.title')}</span>
-                                <Dropdown 
-                                    menu={{ 
-                                        items: personalityItems, 
-                                        selectable: true,
-                                        selectedKeys: [personality],
-                                        onClick: ({ key }) => setPersonality(key as PersonalityKey) 
-                                    }} 
-                                    trigger={['click']}
-                                >
-                                    <Tag 
-                                        icon={<UserSwitchOutlined />} 
-                                        className="cursor-pointer ml-1 hover:opacity-80 transition-opacity border-none text-[10px]" 
-                                        style={{ color: token.colorPrimary, backgroundColor: token.colorPrimaryBg }}
-                                    >
-                                        {personalityItems.find(i => i?.key === personality)?.label as string}
-                                    </Tag>
-                                </Dropdown>
+                            <Flex vertical gap={6} style={{ padding: '4px 0' }}>
+                                <Flex align="center" justify="space-between">
+                                    <div className="flex items-center gap-2" style={{ color: token.colorTextHeading }}>
+                                        <Button 
+                                            type="text" 
+                                            size="small" 
+                                            icon={<HistoryOutlined />} 
+                                            onClick={() => {
+                                                setHistoryVisible(!historyVisible);
+                                                if (!historyVisible) loadHistoryList();
+                                            }}
+                                        />
+                                        <span className="font-semibold text-base">{t('ai.title')}</span>
+                                    </div>
+                                </Flex>
                                 
-                                <Dropdown 
-                                    menu={{ 
-                                        items: llmModels.map(m => ({
-                                            key: String(m.id),
-                                            label: m.display_name,
-                                            icon: <RocketOutlined />
-                                        })), 
-                                        selectable: true,
-                                        selectedKeys: [String(selectedLLMId)],
-                                        onClick: ({ key }) => setSelectedLLMId(Number(key)) 
-                                    }} 
-                                    trigger={['click']}
-                                >
-                                    <Tag 
-                                        icon={<RocketOutlined />} 
-                                        className="cursor-pointer hover:opacity-80 transition-opacity border-none text-[10px]" 
-                                        style={{ color: token.colorWarning, backgroundColor: '#fffbe6' }}
+                                <Flex align="center" gap={4} className="pl-9">
+                                    <Dropdown 
+                                        menu={{ 
+                                            items: personalityItems, 
+                                            selectable: true,
+                                            selectedKeys: [personality],
+                                            onClick: ({ key }) => setPersonality(key as PersonalityKey) 
+                                        }} 
+                                        trigger={['click']}
                                     >
-                                        {llmModels.find(m => m.id === selectedLLMId)?.display_name || '选择模型'}
-                                    </Tag>
-                                </Dropdown>
-                            </Space>
+                                        <Tag 
+                                            icon={<UserSwitchOutlined />} 
+                                            className="cursor-pointer hover:opacity-80 transition-opacity border-none text-[10px] py-0.5 px-2" 
+                                            style={{ color: token.colorPrimary, backgroundColor: token.colorPrimaryBg }}
+                                        >
+                                            {personalityItems.find(i => i?.key === personality)?.label as string}
+                                        </Tag>
+                                    </Dropdown>
+
+                                    <Dropdown 
+                                        menu={{ 
+                                            items: llmModels.map(m => ({
+                                                key: String(m.id),
+                                                label: m.display_name,
+                                                icon: <RocketOutlined />
+                                            })), 
+                                            selectable: true,
+                                            selectedKeys: [String(selectedLLMId)],
+                                            onClick: ({ key }) => setSelectedLLMId(Number(key)) 
+                                        }} 
+                                        trigger={['click']}
+                                    >
+                                        <Tag 
+                                            icon={<RocketOutlined />} 
+                                            className="cursor-pointer hover:opacity-80 transition-opacity border-none text-[10px] py-0.5 px-2" 
+                                            style={{ 
+                                                color: token.colorWarning, 
+                                                backgroundColor: '#fffbe6',
+                                                maxWidth: '220px',
+                                                display: 'flex',
+                                                alignItems: 'center'
+                                            }}
+                                        >
+                                            <span style={{ 
+                                                overflow: 'hidden', 
+                                                textOverflow: 'ellipsis', 
+                                                whiteSpace: 'nowrap' 
+                                            }}>
+                                                {llmModels.find(m => m.id === selectedLLMId)?.display_name || '选择模型'}
+                                            </span>
+                                        </Tag>
+                                    </Dropdown>
+                                </Flex>
+                            </Flex>
                         }
                         extra={
                             <Space>
@@ -602,7 +621,7 @@ const AIChatbot: React.FC = () => {
                         }
                         className="fixed right-6 bottom-[5vh] w-105 h-155 z-50 flex flex-col shadow-2xl rounded-2xl overflow-hidden border border-solid animate-in fade-in slide-in-from-bottom-4 duration-300"
                         style={{ borderColor: token.colorBorderSecondary }}
-                        styles={{ body: { padding: 0, flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: token.colorBgContainer, overflow: 'hidden', height: 'calc(100% - 56px)' } }}
+                        styles={{ body: { padding: 0, flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: token.colorBgContainer, overflow: 'hidden' } }}
                     >
                         {/* 历史对话抽屉 (内部模拟) */}
                         {historyVisible && (
