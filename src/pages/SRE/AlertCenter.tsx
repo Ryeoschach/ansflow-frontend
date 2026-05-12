@@ -30,13 +30,15 @@ import useAppStore from '@/store/useAppStore';
 import { 
   getAlertEvents, ignoreAlert, getHealingPolicies, 
   createHealingPolicy, updateHealingPolicy, deleteHealingPolicy,
-  exportAlertToKnowledge, triggerAlertHealing 
+  exportAlertToKnowledge, triggerAlertHealing,
+  bulkDeleteAlerts, bulkDeletePolicies
 } from '@/api/sre';
 import { getPipelines, getPipelineRunDetail } from '@/api/pipeline';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 const { Text, Title } = Typography;
+const { Search } = Input;
 
 const AlertCenter: React.FC = () => {
     const { t } = useTranslation();
@@ -49,13 +51,15 @@ const AlertCenter: React.FC = () => {
     // --- 告警事件相关状态 ---
     const [detailVisible, setDetailVisible] = useState(false);
     const [selectedAlert, setSelectedAlert] = useState<any>(null);
-    const [alertParams, setAlertParams] = useState({ page: 1, size: 20 });
+    const [alertParams, setAlertParams] = useState<any>({ page: 1, size: 20 });
+    const [selectedAlertKeys, setSelectedAlertKeys] = useState<React.Key[]>([]);
 
     // --- 自愈策略相关状态 ---
     const [policyModalVisible, setPolicyModalVisible] = useState(false);
     const [editingPolicy, setEditingPolicy] = useState<any>(null);
     const [policyForm] = Form.useForm();
-    const [policyParams, setPolicyParams] = useState({ page: 1, size: 20 });
+    const [policyParams, setPolicyParams] = useState<any>({ page: 1, size: 20 });
+    const [selectedPolicyKeys, setSelectedPolicyKeys] = useState<React.Key[]>([]);
 
     // --- 数据获取 ---
     const { data: alertData, isLoading: alertsLoading } = useQuery({
@@ -131,6 +135,24 @@ const AlertCenter: React.FC = () => {
         }
     });
 
+    const bulkDeleteAlertMutation = useMutation({
+        mutationFn: (ids: number[]) => bulkDeleteAlerts(ids),
+        onSuccess: () => {
+            message.success(t('common.deleteSuccess'));
+            setSelectedAlertKeys([]);
+            queryClient.invalidateQueries({ queryKey: ['sre-alerts'] });
+        }
+    });
+
+    const bulkDeletePolicyMutation = useMutation({
+        mutationFn: (ids: number[]) => bulkDeletePolicies(ids),
+        onSuccess: () => {
+            message.success(t('common.deleteSuccess'));
+            setSelectedPolicyKeys([]);
+            queryClient.invalidateQueries({ queryKey: ['sre-policies'] });
+        }
+    });
+
     // --- 映射常量 ---
     const statusMap: any = {
         'firing': { color: 'error', text: t('alertCenter.statusText.firing'), icon: <WarningOutlined /> },
@@ -188,17 +210,37 @@ const AlertCenter: React.FC = () => {
             key: 'healing_status',
             render: (val: string, record: any) => {
                 const s = healingStatusMap[val] || { color: 'default', text: val };
+                const isAuto = record.is_auto_execute;
+                const policyName = record.matched_policy_name;
+                
                 if (val === 'executing' && record.latest_run_id) {
                     return (
-                        <Tooltip title={`运行 ID: #${record.latest_run_id}`}>
+                        <Tooltip title={`策略: ${policyName || '未知'} | 运行 ID: #${record.latest_run_id} ${isAuto ? '(自动触发)' : ''}`}>
                             <Space direction="vertical" size={2} className="w-24">
                                 <Badge status="warning" text={t('alertCenter.healingInProgress')} />
-                                <Progress percent={record.healing_status === 'success' ? 100 : 30} size={[80, 4]} showInfo={false} status="active" />
+                                <Progress percent={30} size={[80, 4]} showInfo={false} status="active" />
                             </Space>
                         </Tooltip>
                     );
                 }
-                return <Badge status={s.color as any} text={s.text} />;
+                
+                return (
+                    <Space direction="vertical" size={0}>
+                        <Space size={4}>
+                            <Badge status={s.color as any} text={s.text} />
+                            {isAuto ? (
+                                <Tag color="gold" style={{ fontSize: '10px', padding: '0 4px', lineHeight: '16px' }}>AUTO</Tag>
+                            ) : policyName ? (
+                                <Tag color="blue" style={{ fontSize: '10px', padding: '0 4px', lineHeight: '16px' }}>MANUAL</Tag>
+                            ) : null}
+                        </Space>
+                        {policyName && (
+                            <Text type="secondary" style={{ fontSize: '10px' }} ellipsis={{ tooltip: policyName }}>
+                                {policyName}
+                            </Text>
+                        )}
+                    </Space>
+                );
             }
         },
         {
@@ -255,13 +297,37 @@ const AlertCenter: React.FC = () => {
             title: t('alertCenter.autoExecute'),
             dataIndex: 'is_auto_execute',
             key: 'is_auto_execute',
-            render: (val: boolean) => <Badge status={val ? 'success' : 'default'} text={val ? t('common.enabled') : t('common.disabled')} />
+            render: (val: boolean, record: any) => (
+                <Switch 
+                    checked={val} 
+                    size="small" 
+                    onChange={(checked) => {
+                        updateHealingPolicy(record.id, { is_auto_execute: checked })
+                            .then(() => {
+                                message.success('自动执行设置已更新');
+                                queryClient.invalidateQueries({ queryKey: ['sre-policies'] });
+                            });
+                    }}
+                />
+            )
         },
         {
             title: t('alertCenter.status'),
             dataIndex: 'is_active',
             key: 'is_active',
-            render: (val: boolean) => <Switch checked={val} size="small" disabled />
+            render: (val: boolean, record: any) => (
+                <Switch 
+                    checked={val} 
+                    size="small" 
+                    onChange={(checked) => {
+                        updateHealingPolicy(record.id, { is_active: checked })
+                            .then(() => {
+                                message.success(checked ? '策略已启用' : '策略已禁用');
+                                queryClient.invalidateQueries({ queryKey: ['sre-policies'] });
+                            });
+                    }}
+                />
+            )
         },
         {
             title: t('alertCenter.action'),
@@ -331,18 +397,49 @@ const AlertCenter: React.FC = () => {
                                 </Space>
                             ),
                             children: (
-                                <Table 
-                                    dataSource={alertData?.data} 
-                                    columns={alertColumns} 
-                                    rowKey="id" 
-                                    loading={alertsLoading}
-                                    pagination={{
-                                        total: alertData?.total,
-                                        current: alertParams.page,
-                                        pageSize: alertParams.size,
-                                        onChange: (page) => setAlertParams({ ...alertParams, page })
-                                    }}
-                                />
+                                <div className="pt-4 flex flex-col gap-4">
+                                    <div className="flex justify-between items-center">
+                                        <Space>
+                                            <Search 
+                                                placeholder={t('alertCenter.alertName')} 
+                                                allowClear 
+                                                onSearch={(val) => setAlertParams({ ...alertParams, alert_name__icontains: val, page: 1 })}
+                                                className="w-64"
+                                            />
+                                            {selectedAlertKeys.length > 0 && (
+                                                <Button 
+                                                    danger 
+                                                    icon={<DeleteOutlined />}
+                                                    onClick={() => {
+                                                        modal.confirm({
+                                                            title: t('common.deleteConfirm'),
+                                                            content: `确认删除选中的 ${selectedAlertKeys.length} 条告警？`,
+                                                            onOk: () => bulkDeleteAlertMutation.mutate(selectedAlertKeys as number[])
+                                                        });
+                                                    }}
+                                                >
+                                                    {t('common.delete')} ({selectedAlertKeys.length})
+                                                </Button>
+                                            )}
+                                        </Space>
+                                    </div>
+                                    <Table 
+                                        dataSource={alertData?.data} 
+                                        columns={alertColumns} 
+                                        rowKey="id" 
+                                        loading={alertsLoading}
+                                        rowSelection={{
+                                            selectedRowKeys: selectedAlertKeys,
+                                            onChange: (keys) => setSelectedAlertKeys(keys)
+                                        }}
+                                        pagination={{
+                                            total: alertData?.total,
+                                            current: alertParams.page,
+                                            pageSize: alertParams.size,
+                                            onChange: (page) => setAlertParams({ ...alertParams, page })
+                                        }}
+                                    />
+                                </div>
                             )
                         },
                         {
@@ -354,8 +451,31 @@ const AlertCenter: React.FC = () => {
                                 </Space>
                             ),
                             children: (
-                                <div className="pt-4">
-                                    <div className="mb-4 flex justify-end">
+                                <div className="pt-4 flex flex-col gap-4">
+                                    <div className="flex justify-between items-center">
+                                        <Space>
+                                            <Search 
+                                                placeholder={t('alertCenter.policyName')} 
+                                                allowClear 
+                                                onSearch={(val) => setPolicyParams({ ...policyParams, name__icontains: val, page: 1 })}
+                                                className="w-64"
+                                            />
+                                            {selectedPolicyKeys.length > 0 && (
+                                                <Button 
+                                                    danger 
+                                                    icon={<DeleteOutlined />}
+                                                    onClick={() => {
+                                                        modal.confirm({
+                                                            title: t('common.deleteConfirm'),
+                                                            content: `确认删除选中的 ${selectedPolicyKeys.length} 条自愈策略？`,
+                                                            onOk: () => bulkDeletePolicyMutation.mutate(selectedPolicyKeys as number[])
+                                                        });
+                                                    }}
+                                                >
+                                                    {t('common.delete')} ({selectedPolicyKeys.length})
+                                                </Button>
+                                            )}
+                                        </Space>
                                         <Button
                                             type="primary"
                                             icon={<PlusOutlined />}
@@ -373,6 +493,10 @@ const AlertCenter: React.FC = () => {
                                         columns={policyColumns} 
                                         rowKey="id" 
                                         loading={policiesLoading}
+                                        rowSelection={{
+                                            selectedRowKeys: selectedPolicyKeys,
+                                            onChange: (keys) => setSelectedPolicyKeys(keys)
+                                        }}
                                         pagination={{
                                             total: policyData?.total,
                                             current: policyParams.page,

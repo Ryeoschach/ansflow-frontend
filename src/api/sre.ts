@@ -36,6 +36,9 @@ export interface SelfHealingPolicy {
 export const getAlertEvents = (params?: any): Promise<PaginatedResponse<AlertEvent>> =>
   request.get('/sre/alerts/', { params }) as any;
 
+export const bulkDeleteAlerts = (ids: number[]): Promise<any> =>
+  request.post('/sre/alerts/bulk-destroy/', { ids });
+
 // 获取单个告警详情
 export const getAlertEvent = (id: number): Promise<AlertEvent> =>
   request.get(`/sre/alerts/${id}/`) as any;
@@ -67,6 +70,9 @@ export const updateHealingPolicy = (id: number, data: Partial<SelfHealingPolicy>
 // 删除自愈策略
 export const deleteHealingPolicy = (id: number): Promise<any> =>
   request.delete(`/sre/policies/${id}/`) as any;
+
+export const bulkDeletePolicies = (ids: number[]): Promise<any> =>
+  request.post('/sre/policies/bulk-destroy/', { ids });
 
 // 绑定建议自愈流水线到告警
 export const bindHealingPipeline = (alertId: number, data: { pipeline_id: number; make_policy?: boolean }): Promise<any> =>

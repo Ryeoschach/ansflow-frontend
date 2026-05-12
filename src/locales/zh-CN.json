@@ -770,6 +770,7 @@
     "pendingCount": "待扫描",
     "latency": "耗时",
     "unreachable": "连接不可达",
+    "columnDetails": "指标详情",
     "noData": "未能获取到监控数据",
     "celeryStatus": "Celery 分布式任务状态",
     "activeWorkers": "活动 Worker",

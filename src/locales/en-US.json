@@ -839,6 +839,7 @@
     "pendingCount": "Pending",
     "latency": "Latency",
     "unreachable": "Connection unreachable",
+    "columnDetails": "Metrics Details",
     "noData": "Unable to fetch monitoring data",
     "celeryStatus": "Celery Distributed Task Status",
     "activeWorkers": "Active Workers",

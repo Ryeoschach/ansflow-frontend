@@ -104,7 +104,7 @@ const SystemHealthTable: React.FC<{ components: HealthComponent[] }> = ({ compon
       render: (v: string) => <Text className="font-mono">{v || 'N/A'}</Text>
     },
     {
-      title: t('monitor.noData'), // 借用作为“详情”列名
+      title: t('monitor.columnDetails'),
       key: 'details',
       render: (_: any, record: HealthComponent) => {
         if (record.status !== 'healthy' && record.message) {
