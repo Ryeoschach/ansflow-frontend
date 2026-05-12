@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { Card, Table, Typography, Tag, Space, Button, theme, Select, Drawer, Descriptions, Badge, Modal, Input, App, Tooltip, Tabs, Timeline, Form, Switch, Popconfirm, List, Avatar, Alert, Divider } from 'antd';
 const { Text } = Typography;
-import { CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, EyeOutlined, PlusOutlined, DeleteOutlined, EditOutlined, SafetyCertificateOutlined, UserOutlined, ClockCircleOutlined, SendOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, EyeOutlined, PlusOutlined, DeleteOutlined, EditOutlined, SafetyCertificateOutlined, UserOutlined, ClockCircleOutlined, SendOutlined, ThunderboltOutlined, ArrowRightOutlined, RobotOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { 
     getApprovalTickets, approveTicket, rejectTicket, 
-    getApprovalTemplates,
+    getApprovalResources, updateApprovalResource, deleteApprovalResource,
     getApprovalPolicies, createApprovalPolicy, updateApprovalPolicy, deleteApprovalPolicy,
-    ApprovalTicket, ApprovalPolicy, ResourceTemplate 
+    ApprovalTicket, ApprovalPolicy, ResourceTemplate, ApprovalResource 
 } from '../../api/approval';
 import { getRoles } from '../../api/rbac';
 import useAppStore from '../../store/useAppStore';
@@ -50,11 +51,27 @@ const ApprovalCenter: React.FC = () => {
         enabled: !!authToken && hasPermission('system:approval_ticket:view'),
     });
 
-    const { data: templatesData } = useQuery({
-        queryKey: ['approvalTemplates'],
-        queryFn: () => getApprovalTemplates(),
-        enabled: !!authToken && activeTab !== 'tickets',
+    const { data: qResourcesData, refetch: refetchResources } = useQuery({
+        queryKey: ['approvalResources'],
+        queryFn: () => getApprovalResources(),
+        enabled: !!authToken && hasPermission('system:approval_resource:view') && (activeTab === 'templates' || activeTab === 'policies'),
     });
+
+    const resourceMutation = useMutation({
+        mutationFn: ({ id, ...data }: any) => updateApprovalResource(id, data),
+        onSuccess: () => {
+            message.success(t('common.success'));
+            refetchResources();
+            // 刷新本地缓存以更新策略页面的显示名称
+            queryClient.invalidateQueries({ queryKey: ['approvalResources'] });
+        }
+    });
+
+    // --- 派生状态：供下拉框使用的启用资源列表 ---
+    const activeResources = React.useMemo(() => {
+        const raw = Array.isArray(qResourcesData) ? qResourcesData : ((qResourcesData as any)?.data?.results || (qResourcesData as any)?.data || []);
+        return Array.isArray(raw) ? raw.filter((r: any) => r.is_active) : [];
+    }, [qResourcesData]);
 
     const { data: policiesData, refetch: refetchPolicies } = useQuery({
         queryKey: ['approvalPolicies'],
@@ -96,12 +113,25 @@ const ApprovalCenter: React.FC = () => {
             message.error(err.response?.data?.detail || t('approval.rejectError'));
         }
     });
+const policyMutation = useMutation({
+    mutationFn: (values: any) => {
+        let processedValues = { ...values };
+        if (typeof processedValues.match_rules === 'string' && processedValues.match_rules.trim() !== '') {
+            try {
+                processedValues.match_rules = JSON.parse(processedValues.match_rules);
+            } catch(e) {
+                message.error(t('approval.matchRulesError') || '匹配规则 JSON 格式有误');
+                throw new Error("Invalid JSON");
+            }
+        } else {
+            processedValues.match_rules = {};
+        }
 
-    const policyMutation = useMutation({
-        mutationFn: (values: any) => editingPolicy 
-            ? updateApprovalPolicy(editingPolicy.id, values) 
-            : createApprovalPolicy(values),
-        onSuccess: () => {
+        if (editingPolicy) return updateApprovalPolicy(editingPolicy.id, processedValues);
+        return createApprovalPolicy(processedValues);
+    },
+    onSuccess: () => {
+
             message.success(t('common.success'));
             setIsPolicyModalOpen(false);
             refetchPolicies();
@@ -144,21 +174,32 @@ const ApprovalCenter: React.FC = () => {
         {
             title: t('approval.columnIntent'),
             key: 'intent',
-            render: (_: any, record: ApprovalTicket) => (
-                <div>
+            render: (_: any, record: ApprovalTicket) => {
+                const isSre = record.payload && (record.payload as any).alert_id;
+                return (
                     <div>
-                        <Tag color={record.method === 'DELETE' ? 'error' : (record.method === 'POST' ? 'success' : 'processing')}>
-                            {record.method}
-                        </Tag>
-                        <span style={{ fontWeight: 500 }}>{record.title}</span>
-                    </div>
-                    <Tooltip title={record.url_path}>
-                        <div style={{ marginTop: '4px', fontSize: '11px', color: token.colorTextTertiary, width: '230px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {record.url_path}
+                        <div>
+                            <Tag color={record.method === 'DELETE' ? 'error' : (record.method === 'POST' ? 'success' : 'processing')}>
+                                {record.method}
+                            </Tag>
+                            {isSre && <ThunderboltOutlined style={{ color: '#faad14', marginRight: 4 }} />}
+                            <span style={{ fontWeight: 500 }}>{record.title}</span>
                         </div>
-                    </Tooltip>
-                </div>
-            )
+                        {isSre ? (
+                            <div style={{ marginTop: '4px', fontSize: '11px', color: '#faad14' }}>
+                                <RobotOutlined style={{ marginRight: 4 }} />
+                                {t('approval.sreAlertTitle')}: {(record.payload as any).alert_name}
+                            </div>
+                        ) : (
+                            <Tooltip title={record.url_path}>
+                                <div style={{ marginTop: '4px', fontSize: '11px', color: token.colorTextTertiary, width: '230px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {record.url_path}
+                                </div>
+                            </Tooltip>
+                        )}
+                    </div>
+                );
+            }
         },
         {
             title: t('approval.columnSubmitter'),
@@ -217,7 +258,26 @@ const ApprovalCenter: React.FC = () => {
 
     const policyColumns = [
         { title: t('approval.policyName'), dataIndex: 'name', key: 'name', render: (v: string) => <Text strong>{v}</Text> },
-        { title: t('approval.resourceType'), dataIndex: 'resource_type', key: 'resource_type', render: (v: string) => <Tag color="processing">{v}</Tag> },
+        { 
+            title: t('approval.resourceType'), 
+            dataIndex: 'resource_type', 
+            key: 'resource_type', 
+            render: (v: string) => {
+                // [Creed's Integration] 从已加载的资源列表中寻找对应名称
+                const resources = Array.isArray(qResourcesData) ? qResourcesData : ((qResourcesData as any)?.data?.results || (qResourcesData as any)?.data || []);
+                const resource = resources.find((r: any) => r.code === v);
+                return (
+                    <Tooltip title={`${t('approval.resourceIdentifier')}: ${v}`}>
+                        <Tag color="processing">
+                            <Space size={4}>
+                                <SyncOutlined style={{ fontSize: '12px' }} />
+                                {resource?.name || v}
+                            </Space>
+                        </Tag>
+                    </Tooltip>
+                );
+            }
+        },
         { title: t('approval.environment'), dataIndex: 'environment', key: 'environment', render: (v: string) => v ? <Tag color="warning">{v}</Tag> : <Tag color="default">{t('common.all') || '全部'}</Tag> },
         { 
             title: t('approval.approverRoles'), 
@@ -242,6 +302,7 @@ const ApprovalCenter: React.FC = () => {
                         setEditingPolicy(record);
                         policyForm.setFieldsValue({
                             ...record,
+                            match_rules: record.match_rules && Object.keys(record.match_rules).length > 0 ? JSON.stringify(record.match_rules, null, 2) : '',
                             approver_roles: record.approver_roles || []
                         });
                         setIsPolicyModalOpen(true);
@@ -324,25 +385,46 @@ const ApprovalCenter: React.FC = () => {
                                 <div className="p-4">
                                     <Alert 
                                         message={t('approval.interceptTipTitle')} 
-                                        description={t('approval.interceptTipDesc')} 
+                                        description={t('approval.interceptTipDesc') || '系统自动发现的拦截点。您可以修改名称或临时禁用它们。'} 
                                         type="info" 
                                         showIcon 
                                         style={{ marginBottom: 24 }} 
                                     />
-                                    <List
-                                        grid={{ gutter: 16, column: 2 }}
-                                        dataSource={templatesData || []}
-                                        renderItem={(item: ResourceTemplate) => (
-                                            <List.Item>
-                                                <Card size="small" hoverable>
-                                                    <Card.Meta 
-                                                        avatar={<Avatar icon={<SyncOutlined />} style={{ backgroundColor: token.colorPrimary }} />}
-                                                        title={item.name}
-                                                        description={`${t('approval.resourceIdentifier')}: ${item.code}`}
+                                    <Table
+                                        dataSource={Array.isArray(qResourcesData) ? qResourcesData : ((qResourcesData as any)?.data?.results || (qResourcesData as any)?.data || [])}
+                                        rowKey="code"
+                                        pagination={false}
+                                        columns={[
+                                            { 
+                                                title: t('approval.resourceName') || '资源名称', 
+                                                dataIndex: 'name', 
+                                                render: (v, record: any) => (
+                                                    <Space>
+                                                        <Avatar size="small" icon={<SyncOutlined />} style={{ backgroundColor: token.colorPrimary }} />
+                                                        <Text strong>{v}</Text>
+                                                        {record.is_system && <Tag style={{ fontSize: '10px' }}>SYSTEM</Tag>}
+                                                    </Space>
+                                                )
+                                            },
+                                            { 
+                                                title: t('approval.resourceIdentifier') || '标识符', 
+                                                dataIndex: 'code', 
+                                                render: (v) => <Typography.Text code style={{ fontSize: '12px' }}>{v}</Typography.Text> 
+                                            },
+                                            { title: t('approval.description') || '描述', dataIndex: 'description' },
+                                            { 
+                                                title: t('common.status') || '状态', 
+                                                dataIndex: 'is_active',
+                                                render: (active, record: any) => (
+                                                    <Switch 
+                                                        size="small" 
+                                                        checked={active} 
+                                                        onChange={(checked) => resourceMutation.mutate({ id: record.id, is_active: checked })} 
+                                                        loading={resourceMutation.isPending}
                                                     />
-                                                </Card>
-                                            </List.Item>
-                                        )}
+                                                )
+                                            }
+                                        ]}
                                     />
                                 </div>
                             )
@@ -408,12 +490,39 @@ const ApprovalCenter: React.FC = () => {
                     <Form.Item name="resource_type" label={t('approval.resourceType')} rules={[{ required: true }]}>
                         <Select 
                             placeholder={t('approval.selectResource')}
-                            options={templatesData?.map(t => ({ label: t.name, value: t.code }))}
+                            options={activeResources.map((t: any) => ({ label: t.name, value: t.code }))}
                         />
                     </Form.Item>
                     <Form.Item name="environment" label={t('approval.environment')}>
                         <Input placeholder={t('approval.placeholderEnvironment')} />
                     </Form.Item>
+                    
+                    {/* [优化 C: 增加颗粒度规则配置] */}
+                    <Form.Item 
+                        name="match_rules" 
+                        label={t('approval.matchRules') || '载荷匹配规则 (JSON)'} 
+                        extra={t('approval.matchRulesTip') || '例如 {"action": "delete"}，空字典表示无条件拦截'}
+                    >
+                        <Input.TextArea 
+                            rows={3} 
+                            placeholder="{}" 
+                            onChange={(e) => {
+                                // 简单的 JSON 校验提示 (实际开发可引入代码编辑器组件)
+                                try { if(e.target.value) JSON.parse(e.target.value); } catch(err) { /* ignore */ }
+                            }} 
+                        />
+                    </Form.Item>
+
+                    {/* [优化 D: 增加免审白名单] */}
+                    <Form.Item 
+                        name="auto_pass_if_ai_verified" 
+                        label={t('approval.autoPassAi') || 'AI确信免审'} 
+                        valuePropName="checked"
+                        extra={t('approval.autoPassAiTip') || '当自愈系统确认告警属于已知安全场景时，自动放行（仅拦截人工触发）'}
+                    >
+                        <Switch />
+                    </Form.Item>
+
                     <Form.Item name="approver_roles" label={t('approval.approverRoles')} extra={t('approval.anyAdminTip')}>
                         <Select 
                             mode="multiple"
@@ -435,10 +544,19 @@ const ApprovalCenter: React.FC = () => {
                 onClose={() => setDetailVisible(false)}
                 open={detailVisible}
                 extra={
-                    currentTicket?.status === 'pending' && hasPermission('system:approval_ticket:approve') && (
+                    ['pending', 'failed'].includes(currentTicket?.status || '') && hasPermission('system:approval_ticket:approve') && (
                         <Space>
-                            <Button danger icon={<CloseCircleOutlined />} onClick={() => setRejectModalVisible(true)}>{t('approval.reject')}</Button>
-                            <Button type="primary" icon={<CheckCircleOutlined />} loading={approveMutation.isPending} onClick={() => handleApprove(currentTicket!.id)}>{t('approval.confirmOkText')}</Button>
+                            {currentTicket?.status === 'pending' && (
+                                <Button danger icon={<CloseCircleOutlined />} onClick={() => setRejectModalVisible(true)}>{t('approval.reject')}</Button>
+                            )}
+                            <Button 
+                                type="primary" 
+                                icon={currentTicket?.status === 'failed' ? <SyncOutlined /> : <CheckCircleOutlined />} 
+                                loading={approveMutation.isPending} 
+                                onClick={() => handleApprove(currentTicket!.id)}
+                            >
+                                {currentTicket?.status === 'failed' ? (t('approval.retry') || '重新执行') : t('approval.confirmOkText')}
+                            </Button>
                         </Space>
                     )
                 }
@@ -486,6 +604,39 @@ const ApprovalCenter: React.FC = () => {
                         />
 
                         <div>
+                            {currentTicket.payload && (currentTicket.payload as any).alert_id && (
+                                <Alert
+                                    message={
+                                        <Space>
+                                            <ThunderboltOutlined style={{ color: '#faad14' }} />
+                                            <Text strong>{t('approval.sreAlertTitle') || '告警自愈触发'}: {(currentTicket.payload as any).alert_name}</Text>
+                                        </Space>
+                                    }
+                                    description={
+                                        <div className="mt-2">
+                                            <Descriptions column={1} size="small" ghost>
+                                                <Descriptions.Item label={t('approval.sreReason') || '触发原因'}>
+                                                    <Tag color="volcano">{(currentTicket.payload as any).reason || '自动执行规则命中'}</Tag>
+                                                </Descriptions.Item>
+                                                <Descriptions.Item label={t('approval.sreAlertLink') || '查看告警详情'}>
+                                                    <Link to={`/v1/sre/alerts?id=${(currentTicket.payload as any).alert_id}`}>
+                                                        {t('common.clickToView') || '点击跳转'} <ArrowRightOutlined />
+                                                    </Link>
+                                                </Descriptions.Item>
+                                                <Descriptions.Item label={t('approval.sreDevRef') || '系统标识'}>
+                                                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                                                        Gemini SRE Integration (Managed by Creed)
+                                                    </Text>
+                                                </Descriptions.Item>
+                                            </Descriptions>
+                                        </div>
+                                    }
+                                    type="warning"
+                                    showIcon={false}
+                                    style={{ marginBottom: '16px', borderRadius: '8px' }}
+                                />
+                            )}
+
                             <Typography.Title level={5}><SendOutlined /> {t('approval.payloadTitle')}</Typography.Title>
                             <div style={{
                                 background: token.colorFillTertiary,

@@ -1,5 +1,7 @@
 {
   "common": {
+    "all": "全部",
+    "selectRoles": "请选择角色",
     "submit": "提交",
     "cancel": "取消",
     "save": "保存",
@@ -517,7 +519,19 @@
     "tickets": "审批工单",
     "templates": "审批模板",
     "policies": "审批策略",
+    "sreAlertTitle": "告警自愈拦截",
+    "sreReason": "触发原因",
+    "sreAlertLink": "关联告警",
+    "sreDevRef": "集成标识",
     "policyName": "策略名称",
+    "resourceName": "资源名称",
+    "resourceIdentifier": "资源标识",
+    "description": "描述",
+    "matchRules": "载荷匹配规则 (JSON)",
+    "matchRulesTip": "例如 {\"action\": \"delete\"}，空字典表示无条件拦截该资源",
+    "matchRulesError": "匹配规则 JSON 格式有误",
+    "autoPassAi": "AI确信免审",
+    "autoPassAiTip": "当自愈系统确信该操作安全时，自动放行（仅拦截人工高危操作）",
     "resourceType": "资源类型",
     "environment": "适用环境",
     "template": "审批模板",
@@ -1710,11 +1724,13 @@
       "none": "未处理",
       "analyzing": "AI 分析中",
       "suggested": "已有建议",
-      "executing": "自愈中",
+      "awaiting_approval": "待审批",
+      "executing": "自愈执行中",
       "success": "自愈成功",
       "failed": "自愈失败",
       "ignored": "已忽略"
     },
+
     "actions": {
       "ignore": "忽略",
       "viewDetail": "查看详情",

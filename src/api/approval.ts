@@ -24,11 +24,17 @@ export interface ApprovalTicket {
     audit_time: string | null;
 }
 
-export interface ResourceTemplate {
+export interface ApprovalResource {
+    id: number;
     code: string;
     name: string;
     icon: string;
+    description: string;
+    is_active: boolean;
+    is_system: boolean;
 }
+
+export interface ResourceTemplate extends Partial<ApprovalResource> {}
 
 export interface ApprovalPolicy {
     id: number;
@@ -51,14 +57,19 @@ export const approveTicket = (id: number): Promise<any> =>
 export const rejectTicket = (id: number, remark: string): Promise<any> =>
     request.post(`/approval_tickets/${id}/reject/`, { remark });
 
-// 资源模版接口 (拦截点)
-export const getApprovalTemplates = (): Promise<ResourceTemplate[]> =>
-    request.get('/approval_templates/') as any;
+// 资源管理接口 (拦截点管理)
+export const getApprovalResources = (params?: any): Promise<ApprovalResource[]> =>
+    request.get('/approval_resources/', { params }) as any;
 
-// 保持兼容性的占位符 (防止前端其他引用报错)
-export const createApprovalTemplate = (data: any) => Promise.reject("Not implemented: Use policies instead");
-export const updateApprovalTemplate = (id: number, data: any) => Promise.reject("Not implemented");
-export const deleteApprovalTemplate = (id: number) => Promise.reject("Not implemented");
+export const updateApprovalResource = (id: number, data: Partial<ApprovalResource>): Promise<any> =>
+    request.patch(`/approval_resources/${id}/`, data) as any;
+
+export const deleteApprovalResource = (id: number): Promise<any> =>
+    request.delete(`/approval_resources/${id}/`) as any;
+
+// 保持兼容性的旧接口导出
+export const getApprovalTemplates = (): Promise<ResourceTemplate[]> =>
+    getApprovalResources({ active_only: 'true' }) as any;
 
 // 策略接口
 export const getApprovalPolicies = (params?: any): Promise<PaginatedResponse<ApprovalPolicy>> =>

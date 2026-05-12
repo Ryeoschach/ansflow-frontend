@@ -163,6 +163,7 @@ const AlertCenter: React.FC = () => {
         'none': { color: 'default', text: t('alertCenter.healingStatus.none') },
         'analyzing': { color: 'processing', text: t('alertCenter.healingStatus.analyzing'), icon: <LoadingOutlined /> },
         'suggested': { color: 'cyan', text: t('alertCenter.healingStatus.suggested'), icon: <RobotOutlined /> },
+        'awaiting_approval': { color: 'magenta', text: t('alertCenter.healingStatus.awaiting_approval'), icon: <SafetyCertificateOutlined /> },
         'executing': { color: 'warning', text: t('alertCenter.healingStatus.executing'), icon: <SyncOutlined spin /> },
         'success': { color: 'success', text: t('alertCenter.healingStatus.success'), icon: <CheckCircleOutlined /> },
         'failed': { color: 'error', text: t('alertCenter.healingStatus.failed'), icon: <CloseCircleOutlined /> },
@@ -212,6 +213,22 @@ const AlertCenter: React.FC = () => {
                 const s = healingStatusMap[val] || { color: 'default', text: val };
                 const isAuto = record.is_auto_execute;
                 const policyName = record.matched_policy_name;
+                
+                if (val === 'awaiting_approval' && record.latest_ticket_id) {
+                    return (
+                        <Link to={`/v1/system/approvals?id=${record.latest_ticket_id}`}>
+                            <Space direction="vertical" size={0}>
+                                <Space size={4}>
+                                    <Badge status={s.color as any} text={s.text} />
+                                    {isAuto && <Tag color="gold" style={{ fontSize: '10px', padding: '0 4px', lineHeight: '16px' }}>AUTO</Tag>}
+                                </Space>
+                                <Text type="link" style={{ fontSize: '10px' }}>
+                                    查看工单 #{record.latest_ticket_id}
+                                </Text>
+                            </Space>
+                        </Link>
+                    );
+                }
                 
                 if (val === 'executing' && record.latest_run_id) {
                     return (

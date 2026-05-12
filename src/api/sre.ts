@@ -10,7 +10,7 @@ export interface AlertEvent {
   fingerprint: string;
   labels: Record<string, string>;
   annotations: Record<string, string>;
-  healing_status: 'none' | 'analyzing' | 'suggested' | 'executing' | 'success' | 'failed' | 'ignored';
+  healing_status: 'none' | 'analyzing' | 'suggested' | 'awaiting_approval' | 'executing' | 'success' | 'failed' | 'ignored';
   ai_analysis: string | null;
   is_exported: boolean;
   suggested_pipeline: number | null;
