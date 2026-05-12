@@ -487,10 +487,16 @@ const policyMutation = useMutation({
                     <Form.Item name="name" label={t('approval.policyName')} rules={[{ required: true }]}>
                         <Input placeholder={t('approval.placeholderPolicyName')} />
                     </Form.Item>
+                    <Form.Item name="name_en" label={t('approval.policyNameEn') || '策略名称 (EN)'}>
+                        <Input placeholder={t('approval.placeholderPolicyNameEn') || 'Enter policy name in English'} />
+                    </Form.Item>
                     <Form.Item name="resource_type" label={t('approval.resourceType')} rules={[{ required: true }]}>
                         <Select 
                             placeholder={t('approval.selectResource')}
-                            options={activeResources.map((t: any) => ({ label: t.name, value: t.code }))}
+                            options={activeResources.map((t: any) => ({ 
+                                label: i18n.language === 'en-US' && t.name_en ? t.name_en : t.name, 
+                                value: t.code 
+                            }))}
                         />
                     </Form.Item>
                     <Form.Item name="environment" label={t('approval.environment')}>
@@ -643,6 +649,22 @@ const policyMutation = useMutation({
                                 color: token.colorText,
                                 padding: '16px', borderRadius: '8px',
                                 overflow: 'auto', maxHeight: '500px',
+                                fontSize: '13px', fontFamily: 'monospace',
+                                border: `1px solid ${token.colorBorderSecondary}`
+                            }}>
+                                <pre style={{ margin: 0 }}>
+                                    {JSON.stringify(currentTicket.payload, null, 2)}
+                                </pre>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </Drawer>
+        </div>
+    );
+};
+
+export default ApprovalCenter;
                                 fontSize: '13px', fontFamily: 'monospace',
                                 border: `1px solid ${token.colorBorderSecondary}`
                             }}>
