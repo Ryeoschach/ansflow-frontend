@@ -63,8 +63,16 @@ export interface KnowledgeDocument {
   title: string;
   content: string;
   source_type: 'manual' | 'file' | 'ai_export';
+  status: 'pending' | 'processing' | 'ready' | 'error';
+  chunk_count: number;
   metadata: any;
   create_time: string;
+}
+
+export interface DocumentChunk {
+  index: number;
+  content: string;
+  length: number;
 }
 
 // 知识库
@@ -86,6 +94,19 @@ export const getKnowledgeDocuments = (params?: { kb?: number }): Promise<Paginat
 
 export const deleteKnowledgeDocument = (id: number): Promise<void> =>
   request.delete(`/ai/documents/${id}/`) as any;
+
+export const uploadKnowledgeDocument = (kbId: number, file: File): Promise<any> => {
+  const formData = new FormData();
+  formData.append('kb', kbId.toString());
+  formData.append('file', file);
+  formData.append('title', file.name);
+  return request.post('/ai/documents/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }) as any;
+};
+
+export const getDocumentChunks = (id: number): Promise<DocumentChunk[]> =>
+  request.get(`/ai/documents/${id}/chunks/`) as any;
 
 // 对话历史
 export const getChatHistories = (params?: Record<string, any>): Promise<PaginatedResponse<ChatHistory>> =>
