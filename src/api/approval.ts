@@ -23,6 +23,7 @@ export interface ApprovalTicket {
     create_time: string;
     audit_time: string | null;
 }
+
 export interface ApprovalResource {
     id: number;
     code: string;
@@ -42,7 +43,6 @@ export interface ApprovalPolicy {
     name: string;
     name_en: string | null;
     resource_type: string;
-...
     environment: string | null;
     approver_roles: number[];
     approver_roles_detail?: any[];
