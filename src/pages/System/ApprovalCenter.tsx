@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Table, Typography, Tag, Space, Button, theme, Select, Drawer, Descriptions, Badge, Modal, Input, App, Tooltip, Tabs, Timeline, Form, Switch, Popconfirm, List, Avatar, Alert, Divider } from 'antd';
+import { Card, Table, Typography, Tag, Space, Button, theme, Select, Drawer, Descriptions, Badge, Modal, Input, App, Tooltip, Tabs, Timeline, Form, Switch, Popconfirm, Avatar, Alert, Divider } from 'antd';
 const { Text } = Typography;
 import { CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, EyeOutlined, PlusOutlined, DeleteOutlined, EditOutlined, SafetyCertificateOutlined, UserOutlined, ClockCircleOutlined, SendOutlined, ThunderboltOutlined, ArrowRightOutlined, RobotOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -8,9 +8,9 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { 
     getApprovalTickets, approveTicket, rejectTicket, 
-    getApprovalResources, updateApprovalResource, deleteApprovalResource,
+    getApprovalResources, updateApprovalResource, 
     getApprovalPolicies, createApprovalPolicy, updateApprovalPolicy, deleteApprovalPolicy,
-    ApprovalTicket, ApprovalPolicy, ResourceTemplate, ApprovalResource 
+    ApprovalTicket, ApprovalPolicy, ApprovalResource 
 } from '../../api/approval';
 import { getRoles } from '../../api/rbac';
 import useAppStore from '../../store/useAppStore';
@@ -25,7 +25,7 @@ const STATUS_MAP = (t: (key: string) => string) => ({
 } as const);
 
 const ApprovalCenter: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { token } = theme.useToken();
     const { message, modal } = App.useApp();
     const queryClient = useQueryClient();
@@ -62,12 +62,10 @@ const ApprovalCenter: React.FC = () => {
         onSuccess: () => {
             message.success(t('common.success'));
             refetchResources();
-            // 刷新本地缓存以更新策略页面的显示名称
             queryClient.invalidateQueries({ queryKey: ['approvalResources'] });
         }
     });
 
-    // --- 派生状态：供下拉框使用的启用资源列表 ---
     const activeResources = React.useMemo(() => {
         const raw = Array.isArray(qResourcesData) ? qResourcesData : ((qResourcesData as any)?.data?.results || (qResourcesData as any)?.data || []);
         return Array.isArray(raw) ? raw.filter((r: any) => r.is_active) : [];
@@ -113,25 +111,25 @@ const ApprovalCenter: React.FC = () => {
             message.error(err.response?.data?.detail || t('approval.rejectError'));
         }
     });
-const policyMutation = useMutation({
-    mutationFn: (values: any) => {
-        let processedValues = { ...values };
-        if (typeof processedValues.match_rules === 'string' && processedValues.match_rules.trim() !== '') {
-            try {
-                processedValues.match_rules = JSON.parse(processedValues.match_rules);
-            } catch(e) {
-                message.error(t('approval.matchRulesError') || '匹配规则 JSON 格式有误');
-                throw new Error("Invalid JSON");
+
+    const policyMutation = useMutation({
+        mutationFn: (values: any) => {
+            let processedValues = { ...values };
+            if (typeof processedValues.match_rules === 'string' && processedValues.match_rules.trim() !== '') {
+                try {
+                    processedValues.match_rules = JSON.parse(processedValues.match_rules);
+                } catch(e) {
+                    message.error(t('approval.matchRulesError') || '匹配规则 JSON 格式有误');
+                    throw new Error("Invalid JSON");
+                }
+            } else {
+                processedValues.match_rules = {};
             }
-        } else {
-            processedValues.match_rules = {};
-        }
 
-        if (editingPolicy) return updateApprovalPolicy(editingPolicy.id, processedValues);
-        return createApprovalPolicy(processedValues);
-    },
-    onSuccess: () => {
-
+            if (editingPolicy) return updateApprovalPolicy(editingPolicy.id, processedValues);
+            return createApprovalPolicy(processedValues);
+        },
+        onSuccess: () => {
             message.success(t('common.success'));
             setIsPolicyModalOpen(false);
             refetchPolicies();
@@ -257,21 +255,28 @@ const policyMutation = useMutation({
     ];
 
     const policyColumns = [
-        { title: t('approval.policyName'), dataIndex: 'name', key: 'name', render: (v: string) => <Text strong>{v}</Text> },
+        { 
+            title: t('approval.policyName'), 
+            dataIndex: 'name', 
+            key: 'name', 
+            render: (v: string, record: ApprovalPolicy) => (
+                <Text strong>{i18n.language === 'en-US' && record.name_en ? record.name_en : v}</Text>
+            )
+        },
         { 
             title: t('approval.resourceType'), 
             dataIndex: 'resource_type', 
             key: 'resource_type', 
             render: (v: string) => {
-                // [Creed's Integration] 从已加载的资源列表中寻找对应名称
                 const resources = Array.isArray(qResourcesData) ? qResourcesData : ((qResourcesData as any)?.data?.results || (qResourcesData as any)?.data || []);
                 const resource = resources.find((r: any) => r.code === v);
+                const displayName = i18n.language === 'en-US' && resource?.name_en ? resource.name_en : (resource?.name || v);
                 return (
                     <Tooltip title={`${t('approval.resourceIdentifier')}: ${v}`}>
                         <Tag color="processing">
                             <Space size={4}>
                                 <SyncOutlined style={{ fontSize: '12px' }} />
-                                {resource?.name || v}
+                                {displayName}
                             </Space>
                         </Tag>
                     </Tooltip>
@@ -394,6 +399,7 @@ const policyMutation = useMutation({
                                         dataSource={Array.isArray(qResourcesData) ? qResourcesData : ((qResourcesData as any)?.data?.results || (qResourcesData as any)?.data || [])}
                                         rowKey="code"
                                         pagination={false}
+                                        scroll={{ x: 'max-content' }}
                                         columns={[
                                             { 
                                                 title: t('approval.resourceName') || '资源名称', 
@@ -401,7 +407,9 @@ const policyMutation = useMutation({
                                                 render: (v, record: any) => (
                                                     <Space>
                                                         <Avatar size="small" icon={<SyncOutlined />} style={{ backgroundColor: token.colorPrimary }} />
-                                                        <Text strong>{v}</Text>
+                                                        <Text strong>
+                                                            {i18n.language === 'en-US' && record.name_en ? record.name_en : v}
+                                                        </Text>
                                                         {record.is_system && <Tag style={{ fontSize: '10px' }}>SYSTEM</Tag>}
                                                     </Space>
                                                 )
@@ -411,10 +419,17 @@ const policyMutation = useMutation({
                                                 dataIndex: 'code', 
                                                 render: (v) => <Typography.Text code style={{ fontSize: '12px' }}>{v}</Typography.Text> 
                                             },
-                                            { title: t('approval.description') || '描述', dataIndex: 'description' },
+                                            { 
+                                                title: t('approval.description') || '描述', 
+                                                dataIndex: 'description',
+                                                render: (v, record: any) => (
+                                                    i18n.language === 'en-US' && record.description_en ? record.description_en : v
+                                                )
+                                            },
                                             { 
                                                 title: t('common.status') || '状态', 
                                                 dataIndex: 'is_active',
+                                                width: 80,
                                                 render: (active, record: any) => (
                                                     <Switch 
                                                         size="small" 
@@ -449,6 +464,7 @@ const policyMutation = useMutation({
                                         dataSource={(policiesData as any)?.data || []}
                                         rowKey="id"
                                         pagination={false}
+                                        scroll={{ x: 'max-content' }}
                                     />
                                 </>
                             )
@@ -457,7 +473,6 @@ const policyMutation = useMutation({
                 />
             </Card>
 
-            {/* 驳回 Modal */}
             <Modal
                 title={t('approval.rejectModalTitle')}
                 open={rejectModalVisible}
@@ -475,7 +490,6 @@ const policyMutation = useMutation({
                 />
             </Modal>
 
-            {/* 策略编辑 Modal */}
             <Modal
                 title={editingPolicy ? t('approval.editPolicy') : t('approval.addPolicy')}
                 open={isPolicyModalOpen}
@@ -503,23 +517,14 @@ const policyMutation = useMutation({
                         <Input placeholder={t('approval.placeholderEnvironment')} />
                     </Form.Item>
                     
-                    {/* [优化 C: 增加颗粒度规则配置] */}
                     <Form.Item 
                         name="match_rules" 
                         label={t('approval.matchRules') || '载荷匹配规则 (JSON)'} 
                         extra={t('approval.matchRulesTip') || '例如 {"action": "delete"}，空字典表示无条件拦截'}
                     >
-                        <Input.TextArea 
-                            rows={3} 
-                            placeholder="{}" 
-                            onChange={(e) => {
-                                // 简单的 JSON 校验提示 (实际开发可引入代码编辑器组件)
-                                try { if(e.target.value) JSON.parse(e.target.value); } catch(err) { /* ignore */ }
-                            }} 
-                        />
+                        <Input.TextArea rows={3} placeholder="{}" />
                     </Form.Item>
 
-                    {/* [优化 D: 增加免审白名单] */}
                     <Form.Item 
                         name="auto_pass_if_ai_verified" 
                         label={t('approval.autoPassAi') || 'AI确信免审'} 
@@ -542,7 +547,6 @@ const policyMutation = useMutation({
                 </Form>
             </Modal>
 
-            {/* 载荷查看 Drawer */}
             <Drawer
                 title={t('approval.drawerTitle')}
                 placement="right"
@@ -649,22 +653,6 @@ const policyMutation = useMutation({
                                 color: token.colorText,
                                 padding: '16px', borderRadius: '8px',
                                 overflow: 'auto', maxHeight: '500px',
-                                fontSize: '13px', fontFamily: 'monospace',
-                                border: `1px solid ${token.colorBorderSecondary}`
-                            }}>
-                                <pre style={{ margin: 0 }}>
-                                    {JSON.stringify(currentTicket.payload, null, 2)}
-                                </pre>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </Drawer>
-        </div>
-    );
-};
-
-export default ApprovalCenter;
                                 fontSize: '13px', fontFamily: 'monospace',
                                 border: `1px solid ${token.colorBorderSecondary}`
                             }}>
