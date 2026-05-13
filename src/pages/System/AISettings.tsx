@@ -8,7 +8,7 @@ import {
   PlusOutlined, EditOutlined, DeleteOutlined, 
   ApiOutlined, RocketOutlined, SettingOutlined,
   BookOutlined, DatabaseOutlined, SyncOutlined,
-  UploadOutlined, InboxOutlined, EyeOutlined,
+  UploadOutlined, InboxOutlined, EyeOutlined, ReloadOutlined,
   SafetyCertificateOutlined, CheckCircleOutlined, StopOutlined, SaveOutlined,
   SearchOutlined, BugOutlined, FileTextOutlined
 } from '@ant-design/icons';
@@ -92,10 +92,16 @@ const AISettings: React.FC = () => {
     enabled: queryEnabled
   });
 
-  const { data: docsData, isLoading: docsLoading } = useQuery({
+  const { data: docsData, isLoading: docsLoading, refetch: refetchDocs } = useQuery({
     queryKey: ['aiDocuments', selectedKB?.id],
-    queryFn: () => getKnowledgeDocuments({ kb: selectedKB?.id }),
-    enabled: !!selectedKB && isDocDrawerOpen
+    queryFn: () => getKnowledgeDocuments({ kb: selectedKB!.id }),
+    enabled: !!selectedKB && isDocDrawerOpen,
+    refetchInterval: (query) => {
+      const docs = query.state.data as any;
+      const results = docs?.results || docs?.data || (Array.isArray(docs) ? docs : []);
+      const hasProcessing = results.some((d: any) => d.status === 'processing' || d.status === 'pending');
+      return hasProcessing ? 3000 : false;
+    }
   });
 
   const { data: chunksData, isLoading: chunksLoading } = useQuery({
@@ -147,7 +153,7 @@ const AISettings: React.FC = () => {
 
   const uploadMutation = useMutation({
     mutationFn: ({ kbId, file }: { kbId: number, file: File }) => uploadKnowledgeDocument(kbId, file),
-    onSuccess: () => { message.info('文件已上传，后台正在异步解析中...'); setUploadVisible(false); queryClient.invalidateQueries({ queryKey: ['aiDocuments', selectedKB?.id] }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['aiDocuments', selectedKB?.id] }); },
     onError: (err: any) => message.error(err.response?.data?.error || 'Upload failed')
   });
 
@@ -170,8 +176,18 @@ const AISettings: React.FC = () => {
 
   // -- Upload Props --
   const uploadProps: UploadProps = {
-    name: 'file', multiple: false,
-    beforeUpload: (file) => { if (selectedKB) uploadMutation.mutate({ kbId: selectedKB.id, file }); return false; },
+    name: 'file', 
+    multiple: true,
+    beforeUpload: (_, fileList) => { 
+      if (selectedKB) {
+        fileList.forEach(file => {
+          uploadMutation.mutate({ kbId: selectedKB.id, file });
+        });
+        message.loading(`正在上传 ${fileList.length} 个文件...`, 1);
+        setUploadVisible(false);
+      }
+      return false; 
+    },
     showUploadList: false
   };
 
@@ -331,8 +347,23 @@ const AISettings: React.FC = () => {
         <Modal title={editingKB ? t('ai.settings.editKnowledgeBase') : t('ai.settings.addKnowledgeBase')} open={isKBModalOpen} onOk={() => kbForm.submit()} onCancel={() => { setIsKBModalOpen(false); setEditingKB(null); }} confirmLoading={kbMutation.isPending}><Form form={kbForm} layout="vertical" onFinish={kbMutation.mutate}><Form.Item name="name" label={t('ai.settings.kbNameCN')} rules={[{ required: true }]}><Input placeholder={t('ai.settings.kbNamePlaceholder')} /></Form.Item><Form.Item name="name_en" label={t('ai.settings.kbNameEn')}><Input placeholder="English Name" /></Form.Item><Form.Item name="collection_name" label={t('ai.settings.kbCollection')} rules={[{ required: true }]}><Input placeholder={t('ai.settings.kbCollectionPlaceholder')} readOnly={!!editingKB} /></Form.Item><Form.Item name="description" label={t('ai.settings.kbDescCN')}><Input.TextArea placeholder={t('ai.settings.kbDescPlaceholder')} /></Form.Item><Form.Item name="description_en" label={t('ai.settings.kbDescEn')}><Input.TextArea placeholder="English Description" /></Form.Item></Form></Modal>
 
         {/* Document Management Drawer */}
-        <Drawer title={`${t('ai.settings.docManagement')} - ${isEn ? (selectedKB?.name_en || selectedKB?.name) : selectedKB?.name}`} width={900} onClose={() => setIsDocDrawerOpen(false)} open={isDocDrawerOpen} extra={<Button type="primary" icon={<UploadOutlined />} onClick={() => setUploadVisible(true)}>{t('common.upload')}</Button>}>
-          <Table size="small" loading={docsLoading} dataSource={docsData?.results || docsData?.data || (Array.isArray(docsData) ? docsData : [])} rowKey="id" columns={[
+        <Drawer title={`${t('ai.settings.docManagement')} - ${isEn ? (selectedKB?.name_en || selectedKB?.name) : selectedKB?.name}`} width={900} onClose={() => setIsDocDrawerOpen(false)} open={isDocDrawerOpen} 
+          extra={
+            <Space>
+              <Text type="secondary" style={{ marginRight: 8 }}>
+                共 {docsData?.total ?? (Array.isArray((docsData as any)?.data) ? (docsData as any).data.length : 0)} 份文档
+              </Text>
+              <Button icon={<ReloadOutlined />} onClick={() => refetchDocs()}>{t('common.refresh') || '刷新'}</Button>
+              <Button type="primary" icon={<UploadOutlined />} onClick={() => setUploadVisible(true)}>{t('common.upload')}</Button>
+            </Space>
+          }
+        >
+          <Table 
+            size="small" 
+            loading={docsLoading} 
+            dataSource={(docsData as any)?.data || (docsData as any)?.results || (Array.isArray(docsData) ? docsData : [])} 
+            rowKey="id" 
+            columns={[
             { title: t('ai.settings.docTitle'), dataIndex: 'title', key: 'title', ellipsis: true },
             { 
               title: t('common.status'), dataIndex: 'status', key: 'status', width: 100,
