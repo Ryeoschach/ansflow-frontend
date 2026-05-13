@@ -63,8 +63,10 @@ const CIEnvironments = lazy(() => import("./pages/Pipeline/CIEnvironments"));
 const PipelineWebhooks = lazy(() => import("./pages/Pipeline/Webhooks"));
 const MonitorCenter = lazy(() => import("./pages/System/Monitor"));
 const BackupManagement = lazy(() => import("./pages/System/BackupManagement"));
+const PeriodicTask = lazy(() => import("./pages/System/PeriodicTask"));
 const AISettings = lazy(() => import("./pages/System/AISettings"));
 const AlertCenter = lazy(() => import("./pages/SRE/AlertCenter"));
+const TaskPulse = lazy(() => import("./pages/SRE/TaskPulse"));
 const Profile = lazy(() => import("./pages/Profile"));
 
 
@@ -459,8 +461,11 @@ function App() {
                 <Route path="v1/system/approvals" element={<ApprovalCenter />} />
                 <Route path="v1/system/monitor" element={<MonitorCenter />} />
                 <Route path="v1/sre/alerts" element={<AlertCenter />} />
+                <Route path="v1/sre/pulse" element={<TaskPulse />} />
                 <Route path="v1/system/backups" element={<BackupManagement />} />
-                <Route path="v1/system/ai" element={<AISettings />} />
+                <Route path="v1/system/periodic-tasks" element={<PeriodicTask />} />
+                <Route path="v1/ai-rag/config" element={<AISettings />} />
+
                 <Route path="v1/system/vault" element={<CredentialVault />} />
                 {/*404*/}
                 <Route path="*" element={<div>^^如果uri不是你手动输入的或者你确定输入的uri是正确的，那就是该页面功能正在开发中^^</div>} />

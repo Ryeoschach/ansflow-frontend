@@ -38,7 +38,9 @@
     "upload": "上传",
     "enabled": "开启",
     "disabled": "关闭",
-    "close": "关闭详情"
+    "close": "关闭详情",
+    "online": "在线",
+    "offline": "离线"
   },
   "menu": {
     "dashboard": "仪表盘",
@@ -605,7 +607,6 @@
     "waitingApproval": "等待审批中",
     "approvalFinished": "审批已完成 ({{status}})",
     "approverLabel": "签批人",
-    "resourceIdentifier": "资源标识",
     "anyAdminTip": "留空则表示拥有审批权限的角色均可操作"
   },
   "menuManagement": {
@@ -1749,7 +1750,6 @@
       "failed": "自愈失败",
       "ignored": "已忽略"
     },
-
     "actions": {
       "ignore": "忽略",
       "viewDetail": "查看详情",
@@ -1806,6 +1806,51 @@
       "jsonFormatError": "匹配规则 JSON 格式错误",
       "editTitle": "编辑自愈策略",
       "createTitle": "新增自愈策略"
+    }
+  },
+  "pulse": {
+    "title": "任务脉搏 (Task Pulse)",
+    "onlineWorkers": "在线 Worker",
+    "runningTasks": "正在运行任务",
+    "totalTasks": "累计任务数",
+    "health": "集群健康度",
+    "workerStatus": "Worker 节点实时状态",
+    "taskTrack": "任务脉搏轨迹 (实时追踪)",
+    "allTasks": "全部任务",
+    "onlyRunning": "只显示运行中",
+    "taskId": "任务 ID",
+    "taskName": "任务名称",
+    "status": "状态",
+    "worker": "执行节点",
+    "runtime": "耗时",
+    "updateTime": "更新时间",
+    "action": "操作",
+    "detail": "详情",
+    "revoke": "撤销",
+    "revokeConfirm": "已下发撤销指令",
+    "taskDetail": "任务详细轨迹",
+    "workerInspection": "Worker 节点巡检",
+    "realtimeStats": "实时运行指标",
+    "activeTasks": "活跃任务",
+    "registeredCapabilities": "已注册能力",
+    "os": "操作系统",
+    "swVersion": "软件版本",
+    "poolConfig": "池配置",
+    "loadAvg": "平均负载",
+    "processed": "已处理任务",
+    "args": "位置参数",
+    "kwargs": "关键字参数",
+    "result": "执行结果",
+    "traceback": "错误堆栈",
+    "routing": "路由信息",
+    "noWorker": "暂无节点上报，请启动 pulse_monitor",
+    "status_map": {
+      "success": "成功",
+      "failure": "失败",
+      "running": "运行中",
+      "pending": "排队中",
+      "revoked": "已撤销",
+      "retry": "重试中"
     }
   }
 }
