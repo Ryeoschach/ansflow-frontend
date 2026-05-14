@@ -4,7 +4,7 @@ import {
     RobotOutlined, UserOutlined, SendOutlined, MinusOutlined, PlayCircleOutlined, 
     CoffeeOutlined, ThunderboltOutlined, UserSwitchOutlined, HistoryOutlined, 
     PlusOutlined, MessageOutlined, DeleteOutlined, SearchOutlined, BookOutlined,
-    RocketOutlined
+    RocketOutlined, StopOutlined
 } from '@ant-design/icons';
 import { App, Flex } from 'antd';
 import { useTranslation } from 'react-i18next';
@@ -68,6 +68,7 @@ const AIChatbot: React.FC = () => {
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
     
     // 追踪当前诊断的告警 ID
     const [diagnosedAlertId, setDiagnosedAlertId] = useState<number | null>(null);
@@ -228,6 +229,9 @@ const AIChatbot: React.FC = () => {
         }, 60000);
 
         try {
+            // 设置新的 abort controller
+            abortControllerRef.current = new AbortController();
+
             // 首先创建一个专门用于记录诊断的历史会话
             const sid = `diagnose_${type}_${id}_${Date.now()}`;
             const historyRes = await createChatHistory({
@@ -244,6 +248,7 @@ const AIChatbot: React.FC = () => {
             const response = await fetch(`/api/v1/ai/chat-histories/${currentHid}/diagnose/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${appToken}` },
+                signal: abortControllerRef.current.signal,
                 body: JSON.stringify({ 
                     target_type: type, 
                     target_id: id, 
@@ -334,7 +339,11 @@ const AIChatbot: React.FC = () => {
 
             // 3秒后恢复正常状态
             setTimeout(() => setAiStatus('idle'), 3000);
-        } catch (err) { 
+        } catch (err: any) { 
+            if (err.name === 'AbortError') {
+                setAiStatus('idle');
+                return;
+            }
             message.error(t('ai.diagnosisError')); 
             setAiStatus('error');
             clearTimeout(timeoutTimer);
@@ -366,7 +375,11 @@ const AIChatbot: React.FC = () => {
             await streamResponse(currentHid, userQuestion);
             setAiStatus('success');
             setTimeout(() => setAiStatus('idle'), 3000);
-        } catch (err) {
+        } catch (err: any) {
+            if (err.name === 'AbortError') {
+                setAiStatus('idle');
+                return;
+            }
             message.error(t('ai.responseError'));
             setLoading(false);
             setAiStatus('error');
@@ -377,9 +390,12 @@ const AIChatbot: React.FC = () => {
         setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
         setPipelineDraft(null); // Reset draft for new query
         
+        abortControllerRef.current = new AbortController();
+
         const response = await fetch(`/api/v1/ai/chat-histories/${hid}/chat/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${appToken}` },
+            signal: abortControllerRef.current.signal,
             body: JSON.stringify({ 
                 question, 
                 personality,
@@ -502,7 +518,8 @@ const AIChatbot: React.FC = () => {
                 }`}
                 style={{ 
                     backgroundColor: aiStatus === 'analyzing' ? '#fffbe6' : undefined,
-                    borderColor: aiStatus === 'analyzing' ? '#ffe58f' : undefined 
+                    borderColor: aiStatus === 'analyzing' ? '#ffe58f' : undefined,
+                    zIndex: 2147483647 
                 }}
                 badge={{ 
                     dot: aiStatus === 'idle',
@@ -523,7 +540,7 @@ const AIChatbot: React.FC = () => {
             />
 
             {visible && (
-                <div ref={containerRef}>
+                <div ref={containerRef} style={{ zIndex: 2147483647, position: 'relative' }}>
                     <style>
                         {`
                             .ai-chat-messages::-webkit-scrollbar {
@@ -835,7 +852,24 @@ const AIChatbot: React.FC = () => {
                         </div>
                         <div className="p-4 border-t flex items-end gap-3" style={{ backgroundColor: token.colorBgContainer, borderTopColor: token.colorBorderSecondary }}>
                             <Input.TextArea value={input} onChange={e => setInput(e.target.value)} onPressEnter={e => { if (!e.shiftKey) { e.preventDefault(); handleSend(); } }} placeholder={t('ai.inputPlaceholder')} autoSize={{ minRows: 1, maxRows: 4 }} style={{ backgroundColor: token.colorBgLayout, color: token.colorText }} className="border-none hover:bg-slate-200 focus:bg-white transition-all rounded-xl py-2 px-3" />
-                            <Button type="primary" shape="circle" icon={<SendOutlined />} onClick={handleSend} loading={loading} disabled={!input.trim()} className="flex-shrink-0 w-10 h-10 flex items-center justify-center shadow-lg" style={{ boxShadow: `0 4px 12px ${token.colorPrimary}40` }} />
+                            {loading ? (
+                                <Tooltip title="停止生成">
+                                    <Button 
+                                        type="default" 
+                                        shape="circle" 
+                                        icon={<StopOutlined />} 
+                                        onClick={() => {
+                                            if (abortControllerRef.current) {
+                                                abortControllerRef.current.abort();
+                                                setAiStatus('idle');
+                                            }
+                                        }} 
+                                        className="flex-shrink-0 w-10 h-10 flex items-center justify-center shadow-md border-gray-300 text-gray-500 hover:text-red-500 hover:border-red-500" 
+                                    />
+                                </Tooltip>
+                            ) : (
+                                <Button type="primary" shape="circle" icon={<SendOutlined />} onClick={handleSend} disabled={!input.trim()} className="flex-shrink-0 w-10 h-10 flex items-center justify-center shadow-lg" style={{ boxShadow: `0 4px 12px ${token.colorPrimary}40` }} />
+                            )}
                         </div>
                     </Card>
                 </div>
