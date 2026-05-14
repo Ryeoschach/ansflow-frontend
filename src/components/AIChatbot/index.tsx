@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Button, Input, Card, Space, Avatar, FloatButton, Typography, theme, Dropdown, MenuProps, Tag, Drawer, List, Tooltip, Empty, Skeleton, Tabs } from 'antd';
 import { 
     RobotOutlined, UserOutlined, SendOutlined, MinusOutlined, PlayCircleOutlined, 
@@ -71,6 +72,7 @@ const AIChatbot: React.FC = () => {
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<any>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
     
     // 追踪当前诊断的告警 ID
@@ -160,6 +162,9 @@ const AIChatbot: React.FC = () => {
         setLoading(true);
         setHistoryId(hid);
         setMessages([]);
+        setSuggestedPipelineId(null);
+        setPipelineDraft(null);
+        setAnsibleDraft(null);
         
         // 查找并恢复当时的 AI 性格
         if (historyList.length > 0) {
@@ -171,12 +176,61 @@ const AIChatbot: React.FC = () => {
 
         try {
             const res = await getChatMessages(hid);
-            setMessages(res.map((m: any) => ({ 
-                id: m.id, 
-                role: m.role, 
-                content: m.content,
-                is_exported: m.is_exported
-            })));
+            const loadedMessages = res.map((m: any) => {
+                let content = m.content;
+                
+                // --- 历史记录解析逻辑：如果是助手发出的消息，尝试恢复草案卡片 ---
+                if (m.role === 'assistant') {
+                    // 1. 恢复建议流水线 ID (如果是诊断场景)
+                    if (content.includes('__SUGGESTION__:')) {
+                        const match = content.match(/__SUGGESTION__:(\{.*?\})/);
+                        if (match) {
+                            try {
+                                const suggestion = JSON.parse(match[1]);
+                                setSuggestedPipelineId(suggestion.pipeline_id);
+                                content = content.replace(/__SUGGESTION__:\{.*?\}/, '').trim();
+                            } catch (e) {}
+                        }
+                    }
+
+                    // 2. 恢复 Ansible 草案
+                    if (content.includes('__ANSIBLE_DRAFT__:')) {
+                        const startIndex = content.indexOf('__ANSIBLE_DRAFT__:');
+                        const jsonStart = content.indexOf('{', startIndex);
+                        const jsonEnd = content.lastIndexOf('}');
+                        if (jsonStart !== -1 && jsonEnd > jsonStart) {
+                            try {
+                                const draft = JSON.parse(content.substring(jsonStart, jsonEnd + 1));
+                                setAnsibleDraft(draft);
+                                content = (content.substring(0, startIndex) + content.substring(jsonEnd + 1)).trim();
+                            } catch (e) {}
+                        }
+                    }
+
+                    // 3. 恢复流水线草案
+                    if (content.includes('__PIPELINE_DRAFT__:')) {
+                        const startIndex = content.indexOf('__PIPELINE_DRAFT__:');
+                        const jsonStart = content.indexOf('{', startIndex);
+                        const jsonEnd = content.lastIndexOf('}');
+                        if (jsonStart !== -1 && jsonEnd > jsonStart) {
+                            try {
+                                const draft = JSON.parse(content.substring(jsonStart, jsonEnd + 1));
+                                setPipelineDraft(draft);
+                                content = (content.substring(0, startIndex) + content.substring(jsonEnd + 1)).trim();
+                            } catch (e) {}
+                        }
+                    }
+                }
+
+                return { 
+                    id: m.id, 
+                    role: m.role, 
+                    content: content,
+                    is_exported: m.is_exported
+                };
+            });
+            
+            setMessages(loadedMessages);
             setHistoryVisible(false);
         } catch (err) {
             message.error('加载历史对话失败');
@@ -363,6 +417,7 @@ const AIChatbot: React.FC = () => {
         } catch (err: any) { 
             if (err.name === 'AbortError') {
                 setAiStatus('idle');
+                setLoading(false);
                 return;
             }
             message.error(t('ai.diagnosisError')); 
@@ -399,11 +454,14 @@ const AIChatbot: React.FC = () => {
         } catch (err: any) {
             if (err.name === 'AbortError') {
                 setAiStatus('idle');
+                setLoading(false);
                 return;
             }
             message.error(t('ai.responseError'));
             setLoading(false);
             setAiStatus('error');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -522,7 +580,7 @@ const AIChatbot: React.FC = () => {
         }
     };
 
-    return (
+    return createPortal(
         <>
             <style>
                 {`
@@ -609,21 +667,11 @@ const AIChatbot: React.FC = () => {
             />
 
             {visible && (
-                <div ref={containerRef} style={{ zIndex: 2147483647, position: 'relative' }}>
-                    <style>
-                        {`
-                            .ai-chat-messages::-webkit-scrollbar {
-                                width: 4px;
-                            }
-                            .ai-chat-messages::-webkit-scrollbar-thumb {
-                                background: ${token.colorTextQuaternary};
-                                border-radius: 10px;
-                            }
-                            .ai-chat-messages::-webkit-scrollbar-track {
-                                background: transparent;
-                            }
-                        `}
-                    </style>
+                <div 
+                    ref={containerRef} 
+                    style={{ zIndex: 2147483647, position: 'fixed', top: 0, left: 0, width: 0, height: 0 }}
+                    onMouseDown={e => e.stopPropagation()}
+                >
                     <Card
                         title={
                             <Flex vertical gap={6} style={{ padding: '4px 0' }}>
@@ -633,7 +681,8 @@ const AIChatbot: React.FC = () => {
                                             type="text" 
                                             size="small" 
                                             icon={<HistoryOutlined />} 
-                                            onClick={() => {
+                                            onClick={(e) => {
+                                                e.stopPropagation();
                                                 setHistoryVisible(!historyVisible);
                                                 if (!historyVisible) loadHistoryList();
                                             }}
@@ -700,13 +749,13 @@ const AIChatbot: React.FC = () => {
                         extra={
                             <Space>
                                 <Tooltip title="开启新对话">
-                                    <Button type="text" size="small" icon={<PlusOutlined />} onClick={startNewChat} />
+                                    <Button type="text" size="small" icon={<PlusOutlined />} onClick={(e) => { e.stopPropagation(); startNewChat(); }} />
                                 </Tooltip>
-                                <Button type="text" size="small" icon={<MinusOutlined />} onClick={() => setVisible(false)} />
+                                <Button type="text" size="small" icon={<MinusOutlined />} onClick={(e) => { e.stopPropagation(); setVisible(false); }} />
                             </Space>
                         }
-                        className="fixed right-6 bottom-[5vh] w-105 h-155 z-50 flex flex-col shadow-2xl rounded-2xl overflow-hidden border border-solid animate-in fade-in slide-in-from-bottom-4 duration-300"
-                        style={{ borderColor: token.colorBorderSecondary }}
+                        className="fixed right-6 bottom-[5vh] w-105 h-155 flex flex-col shadow-2xl rounded-2xl overflow-hidden border border-solid animate-in fade-in slide-in-from-bottom-4 duration-300"
+                        style={{ borderColor: token.colorBorderSecondary, zIndex: 2147483647, pointerEvents: 'auto' }}
                         styles={{ body: { padding: 0, flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: token.colorBgContainer, overflow: 'hidden' } }}
                     >
                         {/* 历史对话抽屉 (内部模拟) */}
@@ -949,14 +998,38 @@ const AIChatbot: React.FC = () => {
                             )}
                         </div>
                         <div className="p-4 border-t flex items-end gap-3" style={{ backgroundColor: token.colorBgContainer, borderTopColor: token.colorBorderSecondary }}>
-                            <Input.TextArea value={input} onChange={e => setInput(e.target.value)} onPressEnter={e => { if (!e.shiftKey) { e.preventDefault(); handleSend(); } }} placeholder={t('ai.inputPlaceholder')} autoSize={{ minRows: 1, maxRows: 4 }} style={{ backgroundColor: token.colorBgLayout, color: token.colorText }} className="border-none hover:bg-slate-200 focus:bg-white transition-all rounded-xl py-2 px-3" />
+                            <Input.TextArea 
+                                ref={inputRef}
+                                value={input} 
+                                onChange={e => setInput(e.target.value)} 
+                                onFocus={(e) => {
+                                    e.stopPropagation();
+                                }}
+                                onKeyDown={(e) => {
+                                    e.stopPropagation();
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSend();
+                                    }
+                                }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    // 强行抢夺焦点，防止被 Modal 夺回
+                                    setTimeout(() => inputRef.current?.focus(), 10);
+                                }}
+                                placeholder={t('ai.inputPlaceholder')} 
+                                autoSize={{ minRows: 1, maxRows: 4 }} 
+                                style={{ backgroundColor: token.colorBgLayout, color: token.colorText }} 
+                                className="border-none hover:bg-slate-200 focus:bg-white transition-all rounded-xl py-2 px-3" 
+                            />
                             {loading ? (
                                 <Tooltip title="停止生成">
                                     <Button 
                                         type="default" 
                                         shape="circle" 
                                         icon={<StopOutlined />} 
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                            e.stopPropagation();
                                             if (abortControllerRef.current) {
                                                 abortControllerRef.current.abort();
                                                 setAiStatus('idle');
@@ -966,14 +1039,14 @@ const AIChatbot: React.FC = () => {
                                     />
                                 </Tooltip>
                             ) : (
-                                <Button type="primary" shape="circle" icon={<SendOutlined />} onClick={handleSend} disabled={!input.trim()} className="flex-shrink-0 w-10 h-10 flex items-center justify-center shadow-lg" style={{ boxShadow: `0 4px 12px ${token.colorPrimary}40` }} />
+                                <Button type="primary" shape="circle" icon={<SendOutlined />} onClick={(e) => { e.stopPropagation(); handleSend(); }} disabled={!input.trim()} className="flex-shrink-0 w-10 h-10 flex items-center justify-center shadow-lg" style={{ boxShadow: `0 4px 12px ${token.colorPrimary}40` }} />
                             )}
                         </div>
                     </Card>
                 </div>
             )}
         </>
-    );
+    , document.body);
 };
 
 export default AIChatbot;
