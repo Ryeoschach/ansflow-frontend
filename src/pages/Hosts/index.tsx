@@ -200,6 +200,7 @@ const HostManagement: React.FC = () => {
                     current: params.page,
                     pageSize: params.size,
                     showSizeChanger: true,
+                    showTotal: (total) => t('common.total', { total }),
                     onChange: (p, s) => setParams({ ...params, page: p, size: s }),
                 }}
             />

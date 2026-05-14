@@ -42,12 +42,23 @@ const TemplateList = () => {
   const [versionDrawerOpen, setVersionDrawerOpen] = useState(false);
   const [versionPipelineId, setVersionPipelineId] = useState<number | null>(null);
   const [versionPipelineName, setVersionPipelineName] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   /** @description 拉取所有流水线模板，支持全局搜索 */
   const { data: pipelineData, isLoading } = useQuery({
-    queryKey: ['pipelines', searchText],
-    queryFn: () => getPipelines({ search: searchText }),
+    queryKey: ['pipelines', searchText, page, pageSize],
+    queryFn: () => getPipelines({ 
+        search: searchText,
+        page: page,
+        size: pageSize
+    }),
   });
+
+  // 当搜索词变化时，重置分页
+  useEffect(() => {
+    setPage(1);
+  }, [searchText]);
 
   /** @description 逻辑销毁指令 */
   const deleteMutation = useMutation({
@@ -226,9 +237,16 @@ const TemplateList = () => {
                 rowKey="id"
                 loading={isLoading}
                 pagination={{ 
+                    current: page,
+                    pageSize: pageSize,
                     total: pipelineData?.total || 0,
                     showSizeChanger: true,
-                    className: "pt-4"
+                    showTotal: (total) => t('common.total', { total }),
+                    className: "pt-4",
+                    onChange: (p, s) => {
+                        setPage(p);
+                        setPageSize(s);
+                    }
                 }}
                 className="custom-table-modern"
                 scroll={{ x: 'max-content' }}

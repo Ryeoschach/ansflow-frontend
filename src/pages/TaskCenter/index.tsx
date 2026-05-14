@@ -55,12 +55,14 @@ const TaskCenter: React.FC = () => {
     const [previewRecord, setPreviewRecord] = useState<any>(null);
     const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
     const [batchModalOpen, setBatchModalOpen] = useState(false);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
     const isDark = document.documentElement.classList.contains('dark');
 
     // 1. 获取任务模板列表
     const { data: taskData, isLoading: listLoading } = useQuery({
-        queryKey: ['ansible-tasks'],
-        queryFn: () => getAnsibleTasks({ page: 1, size: 50 }),
+        queryKey: ['ansible-tasks', page, pageSize],
+        queryFn: () => getAnsibleTasks({ page, size: pageSize }),
         enabled: !!token,
     });
 
@@ -318,6 +320,17 @@ const TaskCenter: React.FC = () => {
                     selectedRowKeys,
                     onChange: setSelectedRowKeys,
                 } : undefined}
+                pagination={{
+                    total: taskData?.total,
+                    current: page,
+                    pageSize: pageSize,
+                    showSizeChanger: true,
+                    showTotal: (total) => t('common.total', { total }),
+                    onChange: (p, s) => {
+                        setPage(p);
+                        setPageSize(s);
+                    }
+                }}
             />
                 )}
             <Modal

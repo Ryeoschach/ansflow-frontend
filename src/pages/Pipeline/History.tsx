@@ -37,17 +37,29 @@ export default function PipelineHistory() {
   // URL 参数：支持从蓝图模板点选“历史”进入，自动过滤
   const pipelineId = searchParams.get('pipeline_id');
   const [searchText, setSearchText] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   /**
    * @section 数据查询 (React Query)
    */
   const { data: runsData, isLoading, refetch } = useQuery({
-    queryKey: ['pipelineRuns', searchText, pipelineId],
-    queryFn: () => getPipelineRuns({ search: searchText, pipeline: pipelineId }),
+    queryKey: ['pipelineRuns', searchText, pipelineId, page, pageSize],
+    queryFn: () => getPipelineRuns({ 
+        search: searchText, 
+        pipeline: pipelineId,
+        page: page,
+        size: pageSize
+    }),
     // 即使有 WS，也保持 1 分钟一次的钝化同步，防止心跳失效后的孤岛数据
     refetchInterval: 60000,
     enabled: !!token && hasPermission('pipeline:run:view'),
   });
+
+  // 当搜索词或流水线 ID 变化时，重置分页
+  useEffect(() => {
+    setPage(1);
+  }, [searchText, pipelineId]);
 
   /**
    * @section WebSocket 实时补丁逻辑
@@ -236,9 +248,15 @@ export default function PipelineHistory() {
           loading={isLoading}
           size="middle"
           pagination={{ 
+              current: page,
+              pageSize: pageSize,
               total: runsData?.total || 0,
               showSizeChanger: true,
-              className: "pt-4 px-2"
+              className: "pt-4 px-2",
+              onChange: (p, s) => {
+                  setPage(p);
+                  setPageSize(s);
+              }
           }}
           className="custom-table-modern"
           scroll={{ x: 'max-content', y: 'calc(100vh - 420px)' }}

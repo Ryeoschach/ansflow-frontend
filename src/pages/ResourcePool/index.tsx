@@ -59,6 +59,8 @@ const ResourcePoolManagement: React.FC = () => {
         code: '',
         env: undefined as number | undefined,
         platform: undefined as number | undefined,
+        page: 1,
+        size: 10,
     });
 
     const [selectedEnv, setSelectedEnv] = useState<number | null>(null);
@@ -67,11 +69,7 @@ const ResourcePoolManagement: React.FC = () => {
 
     const { data: poolData, isLoading: poolsLoading } = useQuery({
         queryKey: ['ResourcePools', listFilters],
-        queryFn: () => getResourcePools({
-            page: 1,
-            size: 100,
-            ...listFilters
-        }),
+        queryFn: () => getResourcePools(listFilters),
         enabled: !!authToken,
     });
 
@@ -259,7 +257,7 @@ const ResourcePoolManagement: React.FC = () => {
                         className="w-40"
                         allowClear
                         value={listFilters.name}
-                        onChange={e => setListFilters({ ...listFilters, name: e.target.value })}
+                        onChange={e => setListFilters({ ...listFilters, name: e.target.value, page: 1 })}
                     />
                 </div>
                 <div>
@@ -269,7 +267,7 @@ const ResourcePoolManagement: React.FC = () => {
                         className="w-40"
                         allowClear
                         value={listFilters.code}
-                        onChange={e => setListFilters({ ...listFilters, code: e.target.value })}
+                        onChange={e => setListFilters({ ...listFilters, code: e.target.value, page: 1 })}
                     />
                 </div>
                 <div>
@@ -279,7 +277,7 @@ const ResourcePoolManagement: React.FC = () => {
                         className="w-40"
                         allowClear
                         value={listFilters.env}
-                        onChange={val => setListFilters({ ...listFilters, env: val })}
+                        onChange={val => setListFilters({ ...listFilters, env: val, page: 1 })}
                         options={environments.map((e: any) => ({ label: e.name, value: e.id }))}
                     />
                 </div>
@@ -290,12 +288,12 @@ const ResourcePoolManagement: React.FC = () => {
                         className="w-40"
                         allowClear
                         value={listFilters.platform}
-                        onChange={val => setListFilters({ ...listFilters, platform: val })}
+                        onChange={val => setListFilters({ ...listFilters, platform: val, page: 1 })}
                         options={platforms.map((p: any) => ({ label: p.name, value: p.id }))}
                     />
                 </div>
                 <Button
-                    onClick={() => setListFilters({ name: '', code: '', env: undefined, platform: undefined })}
+                    onClick={() => setListFilters({ ...listFilters, name: '', code: '', env: undefined, platform: undefined, page: 1 })}
                     type="text"
                     danger
                 >
@@ -312,7 +310,14 @@ const ResourcePoolManagement: React.FC = () => {
                 loading={poolsLoading}
                 rowKey="id"
                 scroll={{ x: 'max-content' }}
-               
+                pagination={{
+                    total: poolData?.total,
+                    current: listFilters.page,
+                    pageSize: listFilters.size,
+                    showSizeChanger: true,
+                    showTotal: (total) => t('common.total', { total }),
+                    onChange: (page, size) => setListFilters({ ...listFilters, page, size }),
+                }}
             />
                 )}
 

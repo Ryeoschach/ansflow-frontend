@@ -294,12 +294,13 @@ const ExecutionHistory: React.FC = () => {
                 rowKey="id"
                 loading={listLoading}
                 scroll={{ x: 'max-content' }}
-               
                 pagination={{
                     total: executionData?.total,
                     pageSize: params.size,
                     current: params.page,
-                    onChange: (page) => setParams({ ...params, page })
+                    showSizeChanger: true,
+                    showTotal: (total) => t('common.total', { total }),
+                    onChange: (page, size) => setParams({ ...params, page, size })
                 }}
             />
 

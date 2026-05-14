@@ -37,10 +37,12 @@ const CredentialManagement: React.FC = () => {
     const [editingCredential, setEditingCredential] = useState<any>(null);
     const [testingId, setTestingId] = useState<number | null>(null);
     const [authType, setAuthType] = useState<'password' | 'key'>('password');
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     const { data: credData, isLoading } = useQuery({
-        queryKey: ['ssh-credentials'],
-        queryFn: () => getCredentials({ page: 1, size: 100 }),
+        queryKey: ['ssh-credentials', page, pageSize],
+        queryFn: () => getCredentials({ page, size: pageSize }),
     });
 
     const createMutation = useMutation({
@@ -177,8 +179,17 @@ const CredentialManagement: React.FC = () => {
                 rowKey="id"
                 loading={isLoading}
                 scroll={{ x: 'max-content' }}
-               
-                pagination={{ pageSize: 10 }}
+                pagination={{
+                    current: page,
+                    pageSize: pageSize,
+                    total: credData?.total || 0,
+                    showSizeChanger: true,
+                    showTotal: (total) => t('common.total', { total }),
+                    onChange: (p, s) => {
+                        setPage(p);
+                        setPageSize(s);
+                    }
+                }}
             />
                 )}
 
