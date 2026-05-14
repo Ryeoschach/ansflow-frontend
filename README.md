@@ -36,10 +36,14 @@ Enterprise-level DevOps pipeline platform frontend, built with React 18 + TypeSc
 
 ### 2. SRE Intelligent Alert Center
 - **Route**: `/v1/sre/alerts`
+- **Task Pulse**: Real-time visualization of task execution health and throughput trends.
 - **Full Tracking**: Integrated **Progress Bars** and live status updates during self-healing pipeline execution.
 - **Strong Sync**: Backend signal-driven status synchronization between pipelines and alert records.
 - **Trigger Awareness**: Accurate visual feedback for "Auto-Triggered" vs "Manual" remediation sources.
 - **AI Analysis**: Real-time AI diagnosis reports with one-click export to RAG knowledge base.
+
+### 3. System Management
+- **Periodic Tasks**: UI for managing and scheduling Celery Beat tasks with Crontab support.
 
 ### 3. AIGC Pipeline Orchestration
 - **Intent-driven**: AI input box integrated into the Pipeline Designer top bar.
