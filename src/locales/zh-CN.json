@@ -1314,7 +1314,14 @@
     "empty": "暂无版本记录"
   },
   "pipelineDesigner": {
-    "title": "流水线设置",
+    "unsavedChangesDetected": "检测到未保存的草稿",
+    "unsavedChangesDesc": "您在 {{time}} 有一份未保存的 {{type}} 草稿，是否恢复？",
+    "editMode": "编辑模式",
+    "newMode": "新建模式",
+    "restoreDraft": "恢复草稿",
+    "discardDraft": "丢弃并同步远程",
+    "title": "保存流水线",
+
     "pipelineUniqueName": "流水线唯一标识名称 (Blueprint Name)",
     "enterPipelineName": "例如: 生产环境自动化部署",
     "cronExpressionOptional": "定时调度表达式 (Cron Expression, 可选)",

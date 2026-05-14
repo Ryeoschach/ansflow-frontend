@@ -92,22 +92,133 @@ const DesignerCore = () => {
   const { t } = useTranslation();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
-  const { nodes, setNodes, edges, setEdges, sourceAlertId, setSourceAlertId } = useDesignerStore();
-  const [nodesState, setNodesState, onNodesChange] = useNodesState([]);
-  const [edgesState, setEdgesState, onEdgesChange] = useEdgesState([]);
+  const { 
+    nodes, setNodes, 
+    edges, setEdges, 
+    editingId, setEditingId,
+    lastModified,
+    resetDesigner, clearDesigner,
+    sourceAlertId, setSourceAlertId 
+  } = useDesignerStore();
 
-  useEffect(() => {
-    setNodesState(nodes);
-  }, [nodes, setNodesState]);
-
-  useEffect(() => {
-    setEdgesState(edges);
-  }, [edges, setEdgesState]);
+  const [nodesState, setNodesState, onNodesChangeOriginal] = useNodesState([]);
+  const [edgesState, setEdgesState, onEdgesChangeOriginal] = useEdgesState([]);
 
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const { token } = theme.useToken();
   const { modal, message } = App.useApp();
   const { token: authToken, hasPermission } = useAppStore();
+
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const pipelineId = searchParams.get('id');
+  const [pipelineInfo, setPipelineInfo] = useState<any>(null);
+
+  // --- 核心优化：草稿冲突处理与自动回填 ---
+  useEffect(() => {
+    const initDesigner = async () => {
+      // 1. 如果有缓存的草稿且 ID 不匹配，询问用户
+      if (nodes.length > 0 && editingId !== pipelineId) {
+        modal.confirm({
+          title: t('pipelineDesigner.unsavedChangesDetected'),
+          content: t('pipelineDesigner.unsavedChangesDesc', { 
+            type: editingId ? t('pipelineDesigner.editMode') : t('pipelineDesigner.newMode'),
+            time: new Date(lastModified).toLocaleString()
+          }),
+          okText: t('pipelineDesigner.restoreDraft'),
+          cancelText: t('pipelineDesigner.discardDraft'),
+          onOk: () => {
+            // 恢复草稿，但不修改 editingId，直到用户保存
+            setNodesState(nodes);
+            setEdgesState(edges);
+          },
+          onCancel: () => {
+            clearDesigner();
+            if (pipelineId) {
+                loadRemotePipeline(pipelineId);
+            } else {
+                setNodesState([]);
+                setEdgesState([]);
+            }
+          }
+        });
+        return;
+      }
+
+      // 2. 如果是新建（无 pipelineId），且没有冲突草稿，则初始化为空
+      if (!pipelineId) {
+        if (nodes.length === 0) {
+            setNodesState([]);
+            setEdgesState([]);
+        } else {
+            setNodesState(nodes);
+            setEdgesState(edges);
+        }
+        setEditingId(null);
+        return;
+      }
+
+      // 3. 如果是编辑已有 Pipeline
+      if (pipelineId) {
+        // 如果缓存匹配，直接用缓存
+        if (editingId === pipelineId && nodes.length > 0) {
+            setNodesState(nodes);
+            setEdgesState(edges);
+            // 异步加载基础信息（不覆盖画布）
+            getPipeline(Number(pipelineId)).then(res => setPipelineInfo(res.data || res));
+        } else {
+            // 否则加载远程数据
+            loadRemotePipeline(pipelineId);
+        }
+      }
+    };
+
+    if (reactFlowInstance) {
+        initDesigner();
+    }
+  }, [pipelineId, reactFlowInstance]); // 仅在路由 ID 或 实例初始化时触发
+
+  const loadRemotePipeline = (id: string) => {
+    getPipeline(Number(id)).then((res) => {
+        const data = res.data || res;
+        setPipelineInfo(data);
+        if (data.graph_data) {
+          const remoteNodes = data.graph_data.nodes || [];
+          const remoteEdges = data.graph_data.edges || [];
+          setNodesState(remoteNodes);
+          setEdgesState(remoteEdges);
+          // 同步到缓存
+          setNodes(remoteNodes);
+          setEdges(remoteEdges);
+          setEditingId(id);
+          
+          setTimeout(() => {
+            if (data.graph_data.viewport) {
+              reactFlowInstance.setViewport(data.graph_data.viewport);
+            } else reactFlowInstance.fitView();
+          }, 10);
+        }
+    });
+  };
+
+  // 包装 Change 事件，同步到 Store (带节流效果更佳，这里先实现同步)
+  const onNodesChange = useCallback((changes: any) => {
+    onNodesChangeOriginal(changes);
+    // 这里不能直接用 nodesState，因为 setState 是异步的
+    // 更好的做法是在 useEffect 中监听 nodesState 变化并同步
+  }, [onNodesChangeOriginal]);
+
+  const onEdgesChange = useCallback((changes: any) => {
+    onEdgesChangeOriginal(changes);
+  }, [onEdgesChangeOriginal]);
+
+  // 实时同步到 Store
+  useEffect(() => {
+    if (nodesState.length > 0 || edgesState.length > 0) {
+        setNodes(nodesState);
+        setEdges(edgesState);
+    }
+  }, [nodesState, edgesState, setNodes, setEdges]);
 
   const { data: ansibleTasksData } = useQuery({
     queryKey: ['ansibleTasksPipeline'],
@@ -149,11 +260,6 @@ const DesignerCore = () => {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [form] = Form.useForm();
   
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const pipelineId = searchParams.get('id');
-  const [pipelineInfo, setPipelineInfo] = useState<any>(null);
-
   // AI 编排状态
   const [aiPrompt, setAiPrompt] = useState('');
   const [llmModels, setLlmModels] = useState<any[]>([]);
@@ -222,6 +328,8 @@ const DesignerCore = () => {
         
         setNodes(safeNodes);
         setEdges(data.edges || []);
+        setNodesState(safeNodes);
+        setEdgesState(data.edges || []);
         message.success(nodes.length > 0 ? '流水线已按指令优化' : '流水线已生成');
         setAiPrompt('');
       }
@@ -230,24 +338,6 @@ const DesignerCore = () => {
       message.error(err.response?.data?.error || 'AI 编排失败');
     }
   });
-
-  useEffect(() => {
-    if (pipelineId && reactFlowInstance) {
-        getPipeline(Number(pipelineId)).then((res) => {
-          const data = res.data || res;
-          setPipelineInfo(data);
-          if (data.graph_data) {
-            setNodes(data.graph_data.nodes || []);
-            setEdges(data.graph_data.edges || []);
-            setTimeout(() => {
-              if (data.graph_data.viewport) {
-                reactFlowInstance.setViewport(data.graph_data.viewport);
-              } else reactFlowInstance.fitView();
-            }, 10);
-          }
-        });
-    }
-  }, [pipelineId, reactFlowInstance, setNodes, setEdges]);
 
   const onConnect = useCallback((params: Connection | Edge) => setEdgesState((eds) => addEdge(params, eds)), [setEdgesState]);
 
@@ -276,11 +366,11 @@ const DesignerCore = () => {
         data: { label: `${type} 节点` },
       };
 
-      const updatedNodes = [...nodes, newNode];
+      const updatedNodes = [...nodesState, newNode];
       setNodesState(updatedNodes);
       setNodes(updatedNodes);
     },
-    [reactFlowInstance, nodes, setNodes, setNodesState]
+    [reactFlowInstance, nodesState, setNodes, setNodesState]
   );
 
   const onNodeClick = (_: React.MouseEvent, node: Node) => {
@@ -371,7 +461,13 @@ const DesignerCore = () => {
         } else {
             const res = await createPipeline(payload);
             savedPipelineId = res.id || res.data?.id;
-            navigate(`/v1/pipeline/designer?id=${savedPipelineId}`);
+        }
+
+        // 保存成功后清除缓存
+        clearDesigner();
+
+        if (!pipelineId) {
+            navigate(`/v1/pipeline/designer?id=${savedPipelineId}`, { replace: true });
         }
 
         // 如果是从告警诊断跳转来的，且用户确认绑定

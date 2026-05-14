@@ -1399,7 +1399,14 @@
     "empty": "No version records"
   },
   "pipelineDesigner": {
+    "unsavedChangesDetected": "Unsaved Draft Detected",
+    "unsavedChangesDesc": "You have an unsaved {{type}} draft from {{time}}. Would you like to restore it?",
+    "editMode": "Edit Mode",
+    "newMode": "New Mode",
+    "restoreDraft": "Restore Draft",
+    "discardDraft": "Discard & Sync",
     "title": "Pipeline Settings",
+
     "pipelineUniqueName": "Pipeline Unique Name (Blueprint Name)",
     "enterPipelineName": "e.g., Production Environment Automation Deployment",
     "cronExpressionOptional": "Scheduled Cron Expression (Optional)",
