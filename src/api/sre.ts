@@ -55,6 +55,10 @@ export const exportAlertToKnowledge = (id: number): Promise<any> =>
 export const triggerAlertHealing = (id: number): Promise<any> =>
   request.post(`/sre/alerts/${id}/trigger-healing/`);
 
+// 失败重诊
+export const reDiagnoseAlert = (id: number): Promise<any> =>
+  request.post(`/sre/alerts/${id}/re-diagnose/`);
+
 // 获取自愈策略
 export const getHealingPolicies = (params?: any): Promise<PaginatedResponse<SelfHealingPolicy>> =>
   request.get('/sre/policies/', { params }) as any;

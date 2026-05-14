@@ -30,12 +30,13 @@ import useAppStore from '@/store/useAppStore';
 import { 
   getAlertEvents, ignoreAlert, getHealingPolicies, 
   createHealingPolicy, updateHealingPolicy, deleteHealingPolicy,
-  exportAlertToKnowledge, triggerAlertHealing,
+  exportAlertToKnowledge, triggerAlertHealing, reDiagnoseAlert,
   bulkDeleteAlerts, bulkDeletePolicies
 } from '@/api/sre';
 import { getPipelines, getPipelineRunDetail } from '@/api/pipeline';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import useWebSocket from 'react-use-websocket';
 
 const { Text, Title } = Typography;
 const { Search } = Input;
@@ -81,16 +82,19 @@ const AlertCenter: React.FC = () => {
     });
 
     // 实时追踪自愈流水线状态
-    const { data: runDetail } = useQuery({
+    const { data: runDetailQuery } = useQuery({
         queryKey: ['pipeline_run_detail', selectedAlert?.latest_run_id],
         queryFn: () => getPipelineRunDetail(selectedAlert.latest_run_id),
         enabled: !!selectedAlert?.latest_run_id && detailVisible,
-        refetchInterval: (query: any) => {
-            const data = query.state.data?.data || query.state.data;
-            if (data?.status && ['success', 'failed', 'cancelled'].includes(data.status)) return false;
-            return 3000; // 正在运行中，3秒刷新一次
-        },
+        staleTime: Infinity,
     });
+
+    const wsUrl = (selectedAlert?.latest_run_id && detailVisible) ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/pipeline/${selectedAlert.latest_run_id}/` : null;
+    const { lastJsonMessage } = useWebSocket(wsUrl, {
+        shouldReconnect: () => true,
+    });
+
+    const runDetail = lastJsonMessage || runDetailQuery;
 
     // --- 变更操作 ---
     const healingMutation = useMutation({
@@ -101,6 +105,24 @@ const AlertCenter: React.FC = () => {
                 setSelectedAlert({ ...selectedAlert, latest_run_id: res.run_id, healing_status: 'executing' });
             }
             queryClient.invalidateQueries({ queryKey: ['sre-alerts'] });
+        }
+    });
+
+    const reDiagnoseMutation = useMutation({
+        mutationFn: (id: number) => reDiagnoseAlert(id),
+        onSuccess: () => {
+            message.success('已重新诊断，建议已更新');
+            queryClient.invalidateQueries({ queryKey: ['sre-alerts'] });
+            // Close detail or refresh it
+            if (selectedAlert) {
+                getAlertEvents({ search: selectedAlert.fingerprint }).then(res => {
+                    const updated = res.results.find(a => a.id === selectedAlert.id);
+                    if (updated) setSelectedAlert(updated);
+                });
+            }
+        },
+        onError: (err: any) => {
+            message.error(err.response?.data?.error || '重新诊断失败');
         }
     });
 
@@ -639,22 +661,36 @@ const AlertCenter: React.FC = () => {
                                         </div>
 
                                         {!selectedAlert.latest_run_id || runDetail?.data?.status === 'failed' ? (
-                                            <Button
-                                                size="large"
-                                                className="h-12 px-8 rounded-xl font-bold border-none shadow-md"
-                                                style={{ backgroundColor: token.colorBgContainer, color: token.colorPrimary }}
-                                                icon={<PlayCircleOutlined />}
-                                                loading={healingMutation.isPending}
-                                                onClick={() => {
-                                                    modal.confirm({
-                                                        title: t('alertCenter.confirmHealingTitle'),
-                                                        content: t('alertCenter.confirmHealingContent'),
-                                                        onOk: () => healingMutation.mutate(selectedAlert.id)
-                                                    });
-                                                }}
-                                            >
-                                                {t('alertCenter.actions.executeNow')}
-                                            </Button>
+                                            <Space>
+                                                <Button
+                                                    size="large"
+                                                    className="h-12 px-8 rounded-xl font-bold border-none shadow-md"
+                                                    style={{ backgroundColor: token.colorBgContainer, color: token.colorPrimary }}
+                                                    icon={<PlayCircleOutlined />}
+                                                    loading={healingMutation.isPending}
+                                                    onClick={() => {
+                                                        modal.confirm({
+                                                            title: t('alertCenter.confirmHealingTitle'),
+                                                            content: t('alertCenter.confirmHealingContent'),
+                                                            onOk: () => healingMutation.mutate(selectedAlert.id)
+                                                        });
+                                                    }}
+                                                >
+                                                    {t('alertCenter.actions.executeNow')}
+                                                </Button>
+                                                {runDetail?.data?.status === 'failed' && (
+                                                    <Button
+                                                        size="large"
+                                                        className="h-12 px-6 rounded-xl font-bold border border-white/20 text-white hover:border-white shadow-md"
+                                                        style={{ backgroundColor: 'transparent' }}
+                                                        icon={<SyncOutlined />}
+                                                        loading={reDiagnoseMutation.isPending}
+                                                        onClick={() => reDiagnoseMutation.mutate(selectedAlert.id)}
+                                                    >
+                                                        一键重诊
+                                                    </Button>
+                                                )}
+                                            </Space>
                                         ) : (
                                             <Link to={`/v1/pipeline/runs/${selectedAlert.latest_run_id}`}>
                                                 <Button
