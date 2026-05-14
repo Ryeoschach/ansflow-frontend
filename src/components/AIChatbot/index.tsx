@@ -16,6 +16,7 @@ import {
 } from '@/api/ai';
 import { useNavigate } from 'react-router-dom';
 import { executePipeline } from '@/api/pipeline';
+import { createAnsibleTask } from '@/api/tasks';
 import useDesignerStore from '@/store/useDesignerStore';
 
 const { Text } = Typography;
@@ -51,6 +52,8 @@ const AIChatbot: React.FC = () => {
     const [historyId, setHistoryId] = useState<number | null>(null);
     const [suggestedPipelineId, setSuggestedPipelineId] = useState<number | null>(null);
     const [pipelineDraft, setPipelineDraft] = useState<any | null>(null);
+    const [ansibleDraft, setAnsibleDraft] = useState<any | null>(null);
+    const [isRegisteringTask, setIsRegisteringTask] = useState(false);
     const [personality, setPersonality] = useState<PersonalityKey>(
         (localStorage.getItem('ansflow-ai-personality') as PersonalityKey) || 'professional'
     );
@@ -222,6 +225,7 @@ const AIChatbot: React.FC = () => {
         setAiStatus('analyzing');
         setSuggestedPipelineId(null);
         setPipelineDraft(null);
+        setAnsibleDraft(null);
         
         // 超时检测：如果 60 秒还没返回，标记为超时
         const timeoutTimer = setTimeout(() => {
@@ -323,6 +327,23 @@ const AIChatbot: React.FC = () => {
                     }
                 }
 
+                // 4. 提取 Ansible 任务草案 (JSON)
+                if (assistantReply.includes('__ANSIBLE_DRAFT__:')) {
+                    const startIndex = assistantReply.indexOf('__ANSIBLE_DRAFT__:');
+                    const jsonStart = assistantReply.indexOf('{', startIndex);
+                    const jsonEnd = assistantReply.lastIndexOf('}');
+                    
+                    if (jsonStart !== -1 && jsonEnd > jsonStart) {
+                        const jsonStr = assistantReply.substring(jsonStart, jsonEnd + 1);
+                        try {
+                            const draft = JSON.parse(jsonStr);
+                            setAnsibleDraft(draft);
+                            assistantReply = (assistantReply.substring(0, startIndex) + assistantReply.substring(jsonEnd + 1)).trim();
+                        } catch (e) {
+                        }
+                    }
+                }
+
                 setMessages(prev => {
                     const newMessages = [...prev];
                     newMessages[newMessages.length - 1].content = assistantReply;
@@ -389,6 +410,7 @@ const AIChatbot: React.FC = () => {
     const streamResponse = async (hid: number, question: string) => {
         setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
         setPipelineDraft(null); // Reset draft for new query
+        setAnsibleDraft(null);
         
         abortControllerRef.current = new AbortController();
 
@@ -444,6 +466,22 @@ const AIChatbot: React.FC = () => {
                 }
             }
 
+            // 3. 提取 Ansible 任务草案 (JSON)
+            if (assistantReply.includes('__ANSIBLE_DRAFT__:')) {
+                const startIndex = assistantReply.indexOf('__ANSIBLE_DRAFT__:');
+                const jsonStart = assistantReply.indexOf('{', startIndex);
+                const jsonEnd = assistantReply.lastIndexOf('}');
+                
+                if (jsonStart !== -1 && jsonEnd > jsonStart) {
+                    const jsonStr = assistantReply.substring(jsonStart, jsonEnd + 1);
+                    try {
+                        const draft = JSON.parse(jsonStr);
+                        setAnsibleDraft(draft);
+                        assistantReply = (assistantReply.substring(0, startIndex) + assistantReply.substring(jsonEnd + 1)).trim();
+                    } catch (e) {}
+                }
+            }
+
             setMessages(prev => {
                 const newMessages = [...prev];
                 newMessages[newMessages.length - 1].content = assistantReply;
@@ -451,6 +489,37 @@ const AIChatbot: React.FC = () => {
             });
         }
         setLoading(false);
+    };
+
+    const handleRegisterAnsibleTask = async () => {
+        if (!ansibleDraft) return;
+        setIsRegisteringTask(true);
+        try {
+            const res = await createAnsibleTask({
+                name: ansibleDraft.name || 'AI Generated Playbook',
+                task_type: 'playbook',
+                content: ansibleDraft.content
+            });
+            const newTaskId = res.id || res.data?.id;
+            message.success(`Ansible 任务注册成功 (ID: ${newTaskId})`);
+            
+            // If there's a pipeline draft waiting for this task, inject the ID
+            if (pipelineDraft) {
+                const updatedNodes = (pipelineDraft.nodes || []).map((node: any) => {
+                    if (node.type === 'ansible' && node.data?.ansible_task_id === '{{__ANSIBLE_DRAFT_ID__}}') {
+                        return { ...node, data: { ...node.data, ansible_task_id: newTaskId } };
+                    }
+                    return node;
+                });
+                setPipelineDraft({ ...pipelineDraft, nodes: updatedNodes });
+            }
+            // 移除已处理的 Ansible draft
+            setAnsibleDraft(null);
+        } catch (e: any) {
+            message.error(`注册任务失败: ${e.response?.data?.error || e.message}`);
+        } finally {
+            setIsRegisteringTask(false);
+        }
     };
 
     return (
@@ -784,6 +853,35 @@ const AIChatbot: React.FC = () => {
                                                 });
                                             }}>立即执行</Button>
                                         </Flex>
+                                    </Card>
+                                </div>
+                            )}
+
+                            {ansibleDraft && (
+                                <div className="mx-auto w-full px-5 pb-3 animate-in zoom-in-95 duration-500">
+                                    <Card 
+                                        size="small" 
+                                        className="shadow-sm rounded-xl overflow-hidden" 
+                                        style={{ backgroundColor: '#e6f4ff', borderColor: '#b37feb' }}
+                                    >
+                                        <Flex justify="space-between" align="center">
+                                            <Space direction="vertical" size={0}>
+                                                <Text type="secondary" className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#531dab' }}>AI 资产编排</Text>
+                                                <Text strong className="text-xs" style={{ color: token.colorText }}>已为您生成 Ansible Playbook ({ansibleDraft.name || 'AI Task'})</Text>
+                                            </Space>
+                                            <Button 
+                                                type="primary" 
+                                                size="small" 
+                                                icon={<BookOutlined />} 
+                                                style={{ backgroundColor: '#531dab' }}
+                                                className="rounded-lg h-8 px-4" 
+                                                loading={isRegisteringTask}
+                                                onClick={handleRegisterAnsibleTask}
+                                            >保存并注册</Button>
+                                        </Flex>
+                                        <div className="mt-2 text-[10px] overflow-auto max-h-32 bg-slate-900 text-slate-300 p-2 rounded-lg font-mono whitespace-pre-wrap">
+                                            {ansibleDraft.content}
+                                        </div>
                                     </Card>
                                 </div>
                             )}
