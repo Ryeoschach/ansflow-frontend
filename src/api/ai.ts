@@ -4,7 +4,9 @@ import { PaginatedResponse } from '../types';
 export interface KnowledgeBase {
   id: number;
   name: string;
+  name_en?: string;
   description: string;
+  description_en?: string;
   collection_name: string;
   create_time: string;
   update_time: string;
@@ -55,6 +57,10 @@ export interface AIConfig {
   name: string;
   default_llm: number | null;
   default_embedding: number | null;
+  rag_bm25_weight?: number;
+  rag_vector_weight?: number;
+  rag_top_k?: number;
+  rag_score_threshold?: number;
 }
 
 export interface KnowledgeDocument {

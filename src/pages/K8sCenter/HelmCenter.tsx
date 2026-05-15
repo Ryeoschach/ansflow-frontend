@@ -46,6 +46,8 @@ import {
   rollbackHelmChart,
   restartHelmChart,
   stopHelmChart,
+  getHelmRepos,
+  getHelmRepoCharts,
 } from '../../api/k8s';
 import request from '../../utils/requests';
 import { Resizable } from 'react-resizable';

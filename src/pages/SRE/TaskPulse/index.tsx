@@ -33,7 +33,7 @@ const TaskPulse: React.FC = () => {
   // 获取统计数据
   const { data: stats } = useQuery({
     queryKey: ['pulseStats'],
-    queryFn: getPulseStats,
+    queryFn: () => getPulseStats() as Promise<any>,
     refetchInterval: 5000,
   });
 

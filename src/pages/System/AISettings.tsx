@@ -63,6 +63,28 @@ const AISettings: React.FC = () => {
   const [editingModel, setEditingModel] = useState<AIModel | null>(null);
   const [modelForm] = Form.useForm();
 
+  const handleEditProvider = (provider?: AIProvider) => {
+    setEditingProvider(provider || null);
+    if (provider) {
+      providerForm.setFieldsValue(provider);
+    } else {
+      providerForm.resetFields();
+      providerForm.setFieldsValue({ is_active: true });
+    }
+    setIsProviderModalOpen(true);
+  };
+
+  const handleEditModel = (model?: AIModel) => {
+    setEditingModel(model || null);
+    if (model) {
+      modelForm.setFieldsValue(model);
+    } else {
+      modelForm.resetFields();
+      modelForm.setFieldsValue({ is_active: true, model_type: 'llm' });
+    }
+    setIsModelModalOpen(true);
+  };
+
   const appToken = useAppStore(state => state.token);
   const isInitializing = useAppStore(state => state.isInitializing);
   const queryEnabled = !isInitializing && !!appToken;
@@ -413,7 +435,7 @@ const AISettings: React.FC = () => {
               <Tag icon={<FileTextOutlined />}>{t('ai.settings.docSource')}: {viewingDoc?.source_type}</Tag>
               <Tag>{t('ai.settings.chunkCount')}: {viewingDoc?.chunk_count}</Tag>
             </div>
-            <Divider orientation="left">{t('ai.settings.docContent')}</Divider>
+            <Divider titlePlacement="start">{t('ai.settings.docContent')}</Divider>
             <pre className="whitespace-pre-wrap font-sans text-gray-700 bg-gray-50 p-4 rounded text-sm">
               {viewingDoc?.content || t('common.noData')}
             </pre>

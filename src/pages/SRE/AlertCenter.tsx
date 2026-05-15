@@ -115,8 +115,9 @@ const AlertCenter: React.FC = () => {
             queryClient.invalidateQueries({ queryKey: ['sre-alerts'] });
             // Close detail or refresh it
             if (selectedAlert) {
-                getAlertEvents({ search: selectedAlert.fingerprint }).then(res => {
-                    const updated = res.results.find(a => a.id === selectedAlert.id);
+                getAlertEvents({ search: selectedAlert.fingerprint }).then((res: any) => {
+                    const data = res.data || [];
+                    const updated = data.find((a: any) => a.id === selectedAlert.id);
                     if (updated) setSelectedAlert(updated);
                 });
             }
@@ -244,7 +245,7 @@ const AlertCenter: React.FC = () => {
                                     <Badge status={s.color as any} text={s.text} />
                                     {isAuto && <Tag color="gold" style={{ fontSize: '10px', padding: '0 4px', lineHeight: '16px' }}>AUTO</Tag>}
                                 </Space>
-                                <Text type="link" style={{ fontSize: '10px' }}>
+                                <Text style={{ fontSize: '10px' }} className="text-blue-500 cursor-pointer">
                                     查看工单 #{record.latest_ticket_id}
                                 </Text>
                             </Space>

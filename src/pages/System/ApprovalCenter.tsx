@@ -624,7 +624,7 @@ const ApprovalCenter: React.FC = () => {
                                     }
                                     description={
                                         <div className="mt-2">
-                                            <Descriptions column={1} size="small" ghost>
+                                            <Descriptions column={1} size="small">
                                                 <Descriptions.Item label={t('approval.sreReason') || '触发原因'}>
                                                     <Tag color="volcano">{(currentTicket.payload as any).reason || '自动执行规则命中'}</Tag>
                                                 </Descriptions.Item>

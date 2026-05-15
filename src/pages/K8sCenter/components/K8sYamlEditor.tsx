@@ -14,7 +14,7 @@ const K8sYamlEditor: React.FC<K8sYamlEditorProps> = ({
   readOnly = false,
 }) => {
   const { token } = theme.useToken();
-  const isDark = token.mode === 'dark' || (token as any).colorBgContainer === '#141414';
+  const isDark = (token as any).mode === 'dark' || (token as any).colorBgContainer === '#141414';
 
   return (
     <div className="border border-solid border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">

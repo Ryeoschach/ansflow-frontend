@@ -650,7 +650,7 @@ const AIChatbot: React.FC = () => {
                 }}
                 badge={{ 
                     dot: aiStatus === 'idle',
-                    text: aiStatus !== 'idle' ? {
+                    count: aiStatus !== 'idle' ? {
                         'analyzing': '分析中...',
                         'success': '完成',
                         'error': '错误',
@@ -706,7 +706,7 @@ const AIChatbot: React.FC = () => {
                                             className="cursor-pointer hover:opacity-80 transition-opacity border-none text-[10px] py-0.5 px-2" 
                                             style={{ color: token.colorPrimary, backgroundColor: token.colorPrimaryBg }}
                                         >
-                                            {personalityItems.find(i => i?.key === personality)?.label as string}
+                                            {(personalityItems.find(i => i?.key === personality) as any)?.label as string}
                                         </Tag>
                                     </Dropdown>
 

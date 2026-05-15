@@ -46,6 +46,7 @@ export interface ApprovalPolicy {
     environment: string | null;
     approver_roles: number[];
     approver_roles_detail?: any[];
+    match_rules?: any;
     is_active: boolean;
     create_time: string;
 }

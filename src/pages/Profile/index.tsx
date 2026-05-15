@@ -230,7 +230,7 @@ const Profile: React.FC = () => {
             </Descriptions.Item>
           </Descriptions>
 
-          <Divider orientation="left">{t('profile.themeColor') || '配色方案'}</Divider>
+          <Divider titlePlacement="start">{t('profile.themeColor') || '配色方案'}</Divider>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {themeOptions.map((opt) => (
               <div

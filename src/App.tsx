@@ -232,7 +232,7 @@ function App() {
   const currentTheme = THEMES[themeKey] || THEMES.forest;
 
   const antdTheme = React.useMemo(() => ({
-    cssVar: true,
+    cssVar: { prefix: 'ant' },
     algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
     token: {
       colorPrimary: isDark ? currentTheme.darkPrimary : currentTheme.primary,
