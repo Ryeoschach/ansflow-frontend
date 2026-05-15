@@ -12,7 +12,7 @@ RUN pnpm install --frozen-lockfile
 
 # 复制源码并构建
 COPY . .
-RUN pnpm build
+RUN NODE_OPTIONS=--max-old-space-size=4096 pnpm build
 
 # Stage 2: Serve
 FROM nginx:alpine
