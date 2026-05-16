@@ -250,7 +250,7 @@ const PlatformManagement: React.FC = () => {
                     <Divider plain style={{ margin: '12px 0' }}>{t('platform.connectionConfig')}</Divider>
 
                     <Form.Item label={t('platform.accessKey')} name="access_key">
-                        <Input placeholder="AK / Username" />
+                        <Input.Password placeholder="AK / Username" />
                     </Form.Item>
 
                     <Form.Item label={t('platform.secretKey')} name="secret_key">

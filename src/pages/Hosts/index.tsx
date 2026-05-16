@@ -90,12 +90,11 @@ const HostManagement: React.FC = () => {
         },
         {
             title: t('host.environment'),
-            dataIndex: 'env',
+            dataIndex: 'env_name',
             key: 'env',
-            render: (envId: number) => {
-                const env = environments.find((e: any) => e.id === envId);
-                return <Tag color="processing">{env?.name || `ID:${envId}`}</Tag>;
-            }
+            render: (name: string, record: any) => (
+                <Tag color={record.env_color || 'blue'}>{name || `ID:${record.env}`}</Tag>
+            )
         },
         {
             title: t('host.platform'),

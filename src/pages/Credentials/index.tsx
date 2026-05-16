@@ -135,6 +135,13 @@ const CredentialManagement: React.FC = () => {
             render: (val: string) => new Date(val).toLocaleString(),
         },
         {
+            title: t('credential.remark') || '备注',
+            dataIndex: 'remark',
+            key: 'remark',
+            ellipsis: true,
+            render: (text: string) => <Text type="secondary">{text || '-'}</Text>,
+        },
+        {
             title: t('pipeline.action'),
             key: 'action',
             render: (_: any, record: any) => (

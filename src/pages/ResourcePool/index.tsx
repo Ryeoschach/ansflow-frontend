@@ -336,7 +336,14 @@ const ResourcePoolManagement: React.FC = () => {
                         <Form.Item label={t('resourcePool.nameLabel')} name="name" rules={[{ required: true, message: t('resourcePool.nameRequired') }]}>
                             <Input placeholder={t('resourcePool.namePlaceholder')} />
                         </Form.Item>
-                        <Form.Item label={t('resourcePool.codeLabel')} name="code" rules={[{ required: true, message: t('resourcePool.codeRequired') }]}>
+                        <Form.Item 
+                            label={t('resourcePool.codeLabel')} 
+                            name="code" 
+                            rules={[
+                                { required: true, message: t('resourcePool.codeRequired') },
+                                { pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/, message: '标识必须以字母开头，且仅能包含字母、数字和下划线' }
+                            ]}
+                        >
                             <Input placeholder={t('resourcePool.codePlaceholder')} />
                         </Form.Item>
                     </div>
@@ -384,10 +391,13 @@ const ResourcePoolManagement: React.FC = () => {
                                         {
                                             title: t('resourcePool.host'),
                                             render: (_, h) => (
-                                                <div className="flex justify-between items-center w-full group">
+                                                <div className="flex justify-between items-center w-full group py-1">
                                                     <div>
                                                         <div className="text-sm font-medium">{h.hostname}</div>
-                                                        <div className="text-xs text-gray-400">{h.private_ip}</div>
+                                                        <div className="flex gap-2 items-center">
+                                                            <span className="text-[10px] text-gray-400 font-mono">{h.private_ip}</span>
+                                                            <Tag color={h.env_color || 'blue'} className="px-1 text-[10px] leading-3 h-4 border-none opacity-80">{h.env_name}</Tag>
+                                                        </div>
                                                     </div>
                                                     <Button
                                                         type="link"
@@ -447,7 +457,10 @@ const ResourcePoolManagement: React.FC = () => {
                                                 >
                                                     <div>
                                                         <div className="text-sm font-medium">{h?.hostname || `Unknown (ID: ${id})`}</div>
-                                                        <div className="text-[10px] opacity-50 font-mono">{h?.private_ip || '-'}</div>
+                                                        <div className="flex gap-2 items-center">
+                                                            <span className="text-[10px] opacity-50 font-mono">{h?.private_ip || '-'}</span>
+                                                            {h?.env_name && <Tag color={h.env_color || 'blue'} className="px-1 text-[10px] leading-3 h-4 border-none opacity-60">{h.env_name}</Tag>}
+                                                        </div>
                                                     </div>
                                                     <Button
                                                         type="text"
