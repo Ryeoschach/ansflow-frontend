@@ -6,6 +6,7 @@ import {
     Modal,
     Form,
     Input,
+    InputNumber,
     Select,
     Tag,
     Space,
