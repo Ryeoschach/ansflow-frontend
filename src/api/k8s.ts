@@ -7,12 +7,19 @@ import {K8sResource, PaginatedResponse} from '../types';
 // 获取集群列表
 export const getK8sClusters = (params?: any): Promise<PaginatedResponse<K8sResource>> =>
     request.get<PaginatedResponse<K8sResource>>('/k8s/', { params }) as any;
-// 创建集群
+
+export const getHelmRepositories = (params?: any): Promise<PaginatedResponse<any>> =>
+    request.get<PaginatedResponse<any>>('/helm_repositories/', { params }) as any;
+
 export const createK8sCluster = (data: Partial<K8sResource>): Promise<K8sResource> =>
+
     request.post<K8sResource>('/k8s/', data) as any;
 // 验证连接
 export const verifyK8sCluster = (id: number): Promise<{ msg: string; version: string }> =>
     request.post<{ msg: string; version: string }>(`/k8s/${id}/verify/`) as any;
+
+export const syncK8sClusterStatus = (id: number): Promise<any> =>
+    request.post(`/k8s/${id}/sync_status/`) as any;
 // 删除集群
 export const deleteK8sCluster = (id: number): Promise<any> =>
     request.delete(`/k8s/${id}/`) as any;

@@ -49,7 +49,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
   import { useTranslation } from 'react-i18next';
 
 import { getAnsibleTasks } from '../../api/tasks';
-import { getK8sClusters, getHelmLocalCharts } from '../../api/k8s';
+import { getK8sClusters, getHelmLocalCharts, getHelmRepositories } from '../../api/k8s';
 import { createPipeline, updatePipeline, getPipeline, getCIEnvironments, executePipeline } from '../../api/pipeline';
 import { bindHealingPipeline } from '../../api/sre';
 import { generatePipeline, refinePipeline, suggestNodeParams, getAIModels, getCurrentAIConfig, explainPipeline } from '../../api/ai';
@@ -229,10 +229,16 @@ const DesignerCore = () => {
     queryFn: () => getAnsibleTasks({ page_size: 200 }),
     enabled: !!authToken && hasPermission('pipeline:template:view'),
   });
-  
   const { data: clustersData } = useQuery({
-    queryKey: ['k8sClustersPipeline'],
+    queryKey: ['k8s-clusters'],
     queryFn: () => getK8sClusters({ page_size: 200 }),
+  });
+
+  const { data: repositoriesData } = useQuery({
+    queryKey: ['helm-repositories'],
+    queryFn: () => getHelmRepositories({ page_size: 200 }),
+  });
+
     enabled: !!authToken && hasPermission('pipeline:template:view'),
   });
 
@@ -955,14 +961,27 @@ const DesignerCore = () => {
                   </Form.Item>
                </Card>
                <Card size="small" title={t('pipelineDesigner.helmConfig')} className="mb-5 border-none shadow-sm">
-                  <Form.Item label={t('pipelineDesigner.localChart')} name="k8s_chart_name">
-                      <Select
-                         placeholder={t('pipelineDesigner.selectLocalChart')}
-                         options={localChartsData || []}
-                         fieldNames={{ label: 'name', value: 'id' }}
-                         showSearch
-                         allowClear
-                      />
+                  <div className="flex gap-4">
+                    <Form.Item label="Helm 仓库" name="k8s_repo_id" className="flex-1">
+                        <Select
+                           placeholder="选择远程仓库"
+                           options={repositoriesData?.data || []}
+                           fieldNames={{ label: 'name', value: 'id' }}
+                           allowClear
+                        />
+                    </Form.Item>
+                    <Form.Item label={t('pipelineDesigner.localChart')} name="k8s_chart_name" className="flex-1">
+                        <Select
+                           placeholder={t('pipelineDesigner.selectLocalChart')}
+                           options={localChartsData || []}
+                           fieldNames={{ label: 'name', value: 'id' }}
+                           showSearch
+                           allowClear
+                        />
+                    </Form.Item>
+                  </div>
+                  <Form.Item label="自定义 Values (YAML)" name="k8s_values" tooltip="将与系统自动生成的镜像变量合并。支持 {{ nodes.ID.KEY }} 语法。">
+                      <Input.TextArea rows={6} placeholder={`image:\n  pullPolicy: Always\nreplicaCount: 1`} className="font-mono text-[11px]" />
                   </Form.Item>
                   <Form.Item label={t('pipelineDesigner.forceExecute')} name="k8s_force" initialValue={false} tooltip={t('pipelineDesigner.forceExecuteTooltip')}>
                       <Select options={[{ label: t('pipelineDesigner.closeRecommended'), value: false }, { label: t('pipelineDesigner.enableConflictResolution'), value: true }]} />

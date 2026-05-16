@@ -41,6 +41,7 @@ import {
   createK8sCluster,
   deleteK8sCluster,
   verifyK8sCluster,
+  syncK8sClusterStatus,
   getK8sNodes,
   getK8sNamespaces,
   getK8sPods,
@@ -369,6 +370,17 @@ const K8sCenter: React.FC = () => {
     },
   });
 
+  const syncStatusMutation = useMutation({
+    mutationFn: (id: number) => syncK8sClusterStatus(id),
+    onSuccess: () => {
+      message.success('集群健康状态已刷新');
+      queryClient.invalidateQueries({ queryKey: ['k8s', 'clusters'] });
+    },
+    onError: (err: any) => {
+      message.error(`刷新失败: ${err.response?.data?.error || err.message}`);
+    },
+  });
+
   const handleSubmit = (values: any) => {
     if (selectedCluster) {
       updateMutation.mutate({ id: selectedCluster.id, data: values });
@@ -429,21 +441,40 @@ const K8sCenter: React.FC = () => {
       title: t('k8s.status'),
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => {
+      render: (status: string, record: any) => {
         let color = 'default';
         let text = t('k8s.unknown');
-        if (status === 'connected') {
+        if (status === 'connected' || status === 'running') {
           color = 'success';
           text = t('k8s.connected');
-        } else if (status === 'failed') {
+        } else if (status === 'failed' || status === 'error') {
           color = 'error';
           text = t('k8s.connectionFailed');
         } else if (status === 'pending') {
           color = 'processing';
           text = t('k8s.pendingVerify');
         }
-        return <Badge status={color as any} text={text} />;
+        return (
+          <Tooltip title={record.error_message}>
+             <Badge status={color as any} text={text} />
+          </Tooltip>
+        );
       },
+    },
+    {
+      title: '资源指标',
+      key: 'metrics',
+      render: (_: any, record: any) => (
+        <div className="flex flex-col gap-1">
+          <Tag bordered={false} className="m-0 text-[10px] py-0" color="blue">
+            Nodes: {record.ready_node_count || 0} / {record.node_count || 0}
+          </Tag>
+          <div className="flex gap-1">
+             <Text type="secondary" className="text-[9px]">{record.cpu_capacity || '-'}</Text>
+             <Text type="secondary" className="text-[9px]">{record.memory_capacity || '-'}</Text>
+          </div>
+        </div>
+      )
     },
     {
       title: t('k8s.k8sVersion'),
@@ -726,6 +757,15 @@ const K8sCenter: React.FC = () => {
               className: "text-center",
               render: (_: any, record: K8sResource) => (
                 <Space>
+                  <Tooltip title="刷新健康状态">
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<SyncOutlined />}
+                      onClick={() => syncStatusMutation.mutate(record.id)}
+                      loading={syncStatusMutation.isPending && syncStatusMutation.variables === record.id}
+                    />
+                  </Tooltip>
                   {hasPermission('k8s:cluster:verify') && (
                   <Tooltip title={t('k8s.verifyConnection')}>
                     <Button
