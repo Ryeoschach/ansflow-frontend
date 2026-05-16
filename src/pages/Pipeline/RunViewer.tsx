@@ -25,7 +25,7 @@ import {
   RobotOutlined
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPipelineRunDetail, stopPipelineRun, retryPipelineRun, approvePipelineNode } from '../../api/pipeline';
+import { getPipelineRunDetail, stopPipelineRun, retryPipelineRun, approvePipelineNode, summarizePipelineRun } from '../../api/pipeline';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useWebSocket from 'react-use-websocket';
 import { useTranslation } from 'react-i18next';
@@ -207,6 +207,13 @@ const ViewerCore = () => {
     }
   });
 
+  const summarizeMutation = useMutation({
+    mutationFn: () => summarizePipelineRun(runId!),
+    onSuccess: (res: any) => {
+        message.success(res.message);
+    }
+  });
+
   /**
    * @description 获取 nodeId 的所有前置节点（通过边反向遍历）
    */
@@ -344,6 +351,17 @@ const ViewerCore = () => {
         </Space>
         
         <Space>
+           {payload?.status === 'success' && (
+              <Tooltip title={t('runViewer.aiSummaryTip')}>
+                <Button 
+                    icon={<RobotOutlined className="text-blue-500" />} 
+                    onClick={() => summarizeMutation.mutate()}
+                    loading={summarizeMutation.isPending}
+                >
+                    {t('runViewer.aiSummary')}
+                </Button>
+              </Tooltip>
+           )}
            {hasPermission('pipeline:run:stop') && (payload?.status === 'running' || payload?.status === 'pending') && (
               <Button 
                 danger 

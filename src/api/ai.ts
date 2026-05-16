@@ -58,6 +58,7 @@ export interface AIConfig {
   default_llm: number | null;
   default_embedding: number | null;
   default_rerank: number | null;
+  default_kb: number | null;
   rag_bm25_weight?: number;
   rag_vector_weight?: number;
   rag_top_k?: number;
@@ -213,6 +214,14 @@ export const explainPipeline = (data: {
   llm_id?: number;
 }): Promise<{ explanation: string }> =>
   request.post('/ai/chat-histories/explain-pipeline/', data, { timeout: 60000 }) as any;
+
+// 手动总结流水线运行经验
+export const summarizePipelineRun = (runId: number | string): Promise<any> =>
+  request.post(`/ai/chat-histories/manual-summarize-run/`, { run_id: runId });
+
+// 保存诊断结论到知识库
+export const saveDiagnosisToKnowledge = (historyId: number, messageId: number, title?: string, content?: string): Promise<any> =>
+  request.post(`/ai/chat-histories/${historyId}/save-to-knowledge/`, { message_id: messageId, title, content });
 
 // 诊断接口的 URL (主要用于 fetch 拼接)
 export const DIAGNOSE_URL = '/api/v1/ai/chat-histories/';

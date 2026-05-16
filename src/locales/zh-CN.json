@@ -1440,6 +1440,8 @@
     "confirmRetryFromNode": "确认从节点重试",
     "confirmRetryFromNodeTip": "将跳过「{{node}}」的所有前置节点，保留上次执行结果",
     "retryStarted": "重试任务已启动",
+    "aiSummary": "AI 经验总结",
+    "aiSummaryTip": "让 AI 总结本次部署经验并存入知识库",
     "skipped": "已跳过",
     "selectRetryNode": "选择重试起点节点"
   },
@@ -1639,6 +1641,11 @@
       "humorous": "幽默特工"
     },
     "currentModel": "当前模型",
+    "exportToKB": "沉淀为知识库文档",
+    "docTitle": "文档标题",
+    "docContent": "正文内容 (Markdown)",
+    "exportConfirm": "确认存入",
+    "exportTip": "沉淀后的内容将作为 RAG 知识库的一部分，辅助 AI 后续进行更精准的故障诊断。",
     "selfHealing": {
       "title": "AI 自愈建议",
       "execute": "立即执行",

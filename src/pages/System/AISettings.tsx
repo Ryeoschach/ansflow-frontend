@@ -101,10 +101,16 @@ const AISettings: React.FC = () => {
     queryFn: () => getAIModels(),
     enabled: queryEnabled
   });
+const { data: configData } = useQuery({
+  queryKey: ['aiConfig'],
+  queryFn: getCurrentAIConfig,
+});
 
-  const { data: configData } = useQuery({
-    queryKey: ['aiConfig'],
-    queryFn: getCurrentAIConfig,
+const { data: kbListData } = useQuery({
+  queryKey: ['knowledgeBases'],
+  queryFn: () => getKnowledgeBases({ page_size: 100 }),
+});
+
     enabled: queryEnabled
   });
 
@@ -478,6 +484,11 @@ const AISettings: React.FC = () => {
                 <Form.Item label="默认重排序模型 (Rerank)" name="default_rerank" tooltip="可选。提供更精准的搜索打分，但消耗更多算力。">
                   <Select placeholder="选择默认 Rerank 模型" allowClear>
                     {rerankModels.map(m => (<Select.Option key={m.id} value={m.id}>{m.display_name} ({m.provider_name})</Select.Option>))}
+                  </Select>
+                </Form.Item>
+                <Form.Item label="默认知识库" name="default_kb" tooltip="AI 自动生成摘要时的默认存放位置">
+                  <Select placeholder="选择存储知识库" allowClear>
+                    {(kbData?.data || []).map((kb: any) => (<Select.Option key={kb.id} value={kb.id}>{kb.name}</Select.Option>))}
                   </Select>
                 </Form.Item>
               </Card>

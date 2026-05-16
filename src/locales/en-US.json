@@ -114,6 +114,11 @@
       "humorous": "Humorous Agent"
     },
     "currentModel": "Current Model",
+    "exportToKB": "Save to Knowledge Base",
+    "docTitle": "Document Title",
+    "docContent": "Content (Markdown)",
+    "exportConfirm": "Confirm Save",
+    "exportTip": "Saved content will become part of the RAG knowledge base, helping AI provide more accurate diagnosis in the future.",
     "selfHealing": {
       "title": "AI Self-Healing Suggestion",
       "execute": "Execute Now",
@@ -1525,6 +1530,8 @@
     "confirmRetryFromNode": "Confirm Retry from Node",
     "confirmRetryFromNodeTip": "Will skip all predecessor nodes of \"{{node}}\", preserving their previous results",
     "retryStarted": "Retry started",
+    "aiSummary": "AI Summary",
+    "aiSummaryTip": "Let AI summarize this deployment experience and save to knowledge base",
     "skipped": "Skipped",
     "selectRetryNode": "Select Retry Start Node"
   },

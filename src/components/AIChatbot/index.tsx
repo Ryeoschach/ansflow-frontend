@@ -13,8 +13,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import useAppStore from '@/store/useAppStore';
 import { 
     createChatHistory, getChatHistories, getChatMessages, 
-    saveMessageToKnowledge, getAIModels, getCurrentAIConfig, AIModel 
-} from '@/api/ai';
+    saveMessageToKnowledge, getAIModels, getCurrentAIConfig, AIModel,
+    saveDiagnosisToKnowledge
+    } from '../../api/ai';
+
 import { useNavigate } from 'react-router-dom';
 import { executePipeline } from '@/api/pipeline';
 import { createAnsibleTask } from '@/api/tasks';
@@ -241,14 +243,56 @@ const AIChatbot: React.FC = () => {
 
     const handleSaveKnowledge = async (msgId?: number) => {
         if (!historyId || !msgId) return;
-        try {
-            await saveMessageToKnowledge(historyId, msgId);
-            message.success('已存入知识库');
-            // 本地更新状态，让按钮立即变化
-            setMessages(prev => prev.map(m => m.id === msgId ? { ...m, is_exported: true } : m));
-        } catch (err) {
-            message.error('保存失败');
-        }
+        
+        const msg = messages.find(m => m.id === msgId);
+        if (!msg) return;
+
+        let finalTitle = `AI 经验沉淀 - ${new Date().toLocaleDateString()}`;
+        let finalContent = msg.content;
+
+        modal.confirm({
+            title: t('ai.exportToKB'),
+            width: 600,
+            content: (
+                <div className="mt-4 space-y-4 text-left">
+                    <div>
+                        <div className="text-[11px] mb-1 opacity-50 font-bold uppercase tracking-wider">{t('ai.docTitle')}</div>
+                        <Input 
+                            defaultValue={finalTitle} 
+                            onChange={e => { finalTitle = e.target.value }}
+                            placeholder={t('ai.docTitle')}
+                        />
+                    </div>
+                    <div>
+                        <div className="text-[11px] mb-1 opacity-50 font-bold uppercase tracking-wider">{t('ai.docContent')}</div>
+                        <Input.TextArea 
+                            defaultValue={finalContent} 
+                            onChange={e => { finalContent = e.target.value }}
+                            rows={12}
+                            className="font-mono text-[11px]"
+                        />
+                    </div>
+                    <Alert 
+                        message={t('common.info') || 'Tips'} 
+                        description={t('ai.exportTip')} 
+                        type="info" 
+                        showIcon 
+                        className="text-[11px]"
+                    />
+                </div>
+            ),
+            okText: t('ai.exportConfirm'),
+            cancelText: t('common.cancel'),
+            onOk: async () => {
+                try {
+                    await saveDiagnosisToKnowledge(historyId, msgId, finalTitle, finalContent);
+                    message.success('已存入知识库');
+                    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, is_exported: true } : m));
+                } catch (err) {
+                    message.error('保存失败');
+                }
+            }
+        });
     };
 
     const startNewChat = () => {
