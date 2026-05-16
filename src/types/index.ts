@@ -49,6 +49,36 @@ export interface Environments {
     remark: string;
 }
 
+export interface Host {
+    id: number;
+    hostname: string;
+    ip_address: string;
+    private_ip: string;
+    os_type: string;
+    cpu: number;
+    memory: number;
+    disk: number;
+    status: number;
+    env: number;
+    env_name?: string;
+    env_color?: string;
+    platform: number | null;
+    platform_name?: string;
+    credential: number | null;
+    credential_name?: string;
+    create_time: string;
+    update_time: string;
+}
+
+export interface SshCredential {
+    id: number;
+    name: string;
+    username: string;
+    auth_type: 'password' | 'key';
+    remark?: string;
+    create_time: string;
+}
+
 export interface Pipelines {
     id: number;
     name: string;

@@ -28,7 +28,7 @@ const PlatformManagement: React.FC = () => {
     });
 
     const saveMutation = useMutation({
-        mutationFn: (values) => editingRecord ? updatePlatform(editingRecord.id, values) : createPlatform(values),
+        mutationFn: (values: any) => editingRecord ? updatePlatform(editingRecord.id, values) : createPlatform(values),
         onSuccess: () => {
             message.success(editingRecord ? t('platform.platformUpdated') : t('platform.platformCreated'));
             setIsModalOpen(false);
