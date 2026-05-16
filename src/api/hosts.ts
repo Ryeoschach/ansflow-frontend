@@ -8,6 +8,7 @@ export const getHosts = (params?: any): Promise<PaginatedResponse<any>> => reque
 export const createHost = (data: any) => request.post('/hosts/', data);
 export const updateHost = (id: number, data: any) => request.patch(`/hosts/${id}/`, data);
 export const deleteHost = (id: number) => request.delete(`/hosts/${id}/`);
+export const bulkImportHost = (data: any[]) => request.post('/hosts/bulk_import/', data);
 
 // ========================
 // 环境 (Environments) 接口

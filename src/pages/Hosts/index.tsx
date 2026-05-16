@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Table, Card, Button, Modal, Form, Input, Space, Tooltip, Popconfirm, Select, InputNumber, Tag, App } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, DesktopOutlined } from '@ant-design/icons';
+import { Table, Card, Button, Modal, Form, Input, Space, Tooltip, Popconfirm, Select, InputNumber, Tag, App, Alert } from 'antd';
+import { EditOutlined, DeleteOutlined, PlusOutlined, DesktopOutlined, CloudUploadOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {getHosts, createHost, updateHost, deleteHost, getEnvironments, getPlatforms, getCredentials} from '../../api/hosts.ts';
+import {getHosts, createHost, updateHost, deleteHost, getEnvironments, getPlatforms, getCredentials, bulkImportHost} from '../../api/hosts.ts';
 import useAppStore from '../../store/useAppStore';
 import {TableSkeleton} from "../../components/Skeletons";
 import { useBreakpoint } from '@/utils/useBreakpoint';
@@ -16,7 +16,9 @@ const HostManagement: React.FC = () => {
     const { token } = useAppStore.getState();
     const { isMobile } = useBreakpoint();
     const [form] = Form.useForm();
+    const [importForm] = Form.useForm();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [editingHost, setEditingHost] = useState<any>(null);
 
     // 分页与筛选参数
@@ -68,6 +70,26 @@ const HostManagement: React.FC = () => {
         mutationFn: deleteHost,
         onSuccess: () => {
             message.success(t('host.hostDeleted'));
+            queryClient.invalidateQueries({ queryKey: ['Hosts'] });
+        }
+    });
+
+    const importMutation = useMutation({
+        mutationFn: bulkImportHost,
+        onSuccess: (res: any) => {
+            message.success(res.message);
+            if (res.errors && res.errors.length > 0) {
+                Modal.warning({
+                    title: '导入部分成功',
+                    content: (
+                        <div className="max-h-60 overflow-auto">
+                            {res.errors.map((err: string, i: number) => <div key={i} className="text-red-500 text-xs mb-1">{err}</div>)}
+                        </div>
+                    )
+                });
+            }
+            setIsImportModalOpen(false);
+            importForm.resetFields();
             queryClient.invalidateQueries({ queryKey: ['Hosts'] });
         }
     });
@@ -169,20 +191,30 @@ const HostManagement: React.FC = () => {
 
     return (
         <Card title={t('host.title')} className="m-4 shadow-sm" extra={
-            (hasPermission('*') || hasPermission('resource:hosts:add')) && (
-            <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => {
-                    setEditingHost(null);
-                    form.resetFields();
-                    form.setFieldsValue({ status: 1, cpu: 2, memory: 4, disk: 50, os_type: 'Linux' });
-                    setIsModalOpen(true);
-                }}
-            >
-                {t('host.enterHost')}
-            </Button>
-            )
+            <Space>
+                {(hasPermission('*') || hasPermission('resource:hosts:add')) && (
+                    <Button
+                        icon={<CloudUploadOutlined />}
+                        onClick={() => setIsImportModalOpen(true)}
+                    >
+                        批量导入
+                    </Button>
+                )}
+                {(hasPermission('*') || hasPermission('resource:hosts:add')) && (
+                <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => {
+                        setEditingHost(null);
+                        form.resetFields();
+                        form.setFieldsValue({ status: 1, cpu: 2, memory: 4, disk: 50, os_type: 'Linux' });
+                        setIsModalOpen(true);
+                    }}
+                >
+                    {t('host.enterHost')}
+                </Button>
+                )}
+            </Space>
         }>
             {isLoading ? (
                 <TableSkeleton /> // 加载时显示骨架
@@ -276,6 +308,55 @@ const HostManagement: React.FC = () => {
                             placeholder={t('host.credentialPlaceholder')}
                             options={credData?.data?.map((c: any) => ({ label: c.name, value: c.id }))}
                             allowClear
+                        />
+                    </Form.Item>
+                </Form>
+            </Modal>
+
+            <Modal
+                title="批量导入主机"
+                open={isImportModalOpen}
+                onOk={() => importForm.submit()}
+                onCancel={() => setIsImportModalOpen(false)}
+                confirmLoading={importMutation.isPending}
+                width={600}
+            >
+                <Form
+                    form={importForm}
+                    layout="vertical"
+                    className="mt-4"
+                    onFinish={(values) => {
+                        try {
+                            const data = JSON.parse(values.json_data);
+                            importMutation.mutate(data);
+                        } catch (e) {
+                            message.error("JSON 格式错误，请检查输入");
+                        }
+                    }}
+                >
+                    <Alert 
+                        message="导入说明" 
+                        description={
+                            <ul className="text-xs list-disc ml-4">
+                                <li>请提供标准的 JSON 数组格式。</li>
+                                <li>必需字段：hostname, private_ip, env (环境ID)。</li>
+                                <li>可选字段：ip_address, platform (平台ID), cpu, memory, disk, os_type。</li>
+                                <li>示例：{'[{"hostname":"web-01", "private_ip":"10.0.0.1", "env":1}]'}</li>
+                            </ul>
+                        }
+                        type="info"
+                        showIcon
+                        className="mb-4"
+                    />
+                    <Form.Item 
+                        name="json_data" 
+                        label="JSON 数据" 
+                        rules={[{ required: true, message: '请粘贴 JSON 列表' }]}
+                    >
+                        <Input.TextArea 
+                            rows={10} 
+                            placeholder='[{"hostname": "node-1", "private_ip": "192.168.1.10", "env": 1}]'
+                            className="font-mono text-xs"
                         />
                     </Form.Item>
                 </Form>
