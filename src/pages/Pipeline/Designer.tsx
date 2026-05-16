@@ -229,16 +229,16 @@ const DesignerCore = () => {
     queryFn: () => getAnsibleTasks({ page_size: 200 }),
     enabled: !!authToken && hasPermission('pipeline:template:view'),
   });
+
   const { data: clustersData } = useQuery({
     queryKey: ['k8s-clusters'],
     queryFn: () => getK8sClusters({ page_size: 200 }),
+    enabled: !!authToken && hasPermission('pipeline:template:view'),
   });
 
   const { data: repositoriesData } = useQuery({
     queryKey: ['helm-repositories'],
     queryFn: () => getHelmRepositories({ page_size: 200 }),
-  });
-
     enabled: !!authToken && hasPermission('pipeline:template:view'),
   });
 

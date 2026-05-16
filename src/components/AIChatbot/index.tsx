@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Button, Input, Card, Space, Avatar, FloatButton, Typography, theme, Dropdown, MenuProps, Tag, Drawer, List, Tooltip, Empty, Skeleton, Tabs } from 'antd';
+import { Button, Input, Card, Space, Avatar, FloatButton, Typography, theme, Dropdown, MenuProps, Tag, Drawer, List, Tooltip, Empty, Skeleton, Tabs, Alert } from 'antd';
 import { 
     RobotOutlined, UserOutlined, SendOutlined, MinusOutlined, PlayCircleOutlined, 
     CoffeeOutlined, ThunderboltOutlined, UserSwitchOutlined, HistoryOutlined, 
@@ -29,6 +29,7 @@ interface Message {
     role: 'user' | 'assistant';
     content: string;
     is_exported?: boolean;
+    referenced_docs?: { id: number; title: string }[];
 }
 
 type PersonalityKey = 'professional' | 'concise' | 'humorous';

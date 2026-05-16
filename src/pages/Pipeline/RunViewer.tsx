@@ -8,7 +8,7 @@ import ReactFlow, {
   Edge
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Layout, Typography, Space, Button, theme, Tag, Drawer, Spin, Card, App, Tooltip, Dropdown } from 'antd';
+import { Layout, Typography, Space, Button, theme, Tag, Drawer, Spin, Card, App, Tooltip, Dropdown, Input } from 'antd';
 import {
   ArrowLeftOutlined,
   LoadingOutlined,
@@ -25,7 +25,8 @@ import {
   RobotOutlined
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPipelineRunDetail, stopPipelineRun, retryPipelineRun, approvePipelineNode, summarizePipelineRun } from '../../api/pipeline';
+import { getPipelineRunDetail, stopPipelineRun, retryPipelineRun, approvePipelineNode } from '../../api/pipeline';
+import { summarizePipelineRun } from '../../api/ai';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useWebSocket from 'react-use-websocket';
 import { useTranslation } from 'react-i18next';
@@ -198,7 +199,7 @@ const ViewerCore = () => {
   const approveMutation = useMutation({
     mutationFn: (action: 'pass' | 'reject') => {
         const payload = runData?.data || runData;
-        const nodeRun = payload.nodes.find((n: any) => n.node_id === selectedNodeId);
+        const nodeRun = payload.nodes.find((n: any) => n.node_id === selectedNodeData?.id);
         return approvePipelineNode(nodeRun.id, action, (document.getElementById('approval-comment') as HTMLTextAreaElement)?.value);
     },
     onSuccess: () => {

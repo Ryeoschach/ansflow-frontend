@@ -4,14 +4,16 @@ import { UserOutlined } from '@ant-design/icons';
 import { Tag } from 'antd';
 import BaseNode from './BaseNode';
 
-const ApprovalNode = ({ data, selected }: NodeProps) => {
+const ApprovalNode = (props: NodeProps) => {
+  const { data, isConnectable } = props;
   return (
     <BaseNode
       title="人工审批"
       icon={<UserOutlined style={{ color: '#722ed1' }} />}
-      selected={selected}
-      color="#f9f0ff"
-      borderColor="#722ed1"
+      data={data}
+      isConnectable={isConnectable}
+      defaultColor="#722ed1"
+      defaultBg="#f9f0ff"
     >
       <div className="text-[10px] text-gray-500 mt-1">
         等待指定人员审核通过

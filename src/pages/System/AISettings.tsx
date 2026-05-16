@@ -101,16 +101,10 @@ const AISettings: React.FC = () => {
     queryFn: () => getAIModels(),
     enabled: queryEnabled
   });
-const { data: configData } = useQuery({
-  queryKey: ['aiConfig'],
-  queryFn: getCurrentAIConfig,
-});
 
-const { data: kbListData } = useQuery({
-  queryKey: ['knowledgeBases'],
-  queryFn: () => getKnowledgeBases({ page_size: 100 }),
-});
-
+  const { data: configData } = useQuery({
+    queryKey: ['aiConfig'],
+    queryFn: getCurrentAIConfig,
     enabled: queryEnabled
   });
 
@@ -284,7 +278,7 @@ const { data: kbListData } = useQuery({
 
   const renderKnowledgeTab = () => {
     const rawData = kbData as any;
-    const kbs = Array.isArray(rawData) ? rawData : (rawData?.data || rawData?.results || []);
+    const kbs = Array.isArray(rawData) ? rawData : (rawData?.data || []);
     const isEn = i18n.language.startsWith('en');
     const columns = [
       { title: t('ai.settings.kbName'), key: 'name', width: 150, render: (_: any, record: KnowledgeBase) => (<span>{isEn ? (record.name_en || record.name) : record.name}</span>) },
@@ -488,7 +482,9 @@ const { data: kbListData } = useQuery({
                 </Form.Item>
                 <Form.Item label="默认知识库" name="default_kb" tooltip="AI 自动生成摘要时的默认存放位置">
                   <Select placeholder="选择存储知识库" allowClear>
-                    {(kbData?.data || []).map((kb: any) => (<Select.Option key={kb.id} value={kb.id}>{kb.name}</Select.Option>))}
+                    {(Array.isArray(kbData) ? kbData : (kbData?.data || [])).map((kb: any) => (
+                      <Select.Option key={kb.id} value={kb.id}>{kb.name}</Select.Option>
+                    ))}
                   </Select>
                 </Form.Item>
               </Card>
