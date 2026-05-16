@@ -43,6 +43,10 @@ export const stopPipelineRun = (id: number | string): Promise<any> =>
 export const retryPipelineRun = (runId: number | string, startNodeId: string): Promise<any> =>
   request.post(`/pipeline_runs/${runId}/retry/`, { start_node_id: startNodeId }) as any;
 
+// 审批流水线节点
+export const approvePipelineNode = (nodeRunId: number, action: 'pass' | 'reject', comment?: string): Promise<any> =>
+  request.post(`/pipeline_node_runs/${nodeRunId}/approve/`, { action, comment }) as any;
+
 // --- CI Environments (构建镜像管理) ---
 
 // 获取所有 CI 环境

@@ -25,7 +25,7 @@ import {
   RobotOutlined
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPipelineRunDetail, stopPipelineRun, retryPipelineRun } from '../../api/pipeline';
+import { getPipelineRunDetail, stopPipelineRun, retryPipelineRun, approvePipelineNode } from '../../api/pipeline';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useWebSocket from 'react-use-websocket';
 import { useTranslation } from 'react-i18next';
@@ -50,6 +50,15 @@ const nodeTypes = {
   git_clone: GitNode,
   docker_build: BuildNode,
   kaniko_build: KanikoNode,
+  approval: (props: any) => {
+    const { data } = props;
+    const isWaiting = data.runStatus === 'waiting';
+    return (
+      <div className={`relative ${isWaiting ? 'animate-pulse scale-105 transition-all duration-1000' : ''}`}>
+        <HttpNode {...props} />
+      </div>
+    );
+  }
 };
 
 /**
@@ -186,6 +195,18 @@ const ViewerCore = () => {
     onError: (err: any) => message.error(`${t('runViewer.controlCommandRejected')}: ${err.message}`)
   });
 
+  const approveMutation = useMutation({
+    mutationFn: (action: 'pass' | 'reject') => {
+        const payload = runData?.data || runData;
+        const nodeRun = payload.nodes.find((n: any) => n.node_id === selectedNodeId);
+        return approvePipelineNode(nodeRun.id, action, (document.getElementById('approval-comment') as HTMLTextAreaElement)?.value);
+    },
+    onSuccess: () => {
+        message.success(t('common.success'));
+        queryClient.invalidateQueries({ queryKey: ['pipeline_run', runId] });
+    }
+  });
+
   /**
    * @description 获取 nodeId 的所有前置节点（通过边反向遍历）
    */
@@ -290,6 +311,7 @@ const ViewerCore = () => {
           case 'running': return <Tag icon={<SyncOutlined spin />} color="processing" className="rounded-full px-3">{t('runViewer.executing')}</Tag>;
           case 'success': return <Tag color="success" className="rounded-full px-3">{t('runViewer.success')}</Tag>;
           case 'failed': return <Tag color="error" className="rounded-full px-3">{t('runViewer.failed')}</Tag>;
+          case 'waiting': return <Tag icon={<SyncOutlined spin />} color="purple" className="rounded-full px-3">等待审批</Tag>;
           case 'cancelled': return <Tag icon={<StopOutlined />} color="default" className="rounded-full px-3">{t('runViewer.cancelled')}</Tag>;
           case 'skipped': return <Tag icon={<MinusCircleOutlined />} color="default" className="rounded-full px-3">{t('runViewer.skipped')}</Tag>;
           default: return <Tag color="default" className="rounded-full px-3">{t('runViewer.queued')}</Tag>;
@@ -395,6 +417,7 @@ const ViewerCore = () => {
                     if (s === 'success') return token.colorSuccess;
                     if (s === 'failed') return token.colorError;
                     if (s === 'running') return token.colorPrimary;
+                    if (s === 'waiting') return '#722ed1';
                     return token.colorTextTertiary;
                 }}
             />
@@ -424,6 +447,42 @@ const ViewerCore = () => {
       >
         <div className="flex flex-col h-full">
           <div className="p-6">
+            {selectedNodeData?.runStatus === 'waiting' && (
+                <Card 
+                    size="small" 
+                    title={<Space><MonitorOutlined className="text-purple-500" /><span>审批干预</span></Space>}
+                    className="mb-4 border-2 border-purple-100 bg-purple-50/30 rounded-2xl overflow-hidden shadow-sm"
+                >
+                    <div className="space-y-3">
+                        <Text type="secondary" className="text-[11px]">该步骤需要人工确认后才能继续执行，请填写审核意见：</Text>
+                        <Input.TextArea 
+                            id="approval-comment"
+                            placeholder="请输入审核意见 (可选)" 
+                            rows={3} 
+                            className="rounded-xl border-purple-200"
+                        />
+                        <Space className="w-full justify-end">
+                            <Button 
+                                danger 
+                                ghost 
+                                className="rounded-lg"
+                                onClick={() => approveMutation.mutate('reject')}
+                                loading={approveMutation.isPending}
+                            >
+                                驳回
+                            </Button>
+                            <Button 
+                                type="primary" 
+                                className="rounded-lg bg-purple-600 hover:bg-purple-500 border-none"
+                                onClick={() => approveMutation.mutate('pass')}
+                                loading={approveMutation.isPending}
+                            >
+                                通过并继续
+                            </Button>
+                        </Space>
+                    </div>
+                </Card>
+            )}
             <Card size="small" className="border-none shadow-sm rounded-2xl">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-xs py-2">
                     <div className="flex flex-col gap-1">
