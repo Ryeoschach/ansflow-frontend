@@ -48,7 +48,7 @@ export interface AIModel {
   provider_name: string;
   name: string;
   display_name: string;
-  model_type: 'llm' | 'embedding';
+  model_type: 'llm' | 'embedding' | 'rerank';
   is_active: boolean;
 }
 
@@ -57,6 +57,7 @@ export interface AIConfig {
   name: string;
   default_llm: number | null;
   default_embedding: number | null;
+  default_rerank: number | null;
   rag_bm25_weight?: number;
   rag_vector_weight?: number;
   rag_top_k?: number;

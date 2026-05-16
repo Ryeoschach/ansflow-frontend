@@ -254,7 +254,13 @@ const AISettings: React.FC = () => {
       { title: t('ai.settings.displayName'), dataIndex: 'display_name', key: 'display_name' },
       { title: t('ai.settings.modelId'), dataIndex: 'name', key: 'name' },
       { title: t('ai.settings.belongProvider'), dataIndex: 'provider_name', key: 'provider_name' },
-      { title: t('ai.settings.modelType'), dataIndex: 'model_type', key: 'model_type', render: (type: string) => (<Tag color={type === 'llm' ? 'gold' : 'magenta'}>{type === 'llm' ? t('ai.settings.llm') : t('ai.settings.embedding')}</Tag>) },
+      { title: t('ai.settings.modelType'), dataIndex: 'model_type', key: 'model_type', render: (type: string) => {
+        let color = 'gold';
+        let label = t('ai.settings.llm');
+        if (type === 'embedding') { color = 'magenta'; label = t('ai.settings.embedding'); }
+        else if (type === 'rerank') { color = 'purple'; label = '重排序模型'; }
+        return <Tag color={color}>{label}</Tag>;
+      } },
       {
         title: t('common.action'), key: 'action', width: 120,
         render: (_: any, record: AIModel) => (
@@ -450,6 +456,7 @@ const AISettings: React.FC = () => {
     const allModels: AIModel[] = Array.isArray(rawData) ? rawData : (rawData?.data || rawData?.results || []);
     const llmModels = allModels.filter(m => m.model_type === 'llm');
     const embModels = allModels.filter(m => m.model_type === 'embedding');
+    const rerankModels = allModels.filter(m => m.model_type === 'rerank');
     
     return (
       <div className="max-w-4xl space-y-6">
@@ -466,6 +473,11 @@ const AISettings: React.FC = () => {
                 <Form.Item label={t('ai.settings.defaultEmbedding')} name="default_embedding" tooltip={t('ai.settings.defaultEmbeddingTip')}>
                   <Select placeholder="选择默认 Embedding">
                     {embModels.map(m => (<Select.Option key={m.id} value={m.id}>{m.display_name} ({m.provider_name})</Select.Option>))}
+                  </Select>
+                </Form.Item>
+                <Form.Item label="默认重排序模型 (Rerank)" name="default_rerank" tooltip="可选。提供更精准的搜索打分，但消耗更多算力。">
+                  <Select placeholder="选择默认 Rerank 模型" allowClear>
+                    {rerankModels.map(m => (<Select.Option key={m.id} value={m.id}>{m.display_name} ({m.provider_name})</Select.Option>))}
                   </Select>
                 </Form.Item>
               </Card>
@@ -508,7 +520,7 @@ const AISettings: React.FC = () => {
       <Title level={4}>{t('ai.settings.pageTitle')}</Title>
       <Card><Tabs activeKey={activeTab} onChange={setActiveTab}><Tabs.TabPane tab={<span><SettingOutlined />{t('ai.settings.globalConfig')}</span>} key="config">{renderConfigTab()}</Tabs.TabPane><Tabs.TabPane tab={<span><BookOutlined />{t('ai.settings.knowledgeBase')}</span>} key="knowledge">{renderKnowledgeTab()}</Tabs.TabPane><Tabs.TabPane tab={<span><ApiOutlined />{t('ai.settings.providers')}</span>} key="providers">{renderProviderTab()}</Tabs.TabPane><Tabs.TabPane tab={<span><RocketOutlined />{t('ai.settings.models')}</span>} key="models">{renderModelTab()}</Tabs.TabPane></Tabs></Card>
       <Modal title={editingProvider ? t('ai.settings.editProvider') : t('ai.settings.addProvider')} open={isProviderModalOpen} onCancel={() => setIsProviderModalOpen(false)} onOk={() => providerForm.submit()} confirmLoading={providerMutation.isPending}><Form form={providerForm} layout="vertical" onFinish={providerMutation.mutate}><Form.Item name="name" label={t('ai.settings.providerName')} rules={[{ required: true }]}><Input placeholder="如 DeepSeek 官方" /></Form.Item><Form.Item name="provider_type" label={t('ai.settings.providerType')} rules={[{ required: true }]}><Select onChange={(val) => { if (val === 'local') providerForm.setFieldValue('base_url', 'http://localhost'); }}><Select.Option value="openai">OpenAI</Select.Option><Select.Option value="deepseek">DeepSeek</Select.Option><Select.Option value="anthropic">Anthropic</Select.Option><Select.Option value="ollama">Ollama (Local)</Select.Option><Select.Option value="local">FastEmbed (Local)</Select.Option><Select.Option value="other">Other (OpenAI Compatible)</Select.Option></Select></Form.Item><Form.Item noStyle shouldUpdate={(prev, curr) => prev.provider_type !== curr.provider_type}>{({ getFieldValue }) => (<Form.Item name="base_url" label={t('ai.settings.apiUrl')} rules={[{ required: getFieldValue('provider_type') !== 'local' }]}><Input placeholder={getFieldValue('provider_type') === 'local' ? "本地模式无需配置" : "https://api.deepseek.com"} disabled={getFieldValue('provider_type') === 'local'} /></Form.Item>)}</Form.Item><Form.Item name="api_key" label={t('ai.settings.apiKey')}><Input.Password placeholder="输入 API Key" /></Form.Item><Form.Item name="is_active" label={t('ai.settings.isActive')} valuePropName="checked"><Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} /></Form.Item></Form></Modal>
-      <Modal title={editingModel ? t('ai.settings.editModel') : t('ai.settings.addModel')} open={isModelModalOpen} onCancel={() => setIsModelModalOpen(false)} onOk={() => modelForm.submit()}><Form form={modelForm} layout="vertical" onFinish={(values) => { const m = editingModel ? updateAIModel(editingModel.id, values) : createAIModel(values); m.then(() => { message.success(t('ai.settings.saveSuccess')); setIsModelModalOpen(false); queryClient.invalidateQueries({ queryKey: ['aiModels'] }); }); }}><Form.Item name="provider" label={t('ai.settings.belongProvider')} rules={[{ required: true }]}><Select placeholder="选择供应商">{(Array.isArray(providersData) ? providersData : (providersData as any)?.data || (providersData as any)?.results || []).map((p: any) => (<Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>))}</Select></Form.Item><Form.Item name="display_name" label={t('ai.settings.displayName')} rules={[{ required: true }]}><Input placeholder="如 DeepSeek Chat V3" /></Form.Item><Form.Item name="name" label={t('ai.settings.modelId')} rules={[{ required: true }]}><Input placeholder="如 deepseek-chat" /></Form.Item><Form.Item name="model_type" label={t('ai.settings.modelType')} rules={[{ required: true }]}><Select><Select.Option value="llm">{t('ai.settings.llm')}</Select.Option><Select.Option value="embedding">{t('ai.settings.embedding')}</Select.Option></Select></Form.Item><Form.Item name="is_active" label={t('ai.settings.isActive')} valuePropName="checked"><Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} /></Form.Item></Form></Modal>
+      <Modal title={editingModel ? t('ai.settings.editModel') : t('ai.settings.addModel')} open={isModelModalOpen} onCancel={() => setIsModelModalOpen(false)} onOk={() => modelForm.submit()}><Form form={modelForm} layout="vertical" onFinish={(values) => { const m = editingModel ? updateAIModel(editingModel.id, values) : createAIModel(values); m.then(() => { message.success(t('ai.settings.saveSuccess')); setIsModelModalOpen(false); queryClient.invalidateQueries({ queryKey: ['aiModels'] }); }); }}><Form.Item name="provider" label={t('ai.settings.belongProvider')} rules={[{ required: true }]}><Select placeholder="选择供应商">{(Array.isArray(providersData) ? providersData : (providersData as any)?.data || (providersData as any)?.results || []).map((p: any) => (<Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>))}</Select></Form.Item><Form.Item name="display_name" label={t('ai.settings.displayName')} rules={[{ required: true }]}><Input placeholder="如 DeepSeek Chat V3" /></Form.Item><Form.Item name="name" label={t('ai.settings.modelId')} rules={[{ required: true }]}><Input placeholder="如 deepseek-chat" /></Form.Item><Form.Item name="model_type" label={t('ai.settings.modelType')} rules={[{ required: true }]}><Select><Select.Option value="llm">{t('ai.settings.llm')}</Select.Option><Select.Option value="embedding">{t('ai.settings.embedding')}</Select.Option><Select.Option value="rerank">重排序模型 (Rerank)</Select.Option></Select></Form.Item><Form.Item name="is_active" label={t('ai.settings.isActive')} valuePropName="checked"><Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} /></Form.Item></Form></Modal>
     </div>
   );
 };
