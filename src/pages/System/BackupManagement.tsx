@@ -10,7 +10,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { getBackupList, createBackup, restoreBackup, uploadAndRestoreBackup, downloadBackupFile, deleteBackupFiles, BackupFile } from '../../api/backup';
+import { getBackupList, createBackup, restoreBackup, uploadAndRestoreBackup, downloadBackupFile, deleteBackupFiles, getBackupModules, BackupFile } from '../../api/backup';
 
 const { Title, Text } = Typography;
 
@@ -19,8 +19,18 @@ const BackupManagement: React.FC = () => {
   const { token } = theme.useToken();
   const queryClient = useQueryClient();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [restoreModalOpen, setRestoreModalOpen] = useState(false);
+  const [currentFilename, setCurrentFilename] = useState<string>('');
+  const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [restoreLoading, setRestoreLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+
+  // 获取模块列表
+  const { data: modules = [] } = useQuery({
+    queryKey: ['backup_modules'],
+    queryFn: getBackupModules,
+  });
 
   // 获取备份列表
   const { data: backupList = [], isLoading } = useQuery({
@@ -33,10 +43,11 @@ const BackupManagement: React.FC = () => {
 
   // 创建备份
   const createMutation = useMutation({
-    mutationFn: createBackup,
+    mutationFn: (mods?: string[]) => createBackup(mods),
     onSuccess: (res: any) => {
       if (res.success) {
         message.success(t('backup.createSuccess'));
+        setCreateModalOpen(false);
         queryClient.invalidateQueries({ queryKey: ['system_backups'] });
       } else {
         message.error(res.error || t('backup.createFailed'));
@@ -47,9 +58,10 @@ const BackupManagement: React.FC = () => {
 
   // 恢复备份
   const restoreMutation = useMutation({
-    mutationFn: (filename: string) => restoreBackup(filename),
+    mutationFn: ({filename, mods}: {filename: string, mods?: string[]}) => restoreBackup(filename, mods),
     onSuccess: (res: any) => {
       setRestoreLoading(false);
+      setRestoreModalOpen(false);
       if (res.success) {
         Modal.success({
           title: t('backup.restoreSuccess'),
@@ -75,6 +87,7 @@ const BackupManagement: React.FC = () => {
     },
     onError: () => {
       setRestoreLoading(false);
+      setRestoreModalOpen(false);
       message.error(t('backup.restoreFailed'));
     },
   });
@@ -96,7 +109,7 @@ const BackupManagement: React.FC = () => {
 
   // 上传并恢复
   const uploadMutation = useMutation({
-    mutationFn: (file: File) => uploadAndRestoreBackup(file),
+    mutationFn: (file: File) => uploadAndRestoreBackup(file, selectedModules),
     onSuccess: (res: any) => {
       setRestoreLoading(false);
       setUploadModalOpen(false);
@@ -195,20 +208,18 @@ const BackupManagement: React.FC = () => {
           <Button type="text" icon={<DownloadOutlined />} onClick={() => handleDownload(record.filename)}>
             {t('backup.download')}
           </Button>
-          <Popconfirm
-            title={t('backup.confirmRestore')}
-            description={t('backup.restoreWarning')}
-            onConfirm={() => {
-              setRestoreLoading(true);
-              restoreMutation.mutate(record.filename);
+          <Button 
+            type="text" 
+            icon={<FileZipOutlined />} 
+            danger
+            onClick={() => {
+              setCurrentFilename(record.filename);
+              setSelectedModules(modules.map((m: any) => m.key)); // 默认全选
+              setRestoreModalOpen(true);
             }}
-            okText={t('common.confirm')}
-            cancelText={t('common.cancel')}
           >
-            <Button type="text" icon={<FileZipOutlined />} danger>
-              {t('backup.restore')}
-            </Button>
-          </Popconfirm>
+            {t('backup.restore')}
+          </Button>
         </Space>
       ),
     },
@@ -270,7 +281,15 @@ const BackupManagement: React.FC = () => {
                 </Button>
               </Popconfirm>
             )}
-            <Button type="primary" icon={<DatabaseOutlined />} onClick={() => createMutation.mutate()} loading={createMutation.isPending}>
+            <Button 
+              type="primary" 
+              icon={<DatabaseOutlined />} 
+              onClick={() => {
+                setSelectedModules(modules.map((m: any) => m.key));
+                setCreateModalOpen(true);
+              }} 
+              loading={createMutation.isPending}
+            >
               {t('backup.create')}
             </Button>
             <Button icon={<UploadOutlined />} onClick={() => setUploadModalOpen(true)}>
@@ -289,8 +308,101 @@ const BackupManagement: React.FC = () => {
         />
       </Card>
 
-      <Modal title={t('backup.upload')} open={uploadModalOpen} onCancel={() => setUploadModalOpen(false)} footer={null} width={500}>
+      <Modal
+        title="选择备份范围"
+        open={createModalOpen}
+        onOk={() => createMutation.mutate(selectedModules)}
+        onCancel={() => setCreateModalOpen(false)}
+        confirmLoading={createMutation.isPending}
+      >
         <div className="py-4">
+          <Text type="secondary" className="mb-4 block">请选择您需要导出的功能模块数据：</Text>
+          <Checkbox.Group 
+            style={{ width: '100%' }} 
+            value={selectedModules}
+            onChange={(vals) => setSelectedModules(vals as string[])}
+          >
+            <Row gutter={[16, 12]}>
+              {modules.map((m: any) => (
+                <Col span={12} key={m.key}>
+                  <Checkbox value={m.key}>{m.label}</Checkbox>
+                </Col>
+              ))}
+            </Row>
+          </Checkbox.Group>
+        </div>
+      </Modal>
+
+      <Modal
+        title="确认恢复数据"
+        open={restoreModalOpen}
+        onOk={() => {
+          setRestoreLoading(true);
+          restoreMutation.mutate({ filename: currentFilename, mods: selectedModules });
+        }}
+        onCancel={() => setRestoreModalOpen(false)}
+        confirmLoading={restoreLoading}
+      >
+        <div className="py-4">
+          <Alert
+            message="高风险操作"
+            description="恢复操作将覆盖系统中现有的同名数据。建议您选择仅恢复必要的模块。"
+            type="warning"
+            showIcon
+            className="mb-4"
+          />
+          <Text strong>选择要恢复的模块：</Text>
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <Checkbox.Group 
+              style={{ width: '100%' }} 
+              value={selectedModules}
+              onChange={(vals) => setSelectedModules(vals as string[])}
+            >
+              <Row gutter={[16, 12]}>
+                {modules.map((m: any) => (
+                  <Col span={12} key={m.key}>
+                    <Checkbox value={m.key}>{m.label}</Checkbox>
+                  </Col>
+                ))}
+              </Row>
+            </Checkbox.Group>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal 
+        title={t('backup.upload')} 
+        open={uploadModalOpen} 
+        onCancel={() => setUploadModalOpen(false)} 
+        footer={null} 
+        width={600}
+      >
+        <div className="py-4">
+          <Alert
+            message="上传恢复说明"
+            description="上传文件后将立即执行恢复操作。请在下方勾选需要恢复的模块，默认将尝试恢复全部数据。"
+            type="info"
+            showIcon
+            className="mb-4"
+          />
+          
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-dashed">
+            <Text strong className="mb-3 block">选择恢复模块：</Text>
+            <Checkbox.Group 
+              style={{ width: '100%' }} 
+              value={selectedModules}
+              onChange={(vals) => setSelectedModules(vals as string[])}
+            >
+              <Row gutter={[16, 12]}>
+                {modules.map((m: any) => (
+                  <Col span={12} key={m.key}>
+                    <Checkbox value={m.key}>{m.label}</Checkbox>
+                  </Col>
+                ))}
+              </Row>
+            </Checkbox.Group>
+          </div>
+
           <Upload.Dragger
             accept=".json.gz"
             beforeUpload={(file) => {
