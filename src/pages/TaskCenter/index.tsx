@@ -359,6 +359,9 @@ const TaskCenter: React.FC = () => {
                         <Form.Item label={t('taskCenter.fieldResourcePool')} name="resource_pool" className="flex-1">
                             <Select options={poolData?.data?.map((p: any) => ({ label: p.name, value: p.id }))} />
                         </Form.Item>
+                        <Form.Item label="并发数 (Forks)" name="forks" className="w-full md:w-32" initialValue={5}>
+                            <InputNumber min={1} max={100} className="w-full" />
+                        </Form.Item>
                         <Form.Item label={t('taskCenter.fieldTimeout')} name="timeout" className="w-full md:w-32" initialValue={3600}>
                             <Input type="number" placeholder="3600" />
                         </Form.Item>

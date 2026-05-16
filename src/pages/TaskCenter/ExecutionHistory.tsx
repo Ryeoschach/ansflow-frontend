@@ -13,6 +13,7 @@ import {
     Select,
     DatePicker,
     Tooltip,
+    Popover,
 } from 'antd';
 import {
     SyncOutlined,
@@ -47,6 +48,7 @@ const ExecutionHistory: React.FC = () => {
     const [logDrawerVisible, setLogDrawerVisible] = useState(false);
     const [activeExecutionId, setActiveExecutionId] = useState<number | null>(null);
     const [drawerWidth, setDrawerWidth] = useState(800);
+    const [hostFilter, setHostFilter] = useState<string | null>(null);
 
     // 筛选状态
     const [params, setParams] = useState<any>({ page: 1, size: 20 });
@@ -95,6 +97,19 @@ const ExecutionHistory: React.FC = () => {
     });
 
     const activeExecution = executionData?.data?.find((e: any) => e.id === activeExecutionId);
+
+    const filteredLogs = React.useMemo(() => {
+        if (!logs) return [];
+        if (!hostFilter) return logs;
+        return logs.filter((l: any) => l.host === hostFilter);
+    }, [logs, hostFilter]);
+
+    const availableHosts = React.useMemo(() => {
+        if (!logs) return [];
+        const hosts = new Set<string>();
+        logs.forEach((l: any) => { if (l.host) hosts.add(l.host); });
+        return Array.from(hosts);
+    }, [logs]);
 
     const statusMap: any = {
         'pending': { color: 'default', text: t('executionHistory.pending'), icon: <SyncOutlined spin /> },
@@ -330,14 +345,40 @@ const ExecutionHistory: React.FC = () => {
                     }
                 }}
                 open={logDrawerVisible}
-                styles={{ body: { position: 'relative', padding: '12px' } }}
+                styles={{ body: { position: 'relative', padding: '12px', display: 'flex', flexDirection: 'column' } }}
             >
-                {activeExecution?.status === 'failed' && (
-                    <div className="mb-3 flex justify-end">
+                <div className="mb-3 flex justify-between items-center flex-wrap gap-2">
+                    <Space>
+                        <Select
+                            placeholder="按主机筛选"
+                            style={{ width: 150 }}
+                            allowClear
+                            onChange={setHostFilter}
+                            value={hostFilter}
+                            size="small"
+                        >
+                            {availableHosts.map(h => <Select.Option key={h} value={h}>{h}</Select.Option>)}
+                        </Select>
+                        {activeExecution?.extra_vars_snapshot && (
+                            <Popover 
+                                title="变量快照 (Runtime Vars)" 
+                                content={
+                                    <pre className="text-[10px] p-2 bg-gray-50 rounded max-w-md max-h-60 overflow-auto">
+                                        {JSON.stringify(activeExecution.extra_vars_snapshot, null, 2)}
+                                    </pre>
+                                }
+                            >
+                                <Button size="small" icon={<HistoryOutlined />}>变量快照</Button>
+                            </Popover>
+                        )}
+                    </Space>
+                    
+                    {activeExecution?.status === 'failed' && (
                         <Button
                             type="primary"
                             danger
                             ghost
+                            size="small"
                             icon={<RobotOutlined />}
                             onClick={() => {
                                 setLogDrawerVisible(false);
@@ -349,21 +390,18 @@ const ExecutionHistory: React.FC = () => {
                         >
                             AI 诊断
                         </Button>
-                    </div>
-                )}
+                    )}
+                </div>
+                
                 <div
                     className="absolute left-0 top-0 bottom-0 w-1 cursor-w-resize hover:bg-blue-400 bg-transparent z-1001"
                     onMouseDown={handleMouseDown}
                 />
-                <div className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-auto h-full shadow-inner relative">
+                <div className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-auto flex-1 shadow-inner relative">
                     {logsLoading ? (
                         <LogSkeleton />
-                        // <div className="flex flex-col items-center justify-center h-full gap-2 text-slate-500">
-                        //     <LoadingOutlined style={{ fontSize: 24 }} />
-                        //     <span>正在拉取实时日志...</span>
-                        // </div>
-                    ) : logs && logs.length > 0 ? (
-                        logs.map((log: any, idx: number) => (
+                    ) : filteredLogs && filteredLogs.length > 0 ? (
+                        filteredLogs.map((log: any, idx: number) => (
                             <div key={idx} className="mb-4 border-b border-slate-700 pb-2 last:border-0">
                                 <div className="text-amber-400 mb-1 flex justify-between">
                                     <span>[HOST: {log.host}]</span>
