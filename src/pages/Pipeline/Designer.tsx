@@ -40,8 +40,10 @@ import {
   SettingOutlined,
   RobotOutlined,
   ThunderboltOutlined,
-  ApiOutlined
-} from '@ant-design/icons';
+  ApiOutlined,
+  UserOutlined
+  } from '@ant-design/icons';
+
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
   import { useTranslation } from 'react-i18next';
@@ -65,6 +67,7 @@ import HttpNode from './nodes/HttpNode';
 import GitNode from './nodes/GitNode';
 import BuildNode from './nodes/BuildNode';
 import KanikoNode from './nodes/KanikoNode';
+import ApprovalNode from './nodes/ApprovalNode';
 
 const { Content, Sider } = Layout;
 const { Title, Text } = Typography;
@@ -76,6 +79,7 @@ const nodeTypes = {
   git_clone: GitNode,
   docker_build: BuildNode,
   kaniko_build: KanikoNode,
+  approval: ApprovalNode,
 };
 
 // 显式定义全局单例，防止 React Flow 引用抖动
@@ -869,6 +873,36 @@ const DesignerCore = () => {
               <Form.Item label={t('pipelineDesigner.imageName')} name="image_name" rules={[{ required: true }]}><Input placeholder={t('pipelineDesigner.enterImageName')} /></Form.Item>
               <Form.Item label={t('pipelineDesigner.imageTag')} name="image_tag" initialValue="latest"><Input placeholder={t('pipelineDesigner.enterImageTag')} /></Form.Item>
               <Form.Item label={t('pipelineDesigner.dockerfile')} name="dockerfile_path" initialValue="Dockerfile"><Input /></Form.Item>
+            </Card>
+          )}
+
+          {selectedNode?.type === 'approval' && (
+            <Card size="small" title="审批配置" className="mb-5 border-none shadow-sm">
+              <Form.Item label="审批方式" name="approver_type" initialValue="role" rules={[{ required: true }]}>
+                <Select>
+                  <Select.Option value="role">角色审批 (推荐)</Select.Option>
+                  <Select.Option value="user">指定用户</Select.Option>
+                </Select>
+              </Form.Item>
+              <Form.Item 
+                noStyle 
+                shouldUpdate={(prev, curr) => prev.approver_type !== curr.approver_type}
+              >
+                {({ getFieldValue }) => (
+                  getFieldValue('approver_type') === 'role' ? (
+                    <Form.Item label="审批角色" name="role_id" rules={[{ required: true }]}>
+                      <Select 
+                        placeholder="选择有权审批的角色"
+                        options={[{label: '超级管理员', value: 1}, {label: '运维主管', value: 2}]} 
+                      />
+                    </Form.Item>
+                  ) : (
+                    <Form.Item label="审批人" name="user_id" rules={[{ required: true }]}>
+                      <Select placeholder="选择指定审批人" />
+                    </Form.Item>
+                  )
+                )}
+              </Form.Item>
             </Card>
           )}
 
