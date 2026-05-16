@@ -393,6 +393,22 @@ const AIChatbot: React.FC = () => {
                     }
                 }
 
+                // 1.5 提取引用文档
+                if (assistantReply.includes('__REFERENCES__:')) {
+                    const match = assistantReply.match(/__REFERENCES__:(\[.*?\])\n/);
+                    if (match) {
+                        try {
+                            const refs = JSON.parse(match[1]);
+                            setMessages(prev => {
+                                const newMessages = [...prev];
+                                newMessages[newMessages.length - 1].referenced_docs = refs;
+                                return newMessages;
+                            });
+                            assistantReply = assistantReply.replace(/__REFERENCES__:\[.*?\]\n/, '').trim();
+                        } catch (e) {}
+                    }
+                }
+
                 // 2. 提取建议流水线 ID
                 if (assistantReply.includes('__SUGGESTION__:')) {
                     const match = assistantReply.match(/__SUGGESTION__:(\{.*?\})/);
@@ -901,6 +917,19 @@ const AIChatbot: React.FC = () => {
                                                 </div>
                                             )}
                                         </div>
+                                        {msg.role === 'assistant' && msg.referenced_docs && msg.referenced_docs.length > 0 && (
+                                            <div className="mt-1 flex flex-wrap gap-1 mb-1">
+                                                <span className="text-[10px] opacity-40 mr-1 flex items-center"><BookOutlined className="mr-0.5" /> 参考:</span>
+                                                {msg.referenced_docs.map((doc: any, i: number) => (
+                                                    <Tag 
+                                                        key={i} 
+                                                        className="text-[9px] m-0 px-1 border-none bg-gray-100 hover:bg-gray-200 cursor-help transition-colors"
+                                                    >
+                                                        {doc.title}
+                                                    </Tag>
+                                                ))}
+                                            </div>
+                                        )}
                                         {msg.role === 'assistant' && msg.id && (
                                             <div className="flex justify-start">
                                                 <Tooltip title={msg.is_exported ? "已在知识库中" : "存入知识库"}>

@@ -29,6 +29,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   is_exported?: boolean;
+  referenced_docs?: { id: number; title: string }[];
   create_time: string;
 }
 
