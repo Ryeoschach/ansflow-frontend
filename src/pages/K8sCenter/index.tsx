@@ -373,11 +373,11 @@ const K8sCenter: React.FC = () => {
   const syncStatusMutation = useMutation({
     mutationFn: (id: number) => syncK8sClusterStatus(id),
     onSuccess: () => {
-      message.success('集群健康状态已刷新');
+      message.success(t('k8s.healthRefreshed') || '集群健康状态已刷新');
       queryClient.invalidateQueries({ queryKey: ['k8s', 'clusters'] });
     },
     onError: (err: any) => {
-      message.error(`刷新失败: ${err.response?.data?.error || err.message}`);
+      message.error(`${t('k8s.refreshFailed') || '刷新失败'}: ${err.response?.data?.error || err.message}`);
     },
   });
 

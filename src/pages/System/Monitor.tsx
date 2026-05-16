@@ -13,7 +13,9 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getSystemHealth, HealthComponent, getCeleryStats } from '../../api/system';
+import { getPulseThroughput } from '../../api/pulse';
 import { Button, Table } from 'antd';
+import ReactECharts from 'echarts-for-react';
 import useAppStore from '../../store/useAppStore';
 
 const { Title, Text } = Typography;
@@ -155,7 +157,38 @@ const MonitorCenter: React.FC = () => {
     enabled: !!authToken && hasPermission('system:monitor:view'),
   });
 
+  const { data: throughputData } = useQuery({
+    queryKey: ['pulseThroughput'],
+    queryFn: getPulseThroughput,
+    refetchInterval: 30000,
+    enabled: !!authToken && hasPermission('system:monitor:view'),
+  });
+
   const overallStatus = data?.status || 'unknown';
+
+  const throughputDataRaw = (throughputData as any);
+  const throughputOption = {
+    tooltip: { trigger: 'axis' },
+    grid: { left: '3%', right: '4%', bottom: '3%', top: '10', containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: Array.isArray(throughputDataRaw) ? throughputDataRaw.map((d: any) => d.time) : [],
+      axisLabel: { fontSize: 10, color: antdToken.colorTextTertiary }
+    },
+    yAxis: {
+      type: 'value',
+      splitLine: { lineStyle: { type: 'dashed', opacity: 0.2 } },
+      axisLabel: { fontSize: 10, color: antdToken.colorTextTertiary }
+    },
+    series: [{
+      data: Array.isArray(throughputDataRaw) ? throughputDataRaw.map((d: any) => d.value) : [],
+      type: 'bar',
+      smooth: true,
+      itemStyle: { 
+        borderRadius: [4, 4, 0, 0]
+      }
+    }]
+  };
 
   const handleRefreshAll = () => {
     refetch();
@@ -328,7 +361,19 @@ const MonitorCenter: React.FC = () => {
                 </div>
               }
             >
-              <CeleryWorkerTable workers={celeryData.workers} />
+              <Row gutter={24}>
+                <Col xs={24} xl={16}>
+                  <CeleryWorkerTable workers={celeryData.workers} />
+                </Col>
+                <Col xs={24} xl={8}>
+                  <div className="h-full flex flex-col pt-4">
+                    <Text strong className="mb-4 block text-[10px] opacity-40 uppercase tracking-widest">{t('monitor.throughput')}</Text>
+                    <div className="flex-1 min-h-[220px]">
+                      <ReactECharts option={throughputOption} style={{ height: '100%' }} />
+                    </div>
+                  </div>
+                </Col>
+              </Row>
             </Card>
           )}
         </>

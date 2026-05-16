@@ -94,6 +94,11 @@
     "action": "Action",
     "pipeline": "Pipeline",
     "task": "Task",
+    "platformDist": "Platform Dist.",
+    "envDist": "Environment Dist.",
+    "firingAlerts": "Active Alerts",
+    "recentDynamic": "Recent Dynamics",
+    "syncing": "Syncing",
     "trendTitle": "24h Task Execution Trend",
     "success": "Success",
     "failed": "Failed"
@@ -891,7 +896,8 @@
     "workerConcurrency": "Concurrency",
     "broker": "Broker",
     "celeryBeatStatus": "Task Scheduler (Beat)",
-    "lastRunTime": "Last Run Time"
+    "lastRunTime": "Last Run Time",
+    "throughput": "Throughput (24H)"
   },
   "credentialVault": {
     "title": "Secure Credential Core",
@@ -1131,7 +1137,9 @@
     "clusterUpdateFailed": "Update failed",
     "clusterDeleted": "Cluster deleted",
     "connectionVerifySuccess": "Connection verified! Version: {{version}}",
-    "connectionVerifyFailed": "Connection verification failed"
+    "connectionVerifyFailed": "Connection verification failed",
+    "healthRefreshed": "Cluster health status refreshed",
+    "refreshFailed": "Refresh failed"
   },
   "helm": {
     "repoManager": "Repo Manager",

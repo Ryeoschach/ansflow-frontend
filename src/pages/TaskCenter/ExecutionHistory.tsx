@@ -55,17 +55,27 @@ const ExecutionHistory: React.FC = () => {
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [filterForm, setFilterForm] = useState<any>({});
     
-    // 处理从 dashboard 等页面跳转过来的 ID 参数
+    // 处理从 dashboard 等页面跳转过来的参数
     useEffect(() => {
         const jumpId = searchParams.get('id');
+        const jumpStatus = searchParams.get('status');
+
         if (jumpId && !activeExecutionId && !logDrawerVisible) {
             const numericId = Number(jumpId);
             if (!isNaN(numericId)) {
                 setActiveExecutionId(numericId);
                 setLogDrawerVisible(true);
+                // 标记处理完成，清理 URL 防止刷新干扰
+                searchParams.delete('id');
+                setSearchParams(searchParams);
             }
         }
-    }, [searchParams, activeExecutionId, logDrawerVisible]);
+
+        if (jumpStatus) {
+            setParams((prev: any) => ({ ...prev, status: jumpStatus }));
+            // 如果需要清理 status 参数也可以在这里加，但通常保留过滤状态在 URL 更符合习惯
+        }
+    }, [searchParams]);
 
     // 1. 获取执行记录
     const { data: executionData, isLoading: listLoading } = useQuery({
@@ -249,6 +259,7 @@ const ExecutionHistory: React.FC = () => {
                     allowClear
                     placeholder={t('executionHistory.executionStatus')}
                     style={{ width: 120 }}
+                    value={params.status}
                     options={[
                         { label: t('executionHistory.success'), value: 'success' },
                         { label: t('executionHistory.failed'), value: 'failed' },

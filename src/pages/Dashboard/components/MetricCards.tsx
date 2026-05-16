@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 interface MetricCardsProps {
     data: any;
@@ -17,12 +18,15 @@ interface MetricCardsProps {
 const MetricCards: React.FC<MetricCardsProps> = ({ data, isLoading }) => {
     const { t } = useTranslation();
     const { token } = theme.useToken();
+    const navigate = useNavigate();
     const metrics = data?.metrics || {};
+
+    const cardClass = "shadow-sm border-0 h-full hover:shadow-md transition-shadow cursor-pointer";
 
     return (
         <Row gutter={[16, 16]}>
             <Col xs={24} sm={12} md={6}>
-                <Card className="shadow-sm border-0 h-full">
+                <Card className={cardClass} onClick={() => navigate('/v1/system/hosts')}>
                     {isLoading ? (
                         <StatsSkeleton />
                     ) : (
@@ -42,7 +46,7 @@ const MetricCards: React.FC<MetricCardsProps> = ({ data, isLoading }) => {
             </Col>
 
             <Col xs={24} sm={12} md={6}>
-                <Card className="shadow-sm border-0 h-full">
+                <Card className={cardClass} onClick={() => navigate('/v1/system/resourcepool')}>
                     {isLoading ? (
                         <StatsSkeleton />
                     ) : (
@@ -61,7 +65,7 @@ const MetricCards: React.FC<MetricCardsProps> = ({ data, isLoading }) => {
             </Col>
 
             <Col xs={24} sm={12} md={6}>
-                <Card className="shadow-sm border-0 h-full">
+                <Card className={cardClass} onClick={() => navigate('/v1/task/executions')}>
                     {isLoading ? (
                         <StatsSkeleton />
                     ) : (
@@ -81,7 +85,7 @@ const MetricCards: React.FC<MetricCardsProps> = ({ data, isLoading }) => {
             </Col>
 
             <Col xs={24} sm={12} md={6}>
-                <Card className="shadow-sm border-0 h-full">
+                <Card className={cardClass} onClick={() => navigate('/v1/task/executions?status=failed')}>
                     {isLoading ? (
                         <StatsSkeleton />
                     ) : (

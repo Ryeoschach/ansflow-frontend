@@ -108,6 +108,11 @@
     "action": "操作",
     "pipeline": "流水线",
     "task": "任务",
+    "platformDist": "云平台分布",
+    "envDist": "业务环境分布",
+    "firingAlerts": "当前活动告警",
+    "recentDynamic": "最近执行动态",
+    "syncing": "实时同步中",
     "trendTitle": "24小时任务执行趋势",
     "success": "成功",
     "failed": "失败"
@@ -801,7 +806,8 @@
     "workerConcurrency": "并发限制",
     "broker": "消息中间件",
     "celeryBeatStatus": "任务调度器 (Beat)",
-    "lastRunTime": "最后运行时间"
+    "lastRunTime": "最后运行时间",
+    "throughput": "任务吞吐量 (24H)"
   },
   "credentialVault": {
     "title": "安全凭据核心",
@@ -1041,7 +1047,9 @@
     "clusterUpdateFailed": "更新失败",
     "clusterDeleted": "集群已删除",
     "connectionVerifySuccess": "连接验证成功! 版本: {{version}}",
-    "connectionVerifyFailed": "连接验证失败"
+    "connectionVerifyFailed": "连接验证失败",
+    "healthRefreshed": "集群健康状态已刷新",
+    "refreshFailed": "刷新失败"
   },
   "helm": {
     "repoManager": "仓库管理",
