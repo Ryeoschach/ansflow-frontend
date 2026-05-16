@@ -41,9 +41,9 @@ import {
   RobotOutlined,
   ThunderboltOutlined,
   ApiOutlined,
-  UserOutlined
+  UserOutlined,
+  InfoCircleOutlined
   } from '@ant-design/icons';
-
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
   import { useTranslation } from 'react-i18next';
@@ -818,6 +818,20 @@ const DesignerCore = () => {
       >
         <Form form={form} layout="vertical" className="px-1 pt-4">
           <Card size="small" title={t('pipelineDesigner.basicProperties')} className="mb-5 border-none shadow-sm">
+            <div className="mb-4 p-2 bg-gray-50 rounded-lg border border-dashed flex justify-between items-center">
+               <Text type="secondary" className="text-[10px] uppercase">{t('pipelineDesigner.nodeId')}: <code className="text-blue-600">{selectedNode?.id}</code></Text>
+               <Button 
+                type="link" 
+                size="small" 
+                className="text-[10px] p-0 h-auto"
+                onClick={() => {
+                  navigator.clipboard.writeText(selectedNode?.id || '');
+                  message.success(t('common.copied'));
+                }}
+               >
+                 {t('common.copy')}
+               </Button>
+            </div>
             <Form.Item label={t('pipelineDesigner.nodeIdentifier')} name="label">
               <Input placeholder={t('pipelineDesigner.enterNodeDisplayName')} className="rounded-lg h-10" />
             </Form.Item>
@@ -829,6 +843,10 @@ const DesignerCore = () => {
                 <InputNumber min={1} className="w-full h-9 flex items-center" />
               </Form.Item>
             </Space>
+            <div className="mt-4 text-[10px] text-gray-400">
+              <InfoCircleOutlined className="mr-1" />
+              {t('pipelineDesigner.variableReferenceSupport')}<code className="bg-gray-100 px-1">{'{{ nodes.' + (selectedNode?.id || 'ID') + '.KEY }}'}</code>
+            </div>
           </Card>
 
           {selectedNode?.type === 'git_clone' && (
