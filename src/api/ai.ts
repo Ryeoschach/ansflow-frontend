@@ -8,6 +8,9 @@ export interface KnowledgeBase {
   description: string;
   description_en?: string;
   collection_name: string;
+  reindex_status: 'idle' | 'processing' | 'success' | 'error';
+  last_reindex_at?: string;
+  reindex_error?: string;
   create_time: string;
   update_time: string;
 }

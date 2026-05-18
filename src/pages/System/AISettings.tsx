@@ -111,7 +111,13 @@ const AISettings: React.FC = () => {
   const { data: kbData, isLoading: kbLoading } = useQuery({
     queryKey: ['aiKnowledgeBases'],
     queryFn: () => getKnowledgeBases(),
-    enabled: queryEnabled
+    enabled: queryEnabled,
+    refetchInterval: (query) => {
+      const data = query.state.data as any;
+      const kbs = Array.isArray(data) ? data : (data?.data || []);
+      const isProcessing = kbs.some((kb: KnowledgeBase) => kb.reindex_status === 'processing');
+      return isProcessing ? 3000 : false;
+    }
   });
 
   const { data: docsData, isLoading: docsLoading, refetch: refetchDocs } = useQuery({
@@ -294,6 +300,26 @@ const AISettings: React.FC = () => {
         ) 
       },
       { title: t('ai.settings.kbCollection'), dataIndex: 'collection_name', key: 'collection_name', width: 150 },
+      { 
+        title: '重建状态', 
+        dataIndex: 'reindex_status', 
+        key: 'reindex_status', 
+        width: 150,
+        render: (status: string, record: KnowledgeBase) => {
+          const map: Record<string, { color: string, text: string, icon?: React.ReactNode }> = {
+            idle: { color: 'default', text: '空闲' },
+            processing: { color: 'processing', text: '重建中', icon: <SyncOutlined spin /> },
+            success: { color: 'success', text: '重建成功' },
+            error: { color: 'error', text: '重建异常' },
+          };
+          const config = map[status] || map.idle;
+          return (
+            <Tooltip title={status === 'error' ? record.reindex_error : (record.last_reindex_at ? `最近重建: ${new Date(record.last_reindex_at).toLocaleString()}` : '')}>
+              <Tag color={config.color} icon={config.icon}>{config.text}</Tag>
+            </Tooltip>
+          );
+        }
+      },
       {
         title: t('common.action'), key: 'action', width: 450,
         render: (_: any, record: KnowledgeBase) => (
@@ -301,7 +327,15 @@ const AISettings: React.FC = () => {
             <Button size="small" icon={<DatabaseOutlined />} onClick={() => { setSelectedKB(record); setIsDocDrawerOpen(true); }}>{t('ai.settings.docManagement')}</Button>
             <Button size="small" icon={<BugOutlined />} onClick={() => { setSelectedKB(record); setIsPlaygroundOpen(true); setSearchResults([]); setSearchQuery(""); }}>Playground</Button>
             <Button size="small" icon={<EditOutlined />} onClick={() => { setEditingKB(record); kbForm.setFieldsValue(record); setIsKBModalOpen(true); }} />
-            <Button size="small" icon={<SyncOutlined />} loading={reindexMutation.isPending && reindexMutation.variables === record.id} onClick={() => reindexMutation.mutate(record.id)}>{t('ai.settings.reindex')}</Button>
+            <Button 
+                size="small" 
+                icon={<SyncOutlined />} 
+                loading={(reindexMutation.isPending && reindexMutation.variables === record.id) || record.reindex_status === 'processing'} 
+                disabled={record.reindex_status === 'processing'}
+                onClick={() => reindexMutation.mutate(record.id)}
+            >
+                {t('ai.settings.reindex')}
+            </Button>
           </Space>
         ),
       },
