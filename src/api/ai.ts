@@ -105,7 +105,7 @@ export const reindexKnowledgeBase = (id: number): Promise<any> =>
   request.post(`/ai/knowledge-bases/${id}/reindex/`);
 
 export const testSearchKnowledgeBase = (id: number, query: string): Promise<any[]> =>
-  request.post(`/ai/knowledge-bases/${id}/test_search/`, { query }) as any;
+  request.post(`/ai/knowledge-bases/${id}/test_search/`, { query }, { timeout: 60000 }) as any;
 
 // 知识文档
 export const getKnowledgeDocuments = (params?: { kb?: number }): Promise<PaginatedResponse<KnowledgeDocument>> =>
