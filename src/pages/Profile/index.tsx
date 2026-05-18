@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Tabs, Descriptions, Tag, Space, Button, Form, Input, App, Divider, Avatar, Typography, Upload, message, Switch, Select } from 'antd';
-import { UserOutlined, SafetyOutlined, LockOutlined, HomeOutlined, EditOutlined, CameraOutlined } from '@ant-design/icons';
+import { Card, Tabs, Descriptions, Tag, Space, Button, Form, Input, App, Divider, Avatar, Typography, Upload, Switch, Select, ColorPicker } from 'antd';
+import { UserOutlined, SafetyOutlined, LockOutlined, HomeOutlined, EditOutlined, CameraOutlined, BgColorsOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useAppStore from '../../store/useAppStore';
@@ -16,7 +16,7 @@ const Profile: React.FC = () => {
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const queryClient = useQueryClient();
 
-  const { isDark, setIsDark, themeKey, setThemeKey, language, setLanguage, setAvatar } = useAppStore();
+  const { isDark, setIsDark, themeKey, setThemeKey, customTheme, setCustomTheme, language, setLanguage, setAvatar } = useAppStore();
   const { i18n } = useTranslation();
 
   const themeOptions = [
@@ -25,6 +25,7 @@ const Profile: React.FC = () => {
     { key: 'teal', name: t('profile.themeName.teal'), colors: ['#599A8F', '#334752', '#F4F1DE'] },
     { key: 'nordic', name: t('profile.themeName.nordic'), colors: ['#D65454', '#263651', '#F6FBF4'] },
     { key: 'pastel', name: t('profile.themeName.pastel'), colors: ['#9E868D', '#5C4F51', '#DEE9E4'] },
+    { key: 'custom', name: '自定义', colors: [customTheme.primary, customTheme.heading || '#1F2937', customTheme.bg] },
   ];
 
   const { data: userInfo, isLoading, refetch } = useQuery({
@@ -243,9 +244,15 @@ const Profile: React.FC = () => {
                 }`}
               >
                 <div className="flex gap-1.5 mb-2 h-6 items-center">
-                   {opt.colors.map((c, i) => (
-                     <div key={i} className="w-full h-full rounded-md shadow-inner" style={{ backgroundColor: c }} />
-                   ))}
+                   {opt.key === 'custom' ? (
+                     <div className="w-full h-full flex items-center justify-center bg-white rounded-md shadow-inner border border-dashed border-gray-300">
+                        <BgColorsOutlined className="text-primary text-lg" />
+                     </div>
+                   ) : (
+                     opt.colors.map((c, i) => (
+                       <div key={i} className="w-full h-full rounded-md shadow-inner" style={{ backgroundColor: c }} />
+                     ))
+                   )}
                 </div>
                 <div className="flex justify-between items-center px-1">
                    <Text className={`text-xs ${themeKey === opt.key ? 'font-bold text-primary' : 'opacity-60'}`}>{opt.name}</Text>
@@ -254,6 +261,100 @@ const Profile: React.FC = () => {
               </div>
             ))}
           </div>
+
+          {themeKey === 'custom' && (
+            <div className="mt-6 p-6 rounded-2xl bg-gray-50 dark:bg-slate-800/30 border border-gray-100 dark:border-slate-700 animate-in fade-in slide-in-from-top-4">
+              <div className="flex items-center gap-2 mb-6">
+                <BgColorsOutlined className="text-primary text-xl" />
+                <Text strong className="text-lg">深度自定义调色板</Text>
+              </div>
+              
+              <Tabs 
+                size="small"
+                items={[
+                  {
+                    key: 'light',
+                    label: '浅色模式',
+                    children: (
+                      <div className="space-y-4 pt-2">
+                        <div className="grid grid-cols-1 gap-4">
+                          <div className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-slate-700/50 rounded-lg transition-colors">
+                            <Text type="secondary">品牌主色 (Primary)</Text>
+                            <ColorPicker value={customTheme.primary} onChange={(val) => setCustomTheme({ primary: val.toHexString() })} showText />
+                          </div>
+                          <div className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-slate-700/50 rounded-lg transition-colors">
+                            <Text type="secondary">页面背景 (Background)</Text>
+                            <ColorPicker value={customTheme.bg} onChange={(val) => setCustomTheme({ bg: val.toHexString() })} showText />
+                          </div>
+                          <div className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-slate-700/50 rounded-lg transition-colors">
+                            <Text type="secondary">容器背景 (Container)</Text>
+                            <ColorPicker value={customTheme.container} onChange={(val) => setCustomTheme({ container: val.toHexString() })} showText />
+                          </div>
+                          <div className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-slate-700/50 rounded-lg transition-colors">
+                            <Text type="secondary">标题/导航背景 (Heading)</Text>
+                            <ColorPicker value={customTheme.heading} onChange={(val) => setCustomTheme({ heading: val.toHexString() })} showText />
+                          </div>
+                          <div className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-slate-700/50 rounded-lg transition-colors">
+                            <Text type="secondary">正文文字 (Text)</Text>
+                            <ColorPicker value={customTheme.text} onChange={(val) => setCustomTheme({ text: val.toHexString() })} showText />
+                          </div>
+                          <div className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-slate-700/50 rounded-lg transition-colors">
+                            <Text type="secondary">警告色 (Warning)</Text>
+                            <ColorPicker value={customTheme.warning} onChange={(val) => setCustomTheme({ warning: val.toHexString() })} showText />
+                          </div>
+                          <div className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-slate-700/50 rounded-lg transition-colors">
+                            <Text type="secondary">链接/错误色 (Link)</Text>
+                            <ColorPicker value={customTheme.link} onChange={(val) => setCustomTheme({ link: val.toHexString() })} showText />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  },
+                  {
+                    key: 'dark',
+                    label: '深色模式',
+                    children: (
+                      <div className="space-y-4 pt-2">
+                         <div className="grid grid-cols-1 gap-4">
+                          <div className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-slate-700/50 rounded-lg transition-colors">
+                            <Text type="secondary">深色主色 (Dark Primary)</Text>
+                            <ColorPicker value={customTheme.darkPrimary} onChange={(val) => setCustomTheme({ darkPrimary: val.toHexString() })} showText />
+                          </div>
+                          <div className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-slate-700/50 rounded-lg transition-colors">
+                            <Text type="secondary">深色背景 (Dark Background)</Text>
+                            <ColorPicker value={customTheme.darkBg} onChange={(val) => setCustomTheme({ darkBg: val.toHexString() })} showText />
+                          </div>
+                          <div className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-slate-700/50 rounded-lg transition-colors">
+                            <Text type="secondary">深色容器 (Dark Container)</Text>
+                            <ColorPicker value={customTheme.darkContainer} onChange={(val) => setCustomTheme({ darkContainer: val.toHexString() })} showText />
+                          </div>
+                          <div className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-slate-700/50 rounded-lg transition-colors">
+                            <Text type="secondary">深色标题 (Dark Heading)</Text>
+                            <ColorPicker value={customTheme.darkHeading} onChange={(val) => setCustomTheme({ darkHeading: val.toHexString() })} showText />
+                          </div>
+                          <div className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-slate-700/50 rounded-lg transition-colors">
+                            <Text type="secondary">深色边框 (Dark Border)</Text>
+                            <ColorPicker value={customTheme.darkBorder} onChange={(val) => setCustomTheme({ darkBorder: val.toHexString() })} showText />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  }
+                ]}
+              />
+              <div className="mt-6 flex justify-end">
+                 <Button 
+                   size="small" 
+                   onClick={() => setCustomTheme({
+                     primary: '#606C38', bg: '#FDFCF0', heading: '#283618', text: '#283618', container: '#FFFFFF', warning: '#DDA15E', link: '#BC6C25',
+                     darkPrimary: '#ADC178', darkBg: '#0E140A', darkHeading: '#F0F5E1', darkContainer: '#1D2619', darkBorder: '#2D3A26'
+                   })}
+                 >
+                   恢复默认
+                 </Button>
+              </div>
+            </div>
+          )}
         </Card>
       ),
     },

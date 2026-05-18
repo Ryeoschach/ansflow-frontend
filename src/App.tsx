@@ -228,8 +228,17 @@ const QueryPersistenceManager = () => {
 };
 
 function App() {
-  const { isDark, themeKey, token, setToken, setPermissions, setCurrentUser, setAvatar, language } = useAppStore();
-  const currentTheme = THEMES[themeKey] || THEMES.forest;
+  const { isDark, themeKey, customTheme, token, setToken, setPermissions, setCurrentUser, setAvatar, language } = useAppStore();
+  
+  const currentTheme = React.useMemo(() => {
+    if (themeKey === 'custom') {
+      return {
+        ...THEMES.forest, // 作为 fallback
+        ...customTheme,
+      };
+    }
+    return THEMES[themeKey] || THEMES.forest;
+  }, [themeKey, customTheme]);
 
   const antdTheme = React.useMemo(() => ({
     cssVar: { prefix: 'ant' },
@@ -241,7 +250,7 @@ function App() {
       colorWarning: currentTheme.warning,
       colorError: currentTheme.link,
       colorLink: currentTheme.link,
-      colorTextBase: isDark ? currentTheme.darkHeading : currentTheme.text,
+      colorTextBase: isDark ? currentTheme.darkHeading : (themeKey === 'custom' ? currentTheme.text : currentTheme.text),
       colorBgLayout: isDark ? currentTheme.darkBg : currentTheme.bg,
       colorBgContainer: isDark ? currentTheme.darkContainer : currentTheme.container,
       borderRadius: 12,
@@ -249,14 +258,14 @@ function App() {
     },
     components: {
       Layout: {
-        headerBg: isDark ? currentTheme.darkBg : currentTheme.heading,
-        headerColor: currentTheme.bg,
+        headerBg: isDark ? currentTheme.darkBg : (themeKey === 'custom' ? currentTheme.heading : currentTheme.heading),
+        headerColor: '#FFFFFF',
         bodyBg: isDark ? currentTheme.darkBg : currentTheme.bg,
-        siderBg: isDark ? currentTheme.darkBg : currentTheme.heading,
+        siderBg: isDark ? currentTheme.darkBg : (themeKey === 'custom' ? currentTheme.heading : currentTheme.heading),
         triggerBg: isDark ? currentTheme.darkContainer : currentTheme.primary,
       },
       Menu: {
-        darkItemBg: isDark ? currentTheme.darkBg : currentTheme.heading,
+        darkItemBg: isDark ? currentTheme.darkBg : (themeKey === 'custom' ? currentTheme.heading : currentTheme.heading),
         darkSubMenuItemBg: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.1)',
         popupBg: isDark ? currentTheme.darkContainer : '#FFFFFF',
         itemBorderRadius: 8,
@@ -282,7 +291,7 @@ function App() {
       }
     },
 
-  }), [isDark, themeKey]);
+  }), [isDark, themeKey, currentTheme]);
   const { isInitializing, setIsInitializing } = useAppStore();
   const navigate = useNavigate();
   const { i18n } = useTranslation();

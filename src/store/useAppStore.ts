@@ -12,8 +12,26 @@ interface AppState {
   isDark: boolean;
   setIsDark: (isDark: boolean) => void;
   // 主题配色 Key
-  themeKey: 'forest' | 'deepsea' | 'teal' | 'nordic' | 'pastel';
-  setThemeKey: (key: 'forest' | 'deepsea' | 'teal' | 'nordic' | 'pastel') => void;
+  themeKey: 'forest' | 'deepsea' | 'teal' | 'nordic' | 'pastel' | 'custom';
+  setThemeKey: (key: 'forest' | 'deepsea' | 'teal' | 'nordic' | 'pastel' | 'custom') => void;
+  // 自定义主题配置
+  customTheme: {
+    // Light Mode
+    primary: string;
+    bg: string;
+    heading: string;
+    text: string;
+    container: string;
+    warning: string;
+    link: string;
+    // Dark Mode
+    darkPrimary: string;
+    darkBg: string;
+    darkHeading: string;
+    darkContainer: string;
+    darkBorder: string;
+  };
+  setCustomTheme: (config: Partial<AppState['customTheme']>) => void;
   // 语言
   language: string;
   setLanguage: (lang: string) => void;
@@ -45,6 +63,7 @@ interface AppState {
 interface PersistedState {
   isDark: boolean;
   themeKey: string;
+  customTheme: AppState['customTheme'];
   collapsed: boolean;
   currentUser: string | null;
   permissions: string[];
@@ -65,6 +84,23 @@ const useAppStore = create<AppState>()(
     setIsDark: (isDark) => set({ isDark }),
     themeKey: 'forest',
     setThemeKey: (themeKey) => set({ themeKey }),
+    customTheme: {
+      primary: '#606C38',
+      bg: '#FDFCF0',
+      heading: '#283618',
+      text: '#283618',
+      container: '#FFFFFF',
+      warning: '#DDA15E',
+      link: '#BC6C25',
+      darkPrimary: '#ADC178',
+      darkBg: '#0E140A',
+      darkHeading: '#F0F5E1',
+      darkContainer: '#1D2619',
+      darkBorder: '#2D3A26',
+    },
+    setCustomTheme: (config) => set((state) => ({ 
+      customTheme: { ...state.customTheme, ...config } 
+    })),
     language: 'zh-CN',
     setLanguage: (language) => set({ language }),
     pipelineActiveTab: 'templates',
@@ -94,6 +130,7 @@ const useAppStore = create<AppState>()(
     partialize: (state): PersistedState => ({
       isDark: state.isDark,
       themeKey: state.themeKey,
+      customTheme: state.customTheme,
       collapsed: state.collapsed,
       currentUser: state.currentUser,
       permissions: state.permissions,
