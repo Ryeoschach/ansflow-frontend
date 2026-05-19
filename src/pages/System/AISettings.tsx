@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { 
-  Card, Tabs, Table, Button, Space, Modal, Form, 
+  Card, Tabs, Table, Button, Space, Modal, Form,
   Input, Select, Switch, message, Tag, Typography, Alert, Drawer, Divider, List, Badge, Upload, UploadProps, Popconfirm, Tooltip, Empty,
-  Slider, Row, Col
-} from 'antd';
+  Slider, Row, Col, Checkbox} from 'antd';
 import { 
   PlusOutlined, EditOutlined, DeleteOutlined, 
   ApiOutlined, RocketOutlined, SettingOutlined,
@@ -45,6 +44,8 @@ const AISettings: React.FC = () => {
   const [isPreviewDrawerOpen, setIsPreviewDrawerOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<KnowledgeDocument | null>(null);
   const [uploadVisible, setUploadVisible] = useState(false);
+  const [parserType, setParserType] = useState('auto');
+  const [parsingPrompt, setParsingPrompt] = useState('');
   const [editingChunkId, setEditingChunkId] = useState<number | null>(null);
   const [chunkEditContent, setChunkEditContent] = useState("");
 
@@ -62,6 +63,8 @@ const AISettings: React.FC = () => {
   const [isModelModalOpen, setIsModelModalOpen] = useState(false);
   const [editingModel, setEditingModel] = useState<AIModel | null>(null);
   const [modelForm] = Form.useForm();
+  const [modelPage, setModelPage] = useState(1);
+  const [modelPageSize, setModelPageSize] = useState(10);
 
   const handleEditProvider = (provider?: AIProvider) => {
     setEditingProvider(provider || null);
@@ -97,8 +100,8 @@ const AISettings: React.FC = () => {
   });
 
   const { data: modelsData, isLoading: modelsLoading } = useQuery({
-    queryKey: ['aiModels'],
-    queryFn: () => getAIModels(),
+    queryKey: ['aiModels', modelPage, modelPageSize],
+    queryFn: () => getAIModels({ page: modelPage, size: modelPageSize }),
     enabled: queryEnabled
   });
 
@@ -119,15 +122,17 @@ const AISettings: React.FC = () => {
       return isProcessing ? 3000 : false;
     }
   });
-
   const { data: docsData, isLoading: docsLoading, refetch: refetchDocs } = useQuery({
     queryKey: ['aiDocuments', selectedKB?.id],
-    queryFn: () => getKnowledgeDocuments({ kb: selectedKB!.id }),
-    enabled: !!selectedKB && isDocDrawerOpen,
+    queryFn: () => getKnowledgeDocuments({ kb: selectedKB?.id }),
+    enabled: !!selectedKB,
+    // 增加智能轮询：如果列表中有正在处理的文档，则每 3 秒刷新一次
     refetchInterval: (query) => {
-      const docs = query.state.data as any;
-      const results = docs?.results || docs?.data || (Array.isArray(docs) ? docs : []);
-      const hasProcessing = results.some((d: any) => d.status === 'processing' || d.status === 'pending');
+      const data = query.state.data as any;
+      const docs = data?.data || data?.results || (Array.isArray(data) ? data : []);
+      const hasProcessing = docs.some((doc: any) => 
+        !['ready', 'error'].includes(doc.status)
+      );
       return hasProcessing ? 3000 : false;
     }
   });
@@ -180,7 +185,8 @@ const AISettings: React.FC = () => {
   });
 
   const uploadMutation = useMutation({
-    mutationFn: ({ kbId, file }: { kbId: number, file: File }) => uploadKnowledgeDocument(kbId, file),
+    mutationFn: ({ kbId, file, parserType, parsingPrompt }: { kbId: number, file: File, parserType: string, parsingPrompt: string }) => 
+      uploadKnowledgeDocument(kbId, file, parserType, parsingPrompt),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['aiDocuments', selectedKB?.id] }); },
     onError: (err: any) => message.error(err.response?.data?.error || 'Upload failed')
   });
@@ -204,21 +210,20 @@ const AISettings: React.FC = () => {
 
   // -- Upload Props --
   const uploadProps: UploadProps = {
-    name: 'file', 
+    name: 'file',
     multiple: true,
-    beforeUpload: (_, fileList) => { 
+    beforeUpload: (_, fileList) => {
       if (selectedKB) {
         fileList.forEach(file => {
-          uploadMutation.mutate({ kbId: selectedKB.id, file });
+          uploadMutation.mutate({ kbId: selectedKB.id, file, parserType, parsingPrompt });
         });
         message.loading(`正在上传 ${fileList.length} 个文件...`, 1);
         setUploadVisible(false);
       }
-      return false; 
+      return false;
     },
     showUploadList: false
   };
-
   // -- Render Components --
   const renderProviderTab = () => {
     const rawData = providersData as any;
@@ -228,7 +233,7 @@ const AISettings: React.FC = () => {
       { 
         title: t('ai.settings.providerType'), dataIndex: 'provider_type', key: 'provider_type',
         render: (type: string) => {
-          const colorMap: Record<string, string> = { openai: 'green', deepseek: 'cyan', ollama: 'blue', local: 'purple', anthropic: 'volcano', zhipu: 'orange' };
+          const colorMap: Record<string, string> = { openai: 'green', deepseek: 'cyan', ollama: 'blue', lmstudio: 'purple', local: 'magenta', anthropic: 'volcano', zhipu: 'orange' };
           return <Tag color={colorMap[type] || 'default'}>{type.toUpperCase()}</Tag>;
         }
       },
@@ -256,17 +261,29 @@ const AISettings: React.FC = () => {
   const renderModelTab = () => {
     const rawData = modelsData as any;
     const models = Array.isArray(rawData) ? rawData : (rawData?.data || rawData?.results || []);
+    const total = rawData?.total || models.length;
+
     const columns = [
       { title: t('ai.settings.displayName'), dataIndex: 'display_name', key: 'display_name' },
       { title: t('ai.settings.modelId'), dataIndex: 'name', key: 'name' },
       { title: t('ai.settings.belongProvider'), dataIndex: 'provider_name', key: 'provider_name' },
-      { title: t('ai.settings.modelType'), dataIndex: 'model_type', key: 'model_type', render: (type: string) => {
-        let color = 'gold';
-        let label = t('ai.settings.llm');
-        if (type === 'embedding') { color = 'magenta'; label = t('ai.settings.embedding'); }
-        else if (type === 'rerank') { color = 'purple'; label = '重排序模型'; }
-        return <Tag color={color}>{label}</Tag>;
+      { title: "模型能力", dataIndex: 'capabilities', key: 'capabilities', render: (caps: string[], record: AIModel) => {
+        const allCaps = caps || [record.model_type];
+        return (
+          <Space size={[0, 4]} wrap>
+            {allCaps.map(cap => {
+              let color = 'default';
+              let label = cap;
+              if (cap === 'llm') { color = 'gold'; label = 'LLM'; }
+              else if (cap === 'embedding') { color = 'magenta'; label = 'Embedding'; }
+              else if (cap === 'rerank') { color = 'purple'; label = 'Rerank'; }
+              else if (cap === 'vision') { color = 'cyan'; label = 'Vision'; }
+              return <Tag color={color} key={cap} style={{ margin: 0 }}>{label}</Tag>;
+            })}
+          </Space>
+        );
       } },
+      { title: "上下文", dataIndex: 'num_ctx', key: 'num_ctx', render: (val: number) => <Text type="secondary" size="small">{val || 4096}</Text> },
       {
         title: t('common.action'), key: 'action', width: 120,
         render: (_: any, record: AIModel) => (
@@ -277,7 +294,23 @@ const AISettings: React.FC = () => {
     return (
       <div className="space-y-4">
         <div className="flex justify-between items-center"><Text type="secondary">{t('ai.settings.modelTip')}</Text><Button type="primary" icon={<PlusOutlined />} onClick={() => handleEditModel()}>{t('ai.settings.addModel')}</Button></div>
-        <Table dataSource={models} columns={columns} rowKey="id" loading={modelsLoading} pagination={{ size: 'small' }} />
+        <Table 
+            dataSource={models} 
+            columns={columns} 
+            rowKey="id" 
+            loading={modelsLoading} 
+            pagination={{ 
+                current: modelPage,
+                pageSize: modelPageSize,
+                total: total,
+                showSizeChanger: true,
+                showTotal: (totalCount) => `共 ${totalCount} 个模型`,
+                onChange: (p, s) => {
+                    setModelPage(p);
+                    setModelPageSize(s);
+                }
+            }} 
+        />
       </div>
     );
   };
@@ -427,33 +460,66 @@ const AISettings: React.FC = () => {
             rowKey="id" 
             columns={[
             { title: t('ai.settings.docTitle'), dataIndex: 'title', key: 'title', ellipsis: true },
-            { 
+            {
               title: t('common.status'), dataIndex: 'status', key: 'status', width: 100,
               render: (status: string) => {
-                const map: any = { pending: { color: 'default', text: '待处理' }, processing: { color: 'processing', text: '处理中' }, ready: { color: 'success', text: '就绪' }, error: { color: 'error', text: '错误' } };
+                const map: any = { 
+                  pending: { color: 'default', text: '待处理' }, 
+                  parsing: { color: 'processing', text: '正在解析' },
+                  cleaning: { color: 'processing', text: '清洗中' },
+                  chunking: { color: 'processing', text: '正在切片' },
+                  indexing: { color: 'processing', text: '正在索引' },
+                  ready: { color: 'success', text: '就绪' }, 
+                  error: { color: 'error', text: '错误' } 
+                };
                 const config = map[status] || map.ready;
                 return <Badge status={config.color} text={config.text} />;
               }
-            },
-            { title: t('ai.settings.chunkCount'), dataIndex: 'chunk_count', key: 'chunks', width: 80 },
+            },            { title: t('ai.settings.chunkCount'), dataIndex: 'chunk_count', key: 'chunks', width: 80 },
             { 
               title: t('common.action'), key: 'action', width: 300,
               render: (_: any, record: KnowledgeDocument) => (<Space wrap><Button type="link" size="small" icon={<EyeOutlined />} onClick={() => setViewingDoc(record)}>{t('ai.settings.docView')}</Button><Button type="link" size="small" icon={<SettingOutlined />} onClick={() => { setPreviewDoc(record); setIsPreviewDrawerOpen(true); }}>{t('ai.settings.cleanPreview')}</Button><Button type="link" size="small" danger onClick={() => { Modal.confirm({ title: t('ai.settings.confirmDelete'), onOk: () => deleteDocMutation.mutate(record.id) }); }}>{t('common.delete')}</Button></Space>)
             }
           ]} />
-          <Modal title={t('common.upload')} open={uploadVisible} onCancel={() => setUploadVisible(false)} footer={null}>
-            <Dragger {...uploadProps}>
-              <p className="ant-upload-drag-icon"><InboxOutlined /></p>
-              <p className="ant-upload-text">点击或拖拽文件到此区域进行上传</p>
-              <p className="ant-upload-hint">
-                {t('ai.settings.uploadHint')}
-                <br />
-                <span className="text-blue-500 font-medium italic">{t('ai.settings.ocrTip')}：</span>
-                {t('ai.settings.ocrDescription')}
-              </p>
-            </Dragger>
-          </Modal>
-        </Drawer>
+          <Modal title={t('common.upload')} open={uploadVisible} onCancel={() => setUploadVisible(false)} footer={null} width={600}>
+           <div className="mb-6 space-y-4">
+             <div>
+               <Text strong className="block mb-2">解析模式</Text>
+               <Select 
+                 value={parserType} 
+                 onChange={setParserType} 
+                 className="w-full"
+                 options={[
+                   { label: '自动识别 (由后缀决定)', value: 'auto' },
+                   { label: '原生提取 (纯文本/规范PDF)', value: 'native' },
+                   { label: '视觉 OCR (图片/扫描件)', value: 'ocr' },
+                   { label: '混合增强 (Word/复杂文档)', value: 'hybrid' },
+                 ]}
+               />
+             </div>
+             {(parserType === 'ocr' || parserType === 'hybrid') && (
+               <div>
+                 <Text strong className="block mb-2">解析提示词 (可选)</Text>
+                 <Input.TextArea 
+                   placeholder="例如：请以 Markdown 表格形式提取图片中的所有配置项，并忽略页眉页脚。"
+                   value={parsingPrompt}
+                   onChange={e => setParsingPrompt(e.target.value)}
+                   rows={3}
+                 />
+               </div>
+             )}
+           </div>
+           <Dragger {...uploadProps}>
+             <p className="ant-upload-drag-icon"><InboxOutlined /></p>
+             <p className="ant-upload-text">点击或拖拽文件到此区域进行上传</p>
+             <p className="ant-upload-hint">
+               {t('ai.settings.uploadHint')}
+               <br />
+               <span className="text-blue-500 font-medium italic">{t('ai.settings.ocrTip')}：</span>
+               {t('ai.settings.ocrDescription')}
+             </p>
+           </Dragger>
+          </Modal>        </Drawer>
 
         {/* Chunk Cleaning & Preview Drawer */}
         <Drawer title={<Space><SafetyCertificateOutlined /><span>知识清洗工作台: {previewDoc?.title}</span></Space>} width={750} onClose={() => { setIsPreviewDrawerOpen(false); setEditingChunkId(null); }} open={isPreviewDrawerOpen}><Alert message="知识分块管理 (Hybrid Search)" description="此处支持对文档切片进行细粒度管理。禁用或修改分块内容将实时同步至向量库和 BM25 语料库。" type="warning" showIcon style={{ marginBottom: 16 }} /><List loading={chunksLoading} dataSource={chunksData} renderItem={(item: DocumentChunk) => (
@@ -488,9 +554,12 @@ const AISettings: React.FC = () => {
   const renderConfigTab = () => {
     const rawData = modelsData as any;
     const allModels: AIModel[] = Array.isArray(rawData) ? rawData : (rawData?.data || rawData?.results || []);
-    const llmModels = allModels.filter(m => m.model_type === 'llm');
-    const embModels = allModels.filter(m => m.model_type === 'embedding');
-    const rerankModels = allModels.filter(m => m.model_type === 'rerank');
+    
+    // 基于能力或类型进行过滤，确保新导入的多功能模型能被看见
+    const llmModels = allModels.filter(m => m.capabilities?.includes('llm') || m.model_type === 'llm');
+    const embModels = allModels.filter(m => m.capabilities?.includes('embedding') || m.model_type === 'embedding');
+    const rerankModels = allModels.filter(m => m.capabilities?.includes('rerank') || m.model_type === 'rerank');
+    const visionModels = allModels.filter(m => m.capabilities?.includes('vision') || m.model_type === 'vision' || m.model_type === 'llm');
     
     return (
       <div className="max-w-4xl space-y-6">
@@ -507,6 +576,13 @@ const AISettings: React.FC = () => {
                 <Form.Item label={t('ai.settings.defaultEmbedding')} name="default_embedding" tooltip={t('ai.settings.defaultEmbeddingTip')}>
                   <Select placeholder="选择默认 Embedding">
                     {embModels.map(m => (<Select.Option key={m.id} value={m.id}>{m.display_name} ({m.provider_name})</Select.Option>))}
+                  </Select>
+                </Form.Item>
+                <Form.Item label="默认视觉/OCR模型" name="default_vision" tooltip="用于解析文档中的图片和扫描件">
+                  <Select placeholder="选择视觉模型" allowClear>
+                    {visionModels.map(m => (
+                      <Select.Option key={m.id} value={m.id}>{m.display_name} ({m.provider_name})</Select.Option>
+                    ))}
                   </Select>
                 </Form.Item>
                 <Form.Item label="默认重排序模型 (Rerank)" name="default_rerank" tooltip="可选。提供更精准的搜索打分，但消耗更多算力。">
@@ -560,8 +636,12 @@ const AISettings: React.FC = () => {
     <div className="p-6 space-y-6">
       <Title level={4}>{t('ai.settings.pageTitle')}</Title>
       <Card><Tabs activeKey={activeTab} onChange={setActiveTab}><Tabs.TabPane tab={<span><SettingOutlined />{t('ai.settings.globalConfig')}</span>} key="config">{renderConfigTab()}</Tabs.TabPane><Tabs.TabPane tab={<span><BookOutlined />{t('ai.settings.knowledgeBase')}</span>} key="knowledge">{renderKnowledgeTab()}</Tabs.TabPane><Tabs.TabPane tab={<span><ApiOutlined />{t('ai.settings.providers')}</span>} key="providers">{renderProviderTab()}</Tabs.TabPane><Tabs.TabPane tab={<span><RocketOutlined />{t('ai.settings.models')}</span>} key="models">{renderModelTab()}</Tabs.TabPane></Tabs></Card>
-      <Modal title={editingProvider ? t('ai.settings.editProvider') : t('ai.settings.addProvider')} open={isProviderModalOpen} onCancel={() => setIsProviderModalOpen(false)} onOk={() => providerForm.submit()} confirmLoading={providerMutation.isPending}><Form form={providerForm} layout="vertical" onFinish={providerMutation.mutate}><Form.Item name="name" label={t('ai.settings.providerName')} rules={[{ required: true }]}><Input placeholder="如 DeepSeek 官方" /></Form.Item><Form.Item name="provider_type" label={t('ai.settings.providerType')} rules={[{ required: true }]}><Select onChange={(val) => { if (val === 'local') providerForm.setFieldValue('base_url', 'http://localhost'); }}><Select.Option value="openai">OpenAI</Select.Option><Select.Option value="deepseek">DeepSeek</Select.Option><Select.Option value="anthropic">Anthropic</Select.Option><Select.Option value="ollama">Ollama (Local)</Select.Option><Select.Option value="local">FastEmbed (Local)</Select.Option><Select.Option value="other">Other (OpenAI Compatible)</Select.Option></Select></Form.Item><Form.Item noStyle shouldUpdate={(prev, curr) => prev.provider_type !== curr.provider_type}>{({ getFieldValue }) => (<Form.Item name="base_url" label={t('ai.settings.apiUrl')} rules={[{ required: getFieldValue('provider_type') !== 'local' }]}><Input placeholder={getFieldValue('provider_type') === 'local' ? "本地模式无需配置" : "https://api.deepseek.com"} disabled={getFieldValue('provider_type') === 'local'} /></Form.Item>)}</Form.Item><Form.Item name="api_key" label={t('ai.settings.apiKey')}><Input.Password placeholder="输入 API Key" /></Form.Item><Form.Item name="is_active" label={t('ai.settings.isActive')} valuePropName="checked"><Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} /></Form.Item></Form></Modal>
-      <Modal title={editingModel ? t('ai.settings.editModel') : t('ai.settings.addModel')} open={isModelModalOpen} onCancel={() => setIsModelModalOpen(false)} onOk={() => modelForm.submit()}><Form form={modelForm} layout="vertical" onFinish={(values) => { const m = editingModel ? updateAIModel(editingModel.id, values) : createAIModel(values); m.then(() => { message.success(t('ai.settings.saveSuccess')); setIsModelModalOpen(false); queryClient.invalidateQueries({ queryKey: ['aiModels'] }); }); }}><Form.Item name="provider" label={t('ai.settings.belongProvider')} rules={[{ required: true }]}><Select placeholder="选择供应商">{(Array.isArray(providersData) ? providersData : (providersData as any)?.data || (providersData as any)?.results || []).map((p: any) => (<Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>))}</Select></Form.Item><Form.Item name="display_name" label={t('ai.settings.displayName')} rules={[{ required: true }]}><Input placeholder="如 DeepSeek Chat V3" /></Form.Item><Form.Item name="name" label={t('ai.settings.modelId')} rules={[{ required: true }]}><Input placeholder="如 deepseek-chat" /></Form.Item><Form.Item name="model_type" label={t('ai.settings.modelType')} rules={[{ required: true }]}><Select><Select.Option value="llm">{t('ai.settings.llm')}</Select.Option><Select.Option value="embedding">{t('ai.settings.embedding')}</Select.Option><Select.Option value="rerank">重排序模型 (Rerank)</Select.Option></Select></Form.Item><Form.Item name="is_active" label={t('ai.settings.isActive')} valuePropName="checked"><Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} /></Form.Item></Form></Modal>
+      <Modal title={editingProvider ? t('ai.settings.editProvider') : t('ai.settings.addProvider')} open={isProviderModalOpen} onCancel={() => setIsProviderModalOpen(false)} onOk={() => providerForm.submit()} confirmLoading={providerMutation.isPending}><Form form={providerForm} layout="vertical" onFinish={providerMutation.mutate}><Form.Item name="name" label={t('ai.settings.providerName')} rules={[{ required: true }]}><Input placeholder="如 DeepSeek 官方" /></Form.Item><Form.Item name="provider_type" label={t('ai.settings.providerType')} rules={[{ required: true }]}><Select onChange={(val) => { if (val === 'local') providerForm.setFieldValue('base_url', 'http://localhost'); if (val === 'lmstudio') providerForm.setFieldValue('base_url', 'http://localhost:1234/v1'); }}><Select.Option value="openai">OpenAI</Select.Option><Select.Option value="deepseek">DeepSeek</Select.Option><Select.Option value="anthropic">Anthropic</Select.Option><Select.Option value="ollama">Ollama (Local)</Select.Option><Select.Option value="lmstudio">LM Studio (Local)</Select.Option><Select.Option value="local">FastEmbed (Local)</Select.Option><Select.Option value="other">Other (OpenAI Compatible)</Select.Option></Select></Form.Item><Form.Item noStyle shouldUpdate={(prev, curr) => prev.provider_type !== curr.provider_type}>{({ getFieldValue }) => (<Form.Item name="base_url" label={t('ai.settings.apiUrl')} rules={[{ required: getFieldValue('provider_type') !== 'local' }]}><Input placeholder={getFieldValue('provider_type') === 'local' ? "本地模式无需配置" : "https://api.deepseek.com"} disabled={getFieldValue('provider_type') === 'local'} /></Form.Item>)}</Form.Item><Form.Item name="api_key" label={t('ai.settings.apiKey')}><Input.Password placeholder="输入 API Key" /></Form.Item><Form.Item name="is_active" label={t('ai.settings.isActive')} valuePropName="checked"><Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} /></Form.Item></Form></Modal>
+      <Modal title={editingModel ? t('ai.settings.editModel') : t('ai.settings.addModel')} open={isModelModalOpen} onCancel={() => setIsModelModalOpen(false)} onOk={() => modelForm.submit()}><Form form={modelForm} layout="vertical" onFinish={(values) => { const m = editingModel ? updateAIModel(editingModel.id, values) : createAIModel(values); m.then(() => { message.success(t('ai.settings.saveSuccess')); setIsModelModalOpen(false); queryClient.invalidateQueries({ queryKey: ['aiModels'] }); }); }}><Form.Item name="provider" label={t('ai.settings.belongProvider')} rules={[{ required: true }]}><Select placeholder="选择供应商">{(Array.isArray(providersData) ? providersData : (providersData as any)?.data || (providersData as any)?.results || []).map((p: any) => (<Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>))}</Select></Form.Item><Form.Item name="display_name" label={t('ai.settings.displayName')} rules={[{ required: true }]}><Input placeholder="如 DeepSeek Chat V3" /></Form.Item>
+<Form.Item name="name" label={t('ai.settings.modelId')} rules={[{ required: true }]}><Input placeholder="如 deepseek-chat" /></Form.Item>
+<Form.Item name="capabilities" label="模型能力 (可多选)" rules={[{ required: true }]}><Checkbox.Group><Row><Col span={12}><Checkbox value="llm">{t('ai.settings.llm')}</Checkbox></Col><Col span={12}><Checkbox value="embedding">{t('ai.settings.embedding')}</Checkbox></Col><Col span={12}><Checkbox value="rerank">Rerank</Checkbox></Col><Col span={12}><Checkbox value="vision">Vision/OCR</Checkbox></Col></Row></Checkbox.Group></Form.Item>
+<Form.Item name="num_ctx" label="上下文窗口 (Tokens)" tooltip="模型支持的最大上下文长度"><Input type="number" placeholder="4096" /></Form.Item>
+<Form.Item name="is_active" label={t('ai.settings.isActive')} valuePropName="checked"><Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} /></Form.Item></Form></Modal>
     </div>
   );
 };

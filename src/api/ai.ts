@@ -52,7 +52,9 @@ export interface AIModel {
   provider_name: string;
   name: string;
   display_name: string;
-  model_type: 'llm' | 'embedding' | 'rerank';
+  model_type: 'llm' | 'embedding' | 'rerank' | 'vision';
+  capabilities: ('llm' | 'embedding' | 'rerank' | 'vision')[];
+  num_ctx: number;
   is_active: boolean;
 }
 
@@ -61,6 +63,7 @@ export interface AIConfig {
   name: string;
   default_llm: number | null;
   default_embedding: number | null;
+  default_vision: number | null;
   default_rerank: number | null;
   default_kb: number | null;
   rag_bm25_weight?: number;
@@ -75,7 +78,9 @@ export interface KnowledgeDocument {
   title: string;
   content: string;
   source_type: 'manual' | 'file' | 'ai_export';
-  status: 'pending' | 'processing' | 'ready' | 'error';
+  status: 'pending' | 'parsing' | 'cleaning' | 'chunking' | 'indexing' | 'ready' | 'error';
+  parser_type: 'auto' | 'native' | 'ocr' | 'hybrid';
+  parsing_prompt?: string;
   chunk_count: number;
   metadata: any;
   create_time: string;
@@ -114,11 +119,18 @@ export const getKnowledgeDocuments = (params?: { kb?: number }): Promise<Paginat
 export const deleteKnowledgeDocument = (id: number): Promise<void> =>
   request.delete(`/ai/documents/${id}/`) as any;
 
-export const uploadKnowledgeDocument = (kbId: number, file: File): Promise<any> => {
+export const uploadKnowledgeDocument = (
+  kbId: number, 
+  file: File, 
+  parserType: string = 'auto', 
+  parsingPrompt: string = ''
+): Promise<any> => {
   const formData = new FormData();
   formData.append('kb', kbId.toString());
   formData.append('file', file);
   formData.append('title', file.name);
+  formData.append('parser_type', parserType);
+  formData.append('parsing_prompt', parsingPrompt);
   return request.post('/ai/documents/', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }) as any;

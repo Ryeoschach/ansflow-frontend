@@ -701,10 +701,13 @@ const AIChatbot: React.FC = () => {
                     setVisible(!visible);
                     if (!visible && messages.length === 0) startNewChat();
                 }}
-                className={`fixed right-6 bottom-[75vh] transition-transform hover:scale-110 shadow-lg ${
+                className={`transition-transform hover:scale-110 shadow-lg ${
                     aiStatus === 'analyzing' ? 'ai-float-button-analyzing' : 'ai-float-button-breathe'
                 }`}
                 style={{ 
+                    position: 'fixed',
+                    right: 24,
+                    bottom: '75vh',
                     backgroundColor: aiStatus === 'analyzing' ? '#fffbe6' : undefined,
                     borderColor: aiStatus === 'analyzing' ? '#ffe58f' : undefined,
                     zIndex: 2147483647 
