@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Table, Tag, Skeleton, Button } from 'antd';
+import { Table, Tag, Skeleton, Button, Space } from 'antd';
 import { RightOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -30,16 +30,23 @@ const RecentTasksTable: React.FC<RecentTasksTableProps> = ({ data, isLoading }) 
             ellipsis: true,
             render: (text: string, record: any) => (
                 <div
-                    className="flex flex-col cursor-pointer hover:text-indigo-500 transition-colors"
+                    className="flex flex-col cursor-pointer transition-colors group"
                     onClick={() => handleNavigate(record)}
                 >
-                    <div className="flex items-center gap-2">
-                        <Tag color={record.type === 'pipeline' ? 'blue' : 'orange'} className="text-[10px] px-1 py-0 leading-none h-4 border-0 m-0">
+                    <Space size={8}>
+                        <div 
+                            className="text-[9px] px-1.5 py-0.5 rounded-sm font-bold uppercase tracking-tighter"
+                            style={{ 
+                                backgroundColor: record.type === 'pipeline' ? 'color-mix(in srgb, var(--ans-primary), transparent 92%)' : 'rgba(0,0,0,0.05)',
+                                color: record.type === 'pipeline' ? 'var(--ans-primary)' : 'var(--ans-text-secondary)',
+                                border: `1px solid ${record.type === 'pipeline' ? 'color-mix(in srgb, var(--ans-primary), transparent 85%)' : 'rgba(0,0,0,0.1)'}`
+                            }}
+                        >
                             {record.type === 'pipeline' ? t('dashboard.pipeline') : t('dashboard.task')}
-                        </Tag>
-                        <span className="font-medium">{text}</span>
-                    </div>
-                    <span className="text-xs text-gray-400 font-mono pl-1">{record.id}</span>
+                        </div>
+                        <span className="font-bold text-sm text-ans-text-primary group-hover:text-primary transition-colors">{text}</span>
+                    </Space>
+                    <span className="text-[10px] text-ans-text-secondary opacity-40 font-mono pl-0.5 mt-0.5">{record.id}</span>
                 </div>
             )
         },
@@ -47,54 +54,63 @@ const RecentTasksTable: React.FC<RecentTasksTableProps> = ({ data, isLoading }) 
             title: t('dashboard.status'),
             dataIndex: 'status',
             key: 'status',
-            render: (status: string) => (
-                <Tag color={status === 'SUCCESS' ? 'success' : 'error'} className="border-0 m-0">
-                    {status}
-                </Tag>
-            ),
+            width: 100,
+            render: (status: string) => {
+                const isSuccess = status === 'SUCCESS' || status === 'success';
+                return (
+                    <Tag 
+                        className="border-0 m-0 text-[10px] font-extrabold px-2 py-0"
+                        style={{ 
+                            backgroundColor: isSuccess ? 'color-mix(in srgb, var(--ans-success), transparent 90%)' : 'color-mix(in srgb, var(--ans-error), transparent 90%)',
+                            color: isSuccess ? 'var(--ans-success)' : 'var(--ans-error)'
+                        }}
+                    >
+                        {status.toUpperCase()}
+                    </Tag>
+                );
+            },
         },
         {
             title: t('dashboard.duration'),
             dataIndex: 'time_label',
             key: 'time_label',
-            render: (time: string) => <span className="text-gray-400 text-sm">{time}</span>,
+            width: 120,
+            render: (time: string) => <span className="text-ans-text-secondary text-xs opacity-60 italic">{time}</span>,
         },
         {
-            title: t('dashboard.action'),
+            title: '',
             key: 'action',
+            width: 40,
             render: (_: any, record: any) => (
                 <Button
                     type="text"
                     size="small"
-                    icon={<RightOutlined />}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    icon={<RightOutlined style={{ fontSize: 12, color: 'var(--ans-primary)' }} />}
                     onClick={() => handleNavigate(record)}
                 />
             ),
         },
     ];
 
+    if (isLoading) {
+        return (
+            <div className="p-4">
+                <Skeleton active title={false} paragraph={{ rows: 6 }} />
+            </div>
+        );
+    }
+
     return (
-        <Card
-            title={<span className="font-bold text-base">{t('dashboard.recentPipelineRuns')}</span>}
-            className="shadow-sm border-0 h-full"
-            styles={{ body: { padding: '0 12px 12px 12px' } }}
-        >
-            {isLoading ? (
-                 <div className="p-4">
-                     <Skeleton active title={false} paragraph={{ rows: 6 }} />
-                 </div>
-            ) : (
-                <Table
-                    dataSource={dataSource}
-                    columns={columns}
-                    rowKey="id"
-                    scroll={{ x: 'max-content' }}
-                           
-                    pagination={false}
-                    size="small"
-                />
-            )}
-        </Card>
+        <Table
+            dataSource={dataSource}
+            columns={columns}
+            rowKey="id"
+            scroll={{ x: 'max-content' }}
+            pagination={false}
+            size="middle"
+            className="ans-table-clean"
+        />
     );
 };
 

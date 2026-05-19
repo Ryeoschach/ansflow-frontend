@@ -423,7 +423,7 @@ const DesignerCore = () => {
                    <Text type="secondary" className="text-xs mb-1 block">{t('pipelineDesigner.cronExpressionOptional')}</Text>
                    <Input id="pipeline-cron-input" defaultValue={pipelineInfo?.schedule_cron} placeholder={t('pipelineDesigner.enterCronExpression')} className="font-mono rounded-lg h-10" />
                 </div>
-                <div className="bg-slate-50 dark:bg-white/5 p-3 rounded-lg border border-dashed border-slate-200 dark:border-slate-700">
+                <div className="bg-ans-bg-layout/50 p-3 rounded-ans-md border border-dashed border-ans-border">
                     <Text type="secondary" className="text-[11px] block">{t('pipelineDesigner.cronFormatTip')}</Text>
                 </div>
 
@@ -543,8 +543,8 @@ const DesignerCore = () => {
                     icon: <SettingOutlined style={{ color: '#faad14' }} />,
                     content: (
                         <div className="mt-2">
-                            <p className="font-bold text-amber-600">{res.message || t('pipelineDesigner.systemSecurityProtection')}</p>
-                            <p className="text-xs text-gray-500 mt-2">该流水线已被安全策略拦截，需管理员审批通过后方可继续执行。您可以前往审批中心查看详情。</p>
+                            <p className="font-bold text-ans-warning">{res.message || t('pipelineDesigner.systemSecurityProtection')}</p>
+                            <p className="text-xs text-ans-text-secondary mt-2 opacity-80">该流水线已被安全策略拦截，需管理员审批通过后方可继续执行。您可以前往审批中心查看详情。</p>
                         </div>
                     ),
                     okText: '前往审批中心',
@@ -589,15 +589,10 @@ const DesignerCore = () => {
   }, []);
 
   return (
-    <div style={{ background: token.colorBgLayout }} className="h-full w-full flex flex-col overflow-hidden antialiased">
+    <div style={{ background: 'var(--ans-bg-layout)' }} className="h-full w-full flex flex-col overflow-hidden antialiased">
       {/* Header Bar */}
       <header 
-        style={{ 
-          background: token.colorBgContainer, 
-          borderBottom: `1px solid ${token.colorBorderSecondary}`,
-          padding: '12px 24px'
-        }}
-        className="flex flex-col gap-3 z-10 transition-colors"
+        className="flex flex-col gap-3 z-10 transition-colors bg-ans-bg-container border-b border-solid border-ans-border py-3 px-6"
       >
         {/* Row 1: Title and Basic Actions */}
         <div className="flex items-center justify-between">
@@ -606,7 +601,7 @@ const DesignerCore = () => {
               type="text" 
               icon={<ArrowLeftOutlined />} 
               onClick={() => navigate('/v1/pipeline/list')} 
-              className="hover:bg-slate-100 dark:hover:bg-white/10"
+              className="hover:bg-ans-primary/5"
             />
             <div className="flex flex-col">
               <Title level={5} className="m-0!">{pipelineInfo?.name || t('pipelineDesigner.newPipelineEditor')}</Title>
@@ -635,24 +630,17 @@ const DesignerCore = () => {
 
         {/* Row 2: AI Co-pilot Toolbar */}
         <div 
-          className="flex items-center justify-between p-2 rounded-xl border border-solid transition-all"
-          style={{ 
-            backgroundColor: token.colorFillAlter,
-            borderColor: token.colorBorderSecondary 
-          }}
+          className="flex items-center justify-between p-2 rounded-ans-lg border border-solid transition-all bg-ans-bg-layout/50 border-ans-border"
         >
           <div className="flex items-center gap-3">
             <div 
-              className="flex items-center gap-2 px-3 py-1 rounded-lg shadow-sm border border-solid transition-colors"
-              style={{ 
-                backgroundColor: token.colorBgContainer,
-                borderColor: `${token.colorPrimary}20`,
-              }}
+              className="flex items-center gap-2 px-3 py-1 rounded-ans-sm shadow-sm border border-solid transition-colors bg-ans-bg-container"
+              style={{ borderColor: 'color-mix(in srgb, var(--ans-primary), transparent 80%)' }}
             >
-              <RobotOutlined style={{ color: token.colorPrimary }} />
-              <Text strong className="text-xs uppercase tracking-wider" style={{ color: token.colorPrimary }}>
+              <RobotOutlined style={{ color: 'var(--ans-primary)' }} />
+              <span className="text-xs uppercase tracking-wider font-bold" style={{ color: 'var(--ans-primary)' }}>
                 {t('aiChatbot.title')}
-              </Text>
+              </span>
             </div>
             
             <Select
@@ -680,14 +668,13 @@ const DesignerCore = () => {
             />
 
             <Button 
-              icon={<RobotOutlined style={{ color: token.colorPrimary }} />} 
+              icon={<RobotOutlined style={{ color: 'var(--ans-primary)' }} />} 
               onClick={handleExplain}
               style={{ 
-                borderColor: `${token.colorPrimary}40`,
-                color: token.colorPrimary,
-                backgroundColor: token.colorBgContainer
+                borderColor: 'color-mix(in srgb, var(--ans-primary), transparent 60%)',
+                color: 'var(--ans-primary)'
               }}
-              className="hover:opacity-80 transition-opacity"
+              className="bg-ans-bg-container hover:opacity-80 transition-opacity"
             >
               {t('pipelineDesigner.aiSimulation')}
             </Button>
@@ -710,18 +697,17 @@ const DesignerCore = () => {
         </div>
       </header>
 
-      <Layout className="flex-1 overflow-hidden" style={{ background: 'transparent' }}>
+      <Layout className="flex-1 overflow-hidden bg-transparent">
         <Sider 
             width={280} 
-            style={{ background: token.colorBgContainer, borderRight: `1px solid ${token.colorBorderSecondary}` }}
-            className="overflow-y-auto"
+            className="overflow-y-auto bg-ans-bg-container border-r border-solid border-ans-border"
         >
             <div className="p-5 flex flex-col gap-4">
                 <Flex vertical gap={2}>
-                    <Text strong className="text-[16px] uppercase tracking-widest">
+                    <Text strong className="text-[16px] uppercase tracking-widest text-ans-text-primary">
                         {t('pipelineDesigner.componentList')}
                     </Text>
-                    <Text type="secondary" className="text-[12px] uppercase tracking-widest">
+                    <Text className="text-[12px] uppercase tracking-widest text-ans-text-secondary opacity-80">
                         {t('pipelineDesigner.dragComponentToCanvas')}
                     </Text>
                 </Flex>
@@ -732,24 +718,20 @@ const DesignerCore = () => {
                       return (
                         <div
                             key={node.type}
-                            style={{
-                                background: token.colorBgContainer,
-                                borderLeft: `4px solid ${token.colorPrimary}`,
-                                borderColor: token.colorBorderSecondary
-                            }}
-                            className="p-4 border border-solid rounded-xl cursor-grab hover:shadow-lg transition-all group flex items-start gap-3"
+                            style={{ borderLeft: '4px solid var(--ans-primary)' }}
+                            className="p-4 border border-solid border-ans-border bg-ans-bg-container rounded-ans-md cursor-grab hover:shadow-ans-soft transition-all group flex items-start gap-3"
                             onDragStart={(event) => onDragStart(event, node.type)}
                             draggable
                         >
                             <div
-                              style={{ color: token.colorPrimary, backgroundColor: token.colorPrimaryBg }}
-                              className="w-10 h-10 rounded-lg flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform"
+                              style={{ color: 'var(--ans-primary)', backgroundColor: 'color-mix(in srgb, var(--ans-primary), transparent 90%)' }}
+                              className="w-10 h-10 rounded-ans-sm flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform"
                             >
                                 {node.icon}
                             </div>
                             <div className="flex flex-col flex-1">
-                                <Text strong style={{ color: token.colorText }} className="text-sm">{node.label}</Text>
-                                <Text type="secondary" className="text-[10px] mt-0.5 leading-tight">{node.description}</Text>
+                                <span className="font-bold text-sm text-ans-text-primary">{node.label}</span>
+                                <span className="text-[10px] mt-0.5 leading-tight text-ans-text-secondary opacity-70">{node.description}</span>
                             </div>
                         </div>
                       );
@@ -759,7 +741,7 @@ const DesignerCore = () => {
         </Sider>
         
         <Content 
-            style={{ background: token.colorBgLayout }}
+            style={{ background: 'var(--ans-bg-layout)' }}
             className="relative"
         >
             <div className="h-full w-full bg-transparent" ref={reactFlowWrapper}>
@@ -784,16 +766,16 @@ const DesignerCore = () => {
                     fitView
                     className="bg-transparent"
                 >
-                    <Background gap={32} size={1} color={token.colorBorderSecondary} />
-                    <Controls style={{ background: token.colorBgContainer, border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                    <MiniMap style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary, borderRadius: '12px' }} />
+                    <Background gap={32} size={1} color="var(--ans-border)" />
+                    <Controls style={{ background: 'var(--ans-bg-container)', border: 'none', boxShadow: 'var(--ans-shadow-soft)' }} />
+                    <MiniMap style={{ background: 'var(--ans-bg-container)', borderColor: 'var(--ans-border)', borderRadius: 'var(--ans-radius-lg)' }} />
                 </ReactFlow>
             </div>
         </Content>
       </Layout>
 
       <Drawer
-        title={<Space><SettingOutlined className="text-blue-500" /><span>{t('pipelineDesigner.configNode', { type: selectedNode?.type })}</span></Space>}
+        title={<Space><SettingOutlined style={{ color: 'var(--ans-primary)' }} /><span>{t('pipelineDesigner.configNode', { type: selectedNode?.type })}</span></Space>}
         placement="right"
         onClose={() => setDrawerVisible(false)}
         open={drawerVisible}
@@ -802,19 +784,19 @@ const DesignerCore = () => {
             <Space>
                 {hasPermission('pipeline:template:edit') && (
                     <Button
-                        icon={<RobotOutlined style={{ color: token.colorPrimary }} />}
+                        icon={<RobotOutlined style={{ color: 'var(--ans-primary)' }} />}
                         onClick={handleNodeAI}
                         loading={isNodeAILoading}
                         style={{ 
-                            borderColor: `${token.colorPrimary}40`,
-                            color: token.colorPrimary
+                            borderColor: 'color-mix(in srgb, var(--ans-primary), transparent 60%)',
+                            color: 'var(--ans-primary)'
                         }}
                     >
                         {t('aiChatbot.title')}
                     </Button>
                 )}
                 {hasPermission('pipeline:template:edit') && (
-                    <Button type="primary" size="small" onClick={onDrawerSave}>
+                    <Button type="primary" size="small" onClick={onDrawerSave} className="shadow-none rounded-ans-sm font-bold">
                         {t('pipelineDesigner.saveConfig')}
                     </Button>
                 )}
@@ -823,13 +805,14 @@ const DesignerCore = () => {
         className="custom-drawer"
       >
         <Form form={form} layout="vertical" className="px-1 pt-4">
-          <Card size="small" title={t('pipelineDesigner.basicProperties')} className="mb-5 border-none shadow-sm">
-            <div className="mb-4 p-2 bg-gray-50 rounded-lg border border-dashed flex justify-between items-center">
-               <Text type="secondary" className="text-[10px] uppercase">{t('pipelineDesigner.nodeId')}: <code className="text-blue-600">{selectedNode?.id}</code></Text>
+          <Card size="small" title={t('pipelineDesigner.basicProperties')} className="mb-5 ans-card border-none bg-ans-bg-container">
+            <div className="mb-4 p-2 bg-ans-bg-layout/50 rounded-ans-md border border-dashed border-ans-border flex justify-between items-center">
+               <Text type="secondary" className="text-[10px] uppercase text-ans-text-secondary">{t('pipelineDesigner.nodeId')}: <code className="text-ans-primary font-bold">{selectedNode?.id}</code></Text>
                <Button 
                 type="link" 
                 size="small" 
-                className="text-[10px] p-0 h-auto"
+                className="text-[10px] p-0 h-auto font-bold opacity-80 hover:opacity-100"
+                style={{ color: 'var(--ans-primary)' }}
                 onClick={() => {
                   navigator.clipboard.writeText(selectedNode?.id || '');
                   message.success(t('common.copied'));
@@ -839,19 +822,19 @@ const DesignerCore = () => {
                </Button>
             </div>
             <Form.Item label={t('pipelineDesigner.nodeIdentifier')} name="label">
-              <Input placeholder={t('pipelineDesigner.enterNodeDisplayName')} className="rounded-lg h-10" />
+              <Input placeholder={t('pipelineDesigner.enterNodeDisplayName')} className="rounded-ans-md h-10 border-ans-border bg-ans-bg-layout/30 hover:border-ans-primary" />
             </Form.Item>
             <Space className="w-full justify-between">
               <Form.Item label={t('pipelineDesigner.maxRetryCount')} name="max_retries" initialValue={0} className="w-32 mb-0">
-                <InputNumber min={0} max={10} className="w-full h-9 flex items-center" />
+                <InputNumber min={0} max={10} className="w-full h-9 flex items-center rounded-ans-md border-ans-border bg-ans-bg-layout/30" />
               </Form.Item>
               <Form.Item label={t('pipelineDesigner.retryIntervalSeconds')} name="retry_delay" initialValue={10} className="w-32 mb-0">
-                <InputNumber min={1} className="w-full h-9 flex items-center" />
+                <InputNumber min={1} className="w-full h-9 flex items-center rounded-ans-md border-ans-border bg-ans-bg-layout/30" />
               </Form.Item>
             </Space>
-            <div className="mt-4 text-[10px] text-gray-400">
+            <div className="mt-4 text-[10px] text-ans-text-secondary opacity-70">
               <InfoCircleOutlined className="mr-1" />
-              {t('pipelineDesigner.variableReferenceSupport')}<code className="bg-gray-100 px-1">{'{{ nodes.' + (selectedNode?.id || 'ID') + '.KEY }}'}</code>
+              {t('pipelineDesigner.variableReferenceSupport')}<code className="bg-ans-bg-layout border border-ans-border px-1.5 py-0.5 rounded-sm ml-1 text-ans-primary font-bold">{'{{ nodes.' + (selectedNode?.id || 'ID') + '.KEY }}'}</code>
             </div>
           </Card>
 
@@ -987,8 +970,8 @@ const DesignerCore = () => {
                       <Select options={[{ label: t('pipelineDesigner.closeRecommended'), value: false }, { label: t('pipelineDesigner.enableConflictResolution'), value: true }]} />
                   </Form.Item>
                </Card>
-               <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-dashed border-amber-200 dark:border-amber-700 mb-5">
-                   <Text className="text-[11px] text-amber-700 dark:text-amber-500 block leading-relaxed">
+               <div className="bg-ans-warning/10 p-3 rounded-ans-md border border-dashed border-ans-warning/30 mb-5">
+                   <Text className="text-[11px] text-ans-warning block leading-relaxed">
                        {t('pipelineDesigner.tipConflictError')}
                    </Text>
                </div>
@@ -996,9 +979,9 @@ const DesignerCore = () => {
           )}
 
           {selectedNode?.type === 'http_webhook' && (
-             <Card size="small" title={t('pipelineDesigner.webhookConfig')} className="mb-5 border-none shadow-sm">
+             <Card size="small" title={t('pipelineDesigner.webhookConfig')} className="mb-5 ans-card border-none bg-ans-bg-container">
                 <Form.Item label={t('pipelineDesigner.url')} name="webhook_url" rules={[{required:true}]}>
-                   <Input placeholder="https://..." />
+                   <Input placeholder="https://..." className="rounded-ans-md border-ans-border bg-ans-bg-layout/30" />
                 </Form.Item>
                 <Form.Item label={t('pipelineDesigner.method')} name="webhook_method" initialValue="POST">
                    <Select options={[{label:'POST', value:'POST'}, {label:'GET', value:'GET'}]} />
@@ -1017,18 +1000,18 @@ export default function PipelineDesigner() {
 
   if (isMobile) {
     return (
-      <div className="h-full w-full flex items-center justify-center p-6">
+      <div className="h-full w-full flex items-center justify-center p-6 bg-ans-bg-layout">
         <div className="text-center">
           <div className="text-5xl mb-4">💻</div>
-          <h2 className="text-lg font-semibold mb-2">{t('pipelineDesigner.mobileBlockedTitle')}</h2>
-          <p className="text-gray-500 text-sm">{t('pipelineDesigner.mobileBlockedDesc')}</p>
+          <h2 className="text-lg font-semibold mb-2 text-ans-text-primary">{t('pipelineDesigner.mobileBlockedTitle')}</h2>
+          <p className="text-ans-text-secondary text-sm opacity-80">{t('pipelineDesigner.mobileBlockedDesc')}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full w-full antialiased">
+    <div className="h-full w-full antialiased bg-ans-bg-layout">
       <ReactFlowProvider>
         <DesignerCore />
       </ReactFlowProvider>

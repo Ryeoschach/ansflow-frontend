@@ -12,26 +12,46 @@ interface AppState {
   isDark: boolean;
   setIsDark: (isDark: boolean) => void;
   // 主题配色 Key
-  themeKey: 'forest' | 'deepsea' | 'teal' | 'nordic' | 'pastel' | 'custom';
-  setThemeKey: (key: 'forest' | 'deepsea' | 'teal' | 'nordic' | 'pastel' | 'custom') => void;
-  // 自定义主题配置
-  customTheme: {
-    // Light Mode
-    primary: string;
-    bg: string;
-    heading: string;
-    text: string;
-    container: string;
-    warning: string;
-    link: string;
-    // Dark Mode
-    darkPrimary: string;
-    darkBg: string;
-    darkHeading: string;
-    darkContainer: string;
-    darkBorder: string;
+  themeKey: 'forest' | 'deepsea' | 'teal' | 'nordic' | 'pastel' | 'cyberpunk' | 'custom';
+  setThemeKey: (key: 'forest' | 'deepsea' | 'teal' | 'nordic' | 'pastel' | 'cyberpunk' | 'custom') => void;
+  
+  // 语义化设计变量 (Design Tokens)
+  designTokens: {
+    colors: {
+      primary: string;
+      bgLayout: string;
+      bgContainer: string;
+      textPrimary: string;
+      textSecondary: string;
+      border: string;
+      statusSuccess: string;
+      statusWarning: string;
+      statusError: string;
+      // Dark Mode Tokens
+      darkPrimary: string;
+      darkBgLayout: string;
+      darkBgContainer: string;
+      darkTextPrimary: string;
+      darkTextSecondary: string;
+      darkBorder: string;
+      darkStatusSuccess: string;
+      darkStatusWarning: string;
+      darkStatusError: string;
+    };
+    spacing: {
+      xs: number;
+      sm: number;
+      md: number;
+      lg: number;
+    };
+    borderRadius: {
+      sm: number;
+      md: number;
+      lg: number;
+    };
   };
-  setCustomTheme: (config: Partial<AppState['customTheme']>) => void;
+  setDesignTokens: (tokens: Partial<AppState['designTokens']>) => void;
+
   // 语言
   language: string;
   setLanguage: (lang: string) => void;
@@ -63,7 +83,7 @@ interface AppState {
 interface PersistedState {
   isDark: boolean;
   themeKey: string;
-  customTheme: AppState['customTheme'];
+  designTokens: AppState['designTokens'];
   collapsed: boolean;
   currentUser: string | null;
   permissions: string[];
@@ -84,23 +104,44 @@ const useAppStore = create<AppState>()(
     setIsDark: (isDark) => set({ isDark }),
     themeKey: 'forest',
     setThemeKey: (themeKey) => set({ themeKey }),
-    customTheme: {
-      primary: '#606C38',
-      bg: '#FDFCF0',
-      heading: '#283618',
-      text: '#283618',
-      container: '#FFFFFF',
-      warning: '#DDA15E',
-      link: '#BC6C25',
-      darkPrimary: '#ADC178',
-      darkBg: '#0E140A',
-      darkHeading: '#F0F5E1',
-      darkContainer: '#1D2619',
-      darkBorder: '#2D3A26',
+    
+    designTokens: {
+      colors: {
+        primary: '#606C38',
+        bgLayout: '#FDFCF0',
+        bgContainer: '#FFFFFF',
+        textPrimary: '#283618',
+        textSecondary: 'rgba(40,54,24,0.65)',
+        border: 'rgba(0,0,0,0.06)',
+        statusSuccess: '#52c41a',
+        statusWarning: '#faad14',
+        statusError: '#ff4d4f',
+        darkPrimary: '#ADC178',
+        darkBgLayout: '#0E140A',
+        darkBgContainer: '#1D2619',
+        darkTextPrimary: '#F0F5E1',
+        darkTextSecondary: 'rgba(240,245,225,0.45)',
+        darkBorder: 'rgba(255,255,255,0.08)',
+        darkStatusSuccess: '#73d13d',
+        darkStatusWarning: '#ffc53d',
+        darkStatusError: '#ff7875',
+      },
+      spacing: {
+        xs: 4,
+        sm: 8,
+        md: 16,
+        lg: 24,
+      },
+      borderRadius: {
+        sm: 4,
+        md: 8,
+        lg: 12,
+      },
     },
-    setCustomTheme: (config) => set((state) => ({ 
-      customTheme: { ...state.customTheme, ...config } 
+    setDesignTokens: (tokens) => set((state) => ({ 
+      designTokens: { ...state.designTokens, ...tokens } 
     })),
+
     language: 'zh-CN',
     setLanguage: (language) => set({ language }),
     pipelineActiveTab: 'templates',
@@ -127,10 +168,11 @@ const useAppStore = create<AppState>()(
     setAiDiagnosis: (aiDiagnosisConfig) => set({ aiDiagnosisConfig }),
     }), {
     name: 'ansflow-app-storage',
+    version: 3, // 升级版本号以强制清理旧的缓存
     partialize: (state): PersistedState => ({
       isDark: state.isDark,
       themeKey: state.themeKey,
-      customTheme: state.customTheme,
+      designTokens: state.designTokens,
       collapsed: state.collapsed,
       currentUser: state.currentUser,
       permissions: state.permissions,

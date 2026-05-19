@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Button, Input, Card, Space, Avatar, FloatButton, Typography, theme, Dropdown, MenuProps, Tag, Drawer, List, Tooltip, Empty, Skeleton, Tabs, Alert } from 'antd';
+import { Button, Input, Card, Space, Avatar, FloatButton, Typography, theme, Dropdown, MenuProps, Tag, Drawer, List, Tooltip, Empty, Skeleton, Tabs, Alert, Select } from 'antd';
 import { 
     RobotOutlined, UserOutlined, SendOutlined, MinusOutlined, PlayCircleOutlined, 
     CoffeeOutlined, ThunderboltOutlined, UserSwitchOutlined, HistoryOutlined, 
@@ -761,6 +761,9 @@ const AIChatbot: React.FC = () => {
                                             onClick: ({ key }) => setPersonality(key as PersonalityKey) 
                                         }} 
                                         trigger={['click']}
+                                        placement="bottom"
+                                        getPopupContainer={() => document.body}
+                                        overlayClassName="z-[2147483647]"
                                     >
                                         <Tag 
                                             icon={<UserSwitchOutlined />} 
@@ -783,6 +786,9 @@ const AIChatbot: React.FC = () => {
                                             onClick: ({ key }) => setSelectedLLMId(Number(key)) 
                                         }} 
                                         trigger={['click']}
+                                        placement="bottom"
+                                        getPopupContainer={() => document.body}
+                                        overlayClassName="z-[2147483647]"
                                     >
                                         <Tag 
                                             icon={<RocketOutlined />} 

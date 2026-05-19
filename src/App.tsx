@@ -13,26 +13,34 @@ import { getMe } from './api/user';
 import LoginPage from './pages/Login';
 import AppErrorBoundary from './components/ErrorBoundary';
 
+/**
+ * Vision 2026 - 全量语义化主题模型 (18色体系)
+ * 所有的预置主题现在都完整适配 Design Tokens 体系，确保全站视觉一致性。
+ */
 const THEMES: Record<string, any> = {
   forest: {
-    primary: '#606C38', heading: '#283618', bg: '#FDFCF0', container: '#FFFFFF', warning: '#DDA15E', link: '#BC6C25', text: '#283618',
-    darkPrimary: '#ADC178', darkHeading: '#F0F5E1', darkBg: '#0E140A', darkContainer: '#1D2619', darkBorder: '#2D3A26'
+    primary: '#606C38', bgLayout: '#FDFCF0', bgContainer: '#FFFFFF', textPrimary: '#283618', textSecondary: 'rgba(40,54,24,0.65)', border: 'rgba(0,0,0,0.06)', statusSuccess: '#52c41a', statusWarning: '#faad14', statusError: '#ff4d4f',
+    darkPrimary: '#ADC178', darkBgLayout: '#0E140A', darkBgContainer: '#1D2619', darkTextPrimary: '#F0F5E1', darkTextSecondary: 'rgba(240,245,225,0.45)', darkBorder: 'rgba(255,255,255,0.08)', darkStatusSuccess: '#73d13d', darkStatusWarning: '#ffc53d', darkStatusError: '#ff7875'
   },
   deepsea: {
-    primary: '#1B4965', heading: '#0D1B2A', bg: '#F8F9FA', container: '#FFFFFF', warning: '#F9BC4D', link: '#E88C3E', text: '#0D1B2A',
-    darkPrimary: '#5FA8D3', darkHeading: '#E0E1DD', darkBg: '#0B132B', darkContainer: '#1C2541', darkBorder: '#2A3B5A'
+    primary: '#1B4965', bgLayout: '#F8F9FA', bgContainer: '#FFFFFF', textPrimary: '#0D1B2A', textSecondary: 'rgba(13,27,42,0.65)', border: 'rgba(0,0,0,0.08)', statusSuccess: '#52c41a', statusWarning: '#F9BC4D', statusError: '#E88C3E',
+    darkPrimary: '#5FA8D3', darkBgLayout: '#0B132B', darkBgContainer: '#1C2541', darkTextPrimary: '#E0E1DD', darkTextSecondary: 'rgba(224,225,221,0.45)', darkBorder: 'rgba(255,255,255,0.1)', darkStatusSuccess: '#73d13d', darkStatusWarning: '#F9BC4D', darkStatusError: '#E88C3E'
   },
   teal: {
-    primary: '#599A8F', heading: '#334752', bg: '#FDFBF7', container: '#FFFFFF', warning: '#E6C587', link: '#D9795E', text: '#334752',
-    darkPrimary: '#84A59D', darkHeading: '#F2CC8F', darkBg: '#1A1C22', darkContainer: '#2B2D42', darkBorder: '#3F425A'
+    primary: '#599A8F', bgLayout: '#FDFBF7', bgContainer: '#FFFFFF', textPrimary: '#334752', textSecondary: 'rgba(51,71,82,0.65)', border: 'rgba(0,0,0,0.06)', statusSuccess: '#52c41a', statusWarning: '#E6C587', statusError: '#D9795E',
+    darkPrimary: '#84A59D', darkBgLayout: '#1A1C22', darkBgContainer: '#2B2D42', darkTextPrimary: '#F2CC8F', darkTextSecondary: 'rgba(242,204,143,0.45)', darkBorder: 'rgba(255,255,255,0.1)', darkStatusSuccess: '#73d13d', darkStatusWarning: '#E6C587', darkStatusError: '#D9795E'
   },
   nordic: {
-    primary: '#D65454', heading: '#263651', bg: '#F9FBFC', container: '#FFFFFF', warning: '#FBCDD6', link: '#5D83A3', text: '#263651',
-    darkPrimary: '#E5989B', darkHeading: '#FFB703', darkBg: '#111827', darkContainer: '#1F2937', darkBorder: '#374151'
+    primary: '#D65454', bgLayout: '#F9FBFC', bgContainer: '#FFFFFF', textPrimary: '#263651', textSecondary: 'rgba(38,54,81,0.65)', border: 'rgba(0,0,0,0.06)', statusSuccess: '#52c41a', statusWarning: '#FBCDD6', statusError: '#5D83A3',
+    darkPrimary: '#E5989B', darkBgLayout: '#111827', darkBgContainer: '#1F2937', darkTextPrimary: '#FFB703', darkTextSecondary: 'rgba(255,183,3,0.45)', darkBorder: 'rgba(255,255,255,0.1)', darkStatusSuccess: '#73d13d', darkStatusWarning: '#FBCDD6', darkStatusError: '#5D83A3'
   },
   pastel: {
-    primary: '#9E868D', heading: '#5C4F51', bg: '#F8F9F9', container: '#FFFFFF', warning: '#FBCDD6', link: '#E7A6B5', text: '#5C4F51',
-    darkPrimary: '#B5838D', darkHeading: '#FFB703', darkBg: '#1F1A1C', darkContainer: '#2D2327', darkBorder: '#3D2F34'
+    primary: '#9E868D', bgLayout: '#F8F9F9', bgContainer: '#FFFFFF', textPrimary: '#5C4F51', textSecondary: 'rgba(92,79,81,0.65)', border: 'rgba(0,0,0,0.06)', statusSuccess: '#52c41a', statusWarning: '#FBCDD6', statusError: '#E7A6B5',
+    darkPrimary: '#B5838D', darkBgLayout: '#1F1A1C', darkBgContainer: '#2D2327', darkTextPrimary: '#FFB703', darkTextSecondary: 'rgba(255,183,3,0.45)', darkBorder: 'rgba(255,255,255,0.1)', darkStatusSuccess: '#73d13d', darkStatusWarning: '#FBCDD6', darkStatusError: '#FFB703'
+  },
+  cyberpunk: {
+    primary: '#B8860B', bgLayout: '#F5F5F7', bgContainer: '#FFFFFF', textPrimary: '#1A1A1A', textSecondary: 'rgba(26,26,26,0.65)', border: 'rgba(0,0,0,0.08)', statusSuccess: '#52c41a', statusWarning: '#faad14', statusError: '#ff4d4f',
+    darkPrimary: '#D4AF37', darkBgLayout: '#050505', darkBgContainer: '#141414', darkTextPrimary: '#F5F5F5', darkTextSecondary: 'rgba(245,245,245,0.5)', darkBorder: 'rgba(212,175,55,0.15)', darkStatusSuccess: '#73d13d', darkStatusWarning: '#D4AF37', darkStatusError: '#ff7875'
   }
 };
 
@@ -73,9 +81,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // 增加缓存机制：数据在 5 分钟内不触发网络请求
       staleTime: 1000 * 60 * 5,
-      // 数据在内存中保留 10 分钟
       gcTime: 1000 * 60 * 10,
       retry: (failureCount, error: any) => {
         const status = error?.response?.status;
@@ -87,17 +93,13 @@ const queryClient = new QueryClient({
   },
 });
 
-const CACHE_TTL = 1000 * 60 * 60 * 24; // 设置不常变更数据的本地缓存失效时间24小时
+const CACHE_TTL = 1000 * 60 * 60 * 24;
 
-/**
- * 通用缓存校验与读取逻辑
- */
 const getValidCache = (key: string) => {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
     const { data, timestamp } = JSON.parse(raw);
-    // 如果没有时间戳或已过期，则清除
     if (!timestamp || (Date.now() - timestamp > CACHE_TTL)) {
       localStorage.removeItem(key);
       return null;
@@ -109,11 +111,6 @@ const getValidCache = (key: string) => {
   }
 };
 
-/**
- * 同步回填核心元数据
- * 在 App 渲染前执行，确保业务组件挂载时缓存已 Ready
- * 调用getValidCache 来判断数据是否是有效期以内
- */
 try {
   const clusters = getValidCache('cache:clusters');
   const userInfo = getValidCache('cache:auth_user');
@@ -134,13 +131,8 @@ try {
   console.warn("[AnsFlow Sync Cache] 初始化回填失败:", e);
 }
 
-/**
- * 应用根组件，配置主题和路由
- */
-
-// 单例锁，确保即便是 React StrictMode 两次渲染也只跑一个
+// 单例锁
 let globalInitPromise: Promise<any> | null = null;
-// 运行中标记，防止并发
 let isAuthRunning = false;
 
 import { setGlobalAntd } from './utils/antd';
@@ -152,65 +144,31 @@ const AntdInitializer: React.FC = () => {
   return null;
 };
 
-// const PageLoader = () => (
-//     <div className={`h-full w-full flex flex-col items-center justify-center`}>
-//       <div className="flex flex-col items-center gap-4">
-//         <div className="text-3xl font-bold text-indigo-500 border-2 border-indigo-500/30 rounded-xl px-6 py-2 opacity-90 animate-pulse bg-indigo-500/5">
-//           AnsFlow
-//         </div>
-//         <div className="text-gray-400 text-xs mt-2 uppercase tracking-[0.2em] font-medium animate-pulse">Loading Module...</div>
-//       </div>
-//     </div>
-// );
-
-// 定义全屏初始化 UI 组件,改为使用骨架屏
-// const FullPageInitializingUI = ({ isDark }: { isDark: boolean }) => (
-//     <div className={`h-screen w-screen flex flex-col items-center justify-center ${isDark ? 'bg-[#141414]' : 'bg-[#f0f2f5]'}`}>
-//       <div className="flex flex-col items-center gap-4">
-//          <div className="text-3xl font-bold text-indigo-500 border-2 border-indigo-500/30 rounded-xl px-6 py-2 opacity-90 animate-pulse bg-indigo-500/5">
-//              AnsFlow
-//          </div>
-//          <div className="text-gray-400 text-xs mt-2 uppercase tracking-[0.2em] font-medium animate-pulse">Initializing System Framework</div>
-//       </div>
-//     </div>
-// );
-
-/**
- * 管理核心元数据的逻辑。
- * 在系统启动时尝试回填缓存，并在数据更新时自动同步进本地存储。
- * 同时设置了TTL为24小时，过时会删除本地存储重新更新
- */
 const QueryPersistenceManager = () => {
   const queryClient = useQueryClient();
   const { token } = useAppStore();
 
   useEffect(() => {
-    // 只有在已登录状态下才启动实时同步
     if (!token) return;
 
-    // 监听成功事件，自动镜像特定 API 到本地
     const unsubscribe = queryClient.getQueryCache().subscribe((event: any) => {
       if (event.type === 'updated' && event.action.type === 'success') {
         const queryKey = event.query.queryKey;
         const data = event.action.data;
         const cachePayload = (val: any) => JSON.stringify({ data: val, timestamp: Date.now() });
 
-        // 同步集群列表
         if (queryKey[0] === 'k8sClusters') {
           localStorage.setItem('cache:clusters', cachePayload(data));
         }
-        // 同步账户信息
         if (queryKey[0] === 'auth_user') {
           localStorage.setItem('cache:auth_user', cachePayload(data));
         }
-        // 同步命名空间列表
         if (queryKey[0] === 'k8sNamespaces') {
           localStorage.setItem('cache:namespaces', cachePayload({
             clusterId: Number(queryKey[1]),
             list: data
           }));
         }
-        // 同步 Helm 列表
         if (queryKey[0] === 'k8sHelm') {
           localStorage.setItem('cache:helm_list', cachePayload({
              clusterId: Number(queryKey[1]),
@@ -228,116 +186,140 @@ const QueryPersistenceManager = () => {
 };
 
 function App() {
-  const { isDark, themeKey, customTheme, token, setToken, setPermissions, setCurrentUser, setAvatar, language } = useAppStore();
+  const { isDark, themeKey, designTokens, token, setToken, setPermissions, setCurrentUser, setAvatar, language } = useAppStore();
   
-  const currentTheme = React.useMemo(() => {
+  const currentTokens = React.useMemo(() => {
     if (themeKey === 'custom') {
-      return {
-        ...THEMES.forest, // 作为 fallback
-        ...customTheme,
-      };
+      return designTokens.colors;
     }
+    // 预置主题现在也是全量 Token 模型，直接返回即可（THEMES 结构已补全）
     return THEMES[themeKey] || THEMES.forest;
-  }, [themeKey, customTheme]);
+  }, [themeKey, designTokens]);
+
+  // 全局注入 CSS 变量
+  useEffect(() => {
+    const root = document.documentElement;
+    const colors = currentTokens;
+    
+    const setVar = (name: string, val: string) => root.style.setProperty(`--ans-${name}`, val);
+    
+    // 基础颜色
+    setVar('primary', isDark ? colors.darkPrimary : colors.primary);
+    setVar('bg-layout', isDark ? colors.darkBgLayout : colors.bgLayout);
+    setVar('bg-container', isDark ? colors.darkBgContainer : colors.bgContainer);
+    setVar('text-primary', isDark ? colors.darkTextPrimary : colors.textPrimary);
+    setVar('text-secondary', isDark ? colors.darkTextSecondary : colors.textSecondary);
+    setVar('border', isDark ? colors.darkBorder : colors.border);
+    
+    // 状态色
+    setVar('success', isDark ? colors.darkStatusSuccess : colors.statusSuccess);
+    setVar('warning', isDark ? colors.darkStatusWarning : colors.statusWarning);
+    setVar('error', isDark ? colors.darkStatusError : colors.statusError);
+
+    // 间距与圆角
+    setVar('radius-sm', `${designTokens.borderRadius.sm}px`);
+    setVar('radius-md', `${designTokens.borderRadius.md}px`);
+    setVar('radius-lg', `${designTokens.borderRadius.lg}px`);
+    
+    if (isDark) {
+      root.classList.add('dark');
+      document.body.style.backgroundColor = colors.darkBgLayout;
+    } else {
+      root.classList.remove('dark');
+      document.body.style.backgroundColor = colors.bgLayout;
+    }
+  }, [isDark, currentTokens, designTokens]);
 
   const antdTheme = React.useMemo(() => ({
     cssVar: { prefix: 'ant' },
     algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
     token: {
-      colorPrimary: isDark ? currentTheme.darkPrimary : currentTheme.primary,
-      colorInfo: isDark ? currentTheme.darkPrimary : currentTheme.primary,
-      colorSuccess: currentTheme.primary,
-      colorWarning: currentTheme.warning,
-      colorError: currentTheme.link,
-      colorLink: currentTheme.link,
-      colorTextBase: isDark ? currentTheme.darkHeading : (themeKey === 'custom' ? currentTheme.text : currentTheme.text),
-      colorBgLayout: isDark ? currentTheme.darkBg : currentTheme.bg,
-      colorBgContainer: isDark ? currentTheme.darkContainer : currentTheme.container,
-      borderRadius: 12,
+      colorPrimary: isDark ? currentTokens.darkPrimary : currentTokens.primary,
+      colorInfo: isDark ? currentTokens.darkPrimary : currentTokens.primary,
+      colorSuccess: isDark ? currentTokens.darkStatusSuccess : currentTokens.statusSuccess,
+      colorWarning: isDark ? currentTokens.darkStatusWarning : currentTokens.statusWarning,
+      colorError: isDark ? currentTokens.darkStatusError : currentTokens.statusError,
+      colorTextBase: isDark ? currentTokens.darkTextPrimary : currentTokens.textPrimary,
+      colorBgLayout: isDark ? currentTokens.darkBgLayout : currentTokens.bgLayout,
+      colorBgContainer: isDark ? currentTokens.darkBgContainer : currentTokens.bgContainer,
+      borderRadius: designTokens.borderRadius.lg,
       fontFamily: 'Inter, system-ui, sans-serif',
+      wireframe: false,
     },
     components: {
       Layout: {
-        headerBg: isDark ? currentTheme.darkBg : (themeKey === 'custom' ? currentTheme.heading : currentTheme.heading),
+        headerBg: isDark ? currentTokens.darkBgLayout : currentTokens.primary,
         headerColor: '#FFFFFF',
-        bodyBg: isDark ? currentTheme.darkBg : currentTheme.bg,
-        siderBg: isDark ? currentTheme.darkBg : (themeKey === 'custom' ? currentTheme.heading : currentTheme.heading),
-        triggerBg: isDark ? currentTheme.darkContainer : currentTheme.primary,
+        bodyBg: isDark ? currentTokens.darkBgLayout : currentTokens.bgLayout,
+        // 核心修正：亮色模式下侧边栏不再强制深色，改用浅色背景
+        siderBg: isDark ? currentTokens.darkBgLayout : currentTokens.bgContainer,
       },
       Menu: {
-        darkItemBg: isDark ? currentTheme.darkBg : (themeKey === 'custom' ? currentTheme.heading : currentTheme.heading),
-        darkSubMenuItemBg: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.1)',
-        popupBg: isDark ? currentTheme.darkContainer : '#FFFFFF',
-        itemBorderRadius: 8,
-        // 核心修复：确保文字在深色背景下始终可见
-        darkItemColor: 'rgba(255, 255, 255, 0.85)',
-        darkItemSelectedColor: '#FFFFFF', 
-        darkItemSelectedBg: currentTheme.primary,
-        itemSelectedColor: currentTheme.primary,
+        // 1. 亮色主题配置 (当 theme="light" 时生效)
+        itemBg: 'transparent',
+        subMenuItemBg: 'rgba(0,0,0,0.03)',
+        itemSelectedBg: `color-mix(in srgb, ${currentTokens.primary}, transparent 92%)`,
+        itemSelectedColor: currentTokens.primary,
+        
+        // 2. 深色主题配置 (核心修复：当 theme="dark" 时生效)
+        darkItemBg: 'transparent',
+        darkSubMenuItemBg: 'rgba(0,0,0,0.2)',
+        darkItemSelectedBg: isDark ? currentTokens.darkPrimary : currentTokens.primary,
+        darkItemSelectedColor: '#FFFFFF',
+        darkItemColor: 'rgba(255, 255, 255, 0.65)',
+        darkItemHoverColor: '#FFFFFF',
+
+        popupBg: isDark ? currentTokens.darkBgContainer : currentTokens.bgContainer,
+        itemBorderRadius: designTokens.borderRadius.md,
       },
       Table: {
         headerBg: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
-        borderColor: isDark ? currentTheme.darkBorder : '#f0f0f0',
-        rowHoverBg: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+        borderColor: isDark ? currentTokens.darkBorder : 'rgba(0,0,0,0.06)',
       },
       Card: {
-        boxShadowTertiary: isDark ? '0 8px 24px -4px rgba(0,0,0,0.4)' : '0 4px 12px -2px rgba(40,54,24,0.05)',
-        borderRadiusLG: 16,
-        borderColor: isDark ? currentTheme.darkBorder : '#f0f0f0',
+        boxShadowTertiary: isDark ? '0 12px 32px -4px rgba(0,0,0,0.5)' : '0 8px 24px -4px rgba(40,54,24,0.06)',
+        borderRadiusLG: designTokens.borderRadius.lg,
+        borderColor: isDark ? currentTokens.darkBorder : 'rgba(0,0,0,0.04)',
       },
       Button: {
-        borderRadius: 8,
+        borderRadius: designTokens.borderRadius.md,
         fontWeight: 500,
+        controlOutline: 'none',
       }
     },
+  }), [isDark, currentTokens, designTokens]);
 
-  }), [isDark, themeKey, currentTheme]);
   const { isInitializing, setIsInitializing } = useAppStore();
   const navigate = useNavigate();
   const { i18n } = useTranslation();
 
-  // 同步 i18n 语言到 store（启动时和语言切换时）
   useEffect(() => {
     const syncLang = (l: string) => useAppStore.getState().setLanguage(l);
     i18n.on('languageChanged', syncLang);
     return () => i18n.off('languageChanged', syncLang);
   }, [i18n]);
 
-  // Ant Design locale mapping
   const antdLocale = language === 'en-US' ? enUS : zhCN;
 
   useEffect(() => {
     const initAuth = async () => {
-      // 防止并发
-      if (isAuthRunning) {
-        console.log('[App] initAuth: already running, skip');
-        return;
-      }
+      if (isAuthRunning) return;
       isAuthRunning = true;
-      console.log('[App] initAuth useEffect, token:', token ? 'exists' : 'null', 'path:', window.location.pathname, 'isInit:', isInitializing, 'url:', window.location.search);
       try {
-        // 如果正在登录页，直接退出（不要重定向，否则会打断 OAuth 回调）
         if (window.location.pathname === '/login') {
-          console.log('[App] initAuth: already on login page, skip');
           setIsInitializing(false);
           return;
         }
-        // 如果内存已有 Token，直接退出
         if (token) {
-          console.log('[App] initAuth: token exists, skip refresh');
           setIsInitializing(false);
           return;
         }
-        // 检查 URL 是否有 OAuth token（GitHub/微信 回调带上的）
         const urlParams = new URLSearchParams(window.location.search);
         const oauthToken = urlParams.get('access_token');
         if (oauthToken) {
-          console.log('[App] initAuth: found OAuth token in URL, waiting for LoginPage to process');
-          // 不调用 refresh，等待 LoginPage 的 useEffect 处理
           setIsInitializing(false);
           return;
         }
-        // 使用全局 Promise 锁，防止并发
         if (!globalInitPromise) {
           globalInitPromise = (async () => {
             try {
@@ -355,28 +337,15 @@ function App() {
           })();
         }
         const newToken = await globalInitPromise;
-        console.log('[App] initAuth: newToken from refresh:', newToken ? 'exists' : 'null');
         if (newToken) {
-          // 只有在 store 中还没有 token 的情况下才接受 refresh 结果
-          // 如果已有 token（可能是 OAuth 刚设置的），则跳过
           const currentToken = useAppStore.getState().token;
-          if (currentToken) {
-            console.log('[App] initAuth: store already has token, skipping refresh result');
-          } else {
-            setToken(newToken);
-          }
+          if (!currentToken) setToken(newToken);
         } else {
-          // double-check: maybe OAuth callback set token just now
           const currentToken = useAppStore.getState().token;
-          if (currentToken) {
-            console.log('[App] initAuth: token was set by OAuth, skip login redirect');
-          } else {
-            console.log('[App] initAuth: no token, redirecting to /login');
-            navigate('/login');
-          }
+          if (!currentToken) navigate('/login');
         }
         setIsInitializing(false);
-        globalInitPromise = null; // 跑完清空
+        globalInitPromise = null;
       } finally {
         isAuthRunning = false;
       }
@@ -384,25 +353,16 @@ function App() {
     initAuth();
   }, [token, setToken, setIsInitializing, navigate]);
 
-  // 登录成功后获取用户信息及权限
   useEffect(() => {
     if (token) {
-      console.log('[App] getMe useEffect, token:', token ? 'exists' : 'null');
       getMe().then((res: any) => {
-        // 检查 store 中的 token 是否仍然是当初设置的这个
-        // 如果不匹配，说明期间有新的登录发生，跳过用户信息更新
         const storeToken = useAppStore.getState().token;
-        console.log('[App] getMe success, res:', res, 'tokenMatch:', storeToken === token);
-        if (storeToken !== token) {
-          console.log('[App] getMe callback: token changed from', token, 'to', storeToken, ', skipping user update');
-          return;
+        if (storeToken === token) {
+          setPermissions(res.permissions || []);
+          setCurrentUser(res.username);
+          setAvatar(res.avatar || null);
         }
-        setPermissions(res.permissions || []);
-        setCurrentUser(res.username);
-        setAvatar(res.avatar || null);
       }).catch((err: any) => {
-        console.log('[App] getMe error:', err);
-        // 网络错误不要清除 token，只有 401 才清除
         if (err?.response?.status === 401) {
           setToken(null);
           setPermissions([]);
@@ -410,20 +370,6 @@ function App() {
       });
     }
   }, [token, setPermissions, setCurrentUser, setToken]);
-
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-      document.body.style.backgroundColor = currentTheme.darkBg;
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.body.style.backgroundColor = currentTheme.bg;
-    }
-  }, [isDark, currentTheme.bg, currentTheme.darkBg]);
-
-  // if (isInitializing) {
-  //   return <div className="h-screen w-screen flex items-center justify-center">加载中...</div>;
-  // }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -433,7 +379,6 @@ function App() {
       >
         <AntdApp>
           <AntdInitializer />
-          {/*全局组件异常页面*/}
           <AppErrorBoundary isGlobal={true} title="AnsFlow 全局运行时异常">
             <QueryPersistenceManager />
             <Routes>
@@ -468,16 +413,13 @@ function App() {
                 <Route path="v1/system/monitor" element={<MonitorCenter />} />
                 <Route path="v1/system/audit-logs" element={<AuditLog />} />
                 <Route path="v1/system/approvals" element={<ApprovalCenter />} />
-                <Route path="v1/system/monitor" element={<MonitorCenter />} />
                 <Route path="v1/sre/alerts" element={<AlertCenter />} />
                 <Route path="v1/sre/pulse" element={<TaskPulse />} />
                 <Route path="v1/system/backups" element={<BackupManagement />} />
                 <Route path="v1/system/periodic-tasks" element={<PeriodicTask />} />
                 <Route path="v1/ai-rag/config" element={<AISettings />} />
-
                 <Route path="v1/system/vault" element={<CredentialVault />} />
-                {/*404*/}
-                <Route path="*" element={<div>^^如果uri不是你手动输入的或者你确定输入的uri是正确的，那就是该页面功能正在开发中^^</div>} />
+                <Route path="*" element={<div>^^页面正在开发中^^</div>} />
               </Route>
             </Routes>
           </AppErrorBoundary>
