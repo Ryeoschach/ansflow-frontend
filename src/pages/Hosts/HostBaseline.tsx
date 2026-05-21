@@ -14,6 +14,8 @@ import {
   theme,
   Tooltip,
   Select,
+  Badge,
+  Tabs,
 } from 'antd';
 import {
   ReloadOutlined,
@@ -214,7 +216,7 @@ const HostBaselinePage: React.FC = () => {
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         onOk={() => form.submit()}
-        width={1000}
+        width={1100}
         style={{ top: 20 }}
       >
         <Form
@@ -229,7 +231,7 @@ const HostBaselinePage: React.FC = () => {
             }
           }}
         >
-          <div className="grid grid-cols-2 gap-x-6">
+          <div className="grid grid-cols-2 gap-x-6 mb-6">
             <Form.Item name="name" label="基线名称" rules={[{ required: true }]}>
               <Input placeholder="例如: 标准 Nginx 服务配置检查" />
             </Form.Item>
@@ -247,24 +249,34 @@ const HostBaselinePage: React.FC = () => {
             </Form.Item>
           </div>
 
-          <div className="grid grid-cols-2 gap-x-6 h-[500px]">
-            <div className="flex flex-col">
-              <Text strong className="mb-2">
+          <div className="flex gap-x-6" style={{ height: '400px' }}>
+            <div className="flex-1 flex flex-col min-w-0">
+              <Text strong className="mb-2 block">
                 <InfoCircleOutlined className="mr-1" /> 巡检剧本 (Check Playbook)
               </Text>
-              <div className="flex-1 min-h-0">
-                <K8sYamlEditor value={checkPlaybook} onChange={(v) => setCheckPlaybook(v || '')} />
+              <div className="flex-1 overflow-hidden">
+                <K8sYamlEditor 
+                  height="400px" 
+                  value={checkPlaybook} 
+                  onChange={(v) => setCheckPlaybook(v || '')} 
+                />
               </div>
             </div>
-            <div className="flex flex-col">
-              <Text strong className="mb-2">
+            <div className="flex-1 flex flex-col min-w-0">
+              <Text strong className="mb-2 block">
                 <SafetyCertificateOutlined className="mr-1" /> 修复剧本 (Remediate Playbook)
               </Text>
-              <div className="flex-1 min-h-0">
-                <K8sYamlEditor value={remediatePlaybook} onChange={(v) => setRemediatePlaybook(v || '')} />
+              <div className="flex-1 overflow-hidden">
+                <K8sYamlEditor 
+                  height="400px" 
+                  value={remediatePlaybook} 
+                  onChange={(v) => setRemediatePlaybook(v || '')} 
+                />
               </div>
             </div>
           </div>
+          <div className="h-4" />
+
         </Form>
       </Modal>
     </div>
