@@ -55,6 +55,11 @@ const HostBaselinePage: React.FC = () => {
   const { data: baselinesData, isLoading } = useQuery({
     queryKey: ['host', 'baselines'],
     queryFn: () => getHostBaselines({ page: 1, size: 100 }),
+    refetchInterval: (query) => {
+      // 智能轮询：如果列表中有任何一个正在巡检的任务，则每 3 秒刷新一次
+      const hasRunning = query.state.data?.data?.some((b: any) => b.last_check_status === 'running');
+      return hasRunning ? 3000 : false;
+    },
   });
 
   const { data: poolsData } = useQuery({
@@ -133,8 +138,37 @@ const HostBaselinePage: React.FC = () => {
       title: '最近巡检',
       dataIndex: 'last_check_time',
       key: 'last_check_time',
-      render: (val: string) => (val ? new Date(val).toLocaleString() : '从不'),
+      width: 280,
+      render: (val: string, record: any) => {
+        if (!val) return <Text type="secondary">从未巡检</Text>;
+        const status = record.last_check_status || 'unknown';
+        let color = 'default';
+        let text = status;
+
+        if (status === 'success') { color = 'success'; text = '合规'; }
+        else if (status === 'failed') { color = 'error'; text = '违规'; }
+        else if (status === 'running') { color = 'processing'; text = '巡检中'; }
+
+        return (
+          <Space direction="vertical" size={0}>
+            <Text className="text-xs">{new Date(val).toLocaleString()}</Text>
+            <Space>
+               <Tag color={color}>{text}</Tag>
+               {record.last_execution_id && (
+                 <Button 
+                    type="link" 
+                    size="small" 
+                    onClick={() => window.open(`/v1/task/executions?id=${record.last_execution_id}`)}
+                 >
+                    查看日志
+                 </Button>
+               )}
+            </Space>
+          </Space>
+        );
+      }
     },
+
     {
       title: '状态',
       dataIndex: 'is_active',
@@ -223,7 +257,7 @@ const HostBaselinePage: React.FC = () => {
           form={form}
           layout="vertical"
           onFinish={(values) => {
-            const payload = { ...values, check_playbook, remediate_playbook: remediatePlaybook };
+            const payload = { ...values, check_playbook: checkPlaybook, remediate_playbook: remediatePlaybook };
             if (editingBaseline) {
               updateMutation.mutate({ id: editingBaseline.id, data: payload });
             } else {

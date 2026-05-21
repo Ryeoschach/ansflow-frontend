@@ -31,7 +31,14 @@ const useDesignerStore = create<DesignerState>()(
   persist(
     (set) => ({
       nodes: [],
-      setNodes: (nodes) => set({ nodes, lastModified: Date.now() }),
+      setNodes: (rawNodes) => {
+        // 全局防御逻辑：补全缺失的 position 属性，防止 ReactFlow 渲染崩溃
+        const nodes = rawNodes.map((node, index) => ({
+          ...node,
+          position: node.position || { x: 100 + index * 250, y: 200 }
+        }));
+        set({ nodes, lastModified: Date.now() });
+      },
       edges: [],
       setEdges: (edges) => set({ edges, lastModified: Date.now() }),
       editingId: null,

@@ -5,7 +5,7 @@ import {
     RobotOutlined, UserOutlined, SendOutlined, MinusOutlined, PlayCircleOutlined, 
     CoffeeOutlined, ThunderboltOutlined, UserSwitchOutlined, HistoryOutlined, 
     PlusOutlined, MessageOutlined, DeleteOutlined, SearchOutlined, BookOutlined,
-    RocketOutlined, StopOutlined
+    RocketOutlined, StopOutlined, LoadingOutlined
 } from '@ant-design/icons';
 import { App, Flex } from 'antd';
 import { useTranslation } from 'react-i18next';
@@ -931,25 +931,27 @@ const AIChatbot: React.FC = () => {
                                             <div className="mt-1 flex flex-wrap gap-1 mb-1">
                                                 <span className="text-[10px] opacity-40 mr-1 flex items-center"><BookOutlined className="mr-0.5" /> 参考:</span>
                                                 {msg.referenced_docs.map((doc: any, i: number) => (
-                                                    <Tag 
-                                                        key={i} 
-                                                        className="text-[9px] m-0 px-1 border-none bg-gray-100 hover:bg-gray-200 cursor-help transition-colors"
-                                                    >
-                                                        {doc.title}
-                                                    </Tag>
+                                                    <Tooltip key={i} title="点击查看参考文档详情">
+                                                        <Tag 
+                                                            className="text-[9px] m-0 px-1 border-none bg-gray-100 hover:bg-gray-200 cursor-pointer transition-colors"
+                                                            onClick={() => window.open(`/v1/ai-rag/config?doc_id=${doc.id}`)}
+                                                        >
+                                                            {doc.title}
+                                                        </Tag>
+                                                    </Tooltip>
                                                 ))}
                                             </div>
                                         )}
-                                        {msg.role === 'assistant' && msg.id && (
-                                            <div className="flex justify-start">
-                                                <Tooltip title={msg.is_exported ? "已在知识库中" : "存入知识库"}>
+                                        {msg.role === 'assistant' && (msg.id || (loading && index === messages.length - 1)) && (
+                                            <div className="flex justify-start opacity-0 animate-in fade-in duration-500 fill-mode-forwards" style={{ animationDelay: '300ms' }}>
+                                                <Tooltip title={!msg.id ? "生成凭证中..." : (msg.is_exported ? "已在知识库中" : "存入知识库")}>
                                                     <Button 
                                                         type="text" 
                                                         size="small" 
-                                                        icon={msg.is_exported ? <BookOutlined style={{ color: token.colorSuccess }} /> : <BookOutlined />} 
+                                                        icon={msg.is_exported ? <BookOutlined style={{ color: token.colorSuccess }} /> : (msg.id ? <BookOutlined /> : <LoadingOutlined />)} 
                                                         className={`text-[10px] p-0 h-auto flex items-center gap-1 ${msg.is_exported ? 'text-green-500 opacity-100' : 'opacity-40 hover:opacity-100'}`}
-                                                        onClick={() => !msg.is_exported && handleSaveKnowledge(msg.id)}
-                                                        disabled={msg.is_exported}
+                                                        onClick={() => msg.id && !msg.is_exported && handleSaveKnowledge(msg.id)}
+                                                        disabled={!msg.id || msg.is_exported}
                                                     >
                                                         {msg.is_exported ? '已存入知识库' : '存入知识库'}
                                                     </Button>

@@ -53,13 +53,14 @@ const nodeTypes = {
   kaniko_build: KanikoNode,
   approval: (props: any) => {
     const { data } = props;
-    const isWaiting = data.runStatus === 'waiting';
+    const isWaiting = data?.runStatus === 'waiting';
     return (
       <div className={`relative ${isWaiting ? 'animate-pulse scale-105 transition-all duration-1000' : ''}`}>
         <HttpNode {...props} />
       </div>
     );
-  }
+  },
+  host_deploy: AnsibleNode,
 };
 
 /**
@@ -432,7 +433,7 @@ const ViewerCore = () => {
                 style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
                 className="rounded-2xl shadow-lg"
                 nodeColor={(n) => {
-                    const s = n.data.runStatus;
+                    const s = n.data?.runStatus;
                     if (s === 'success') return token.colorSuccess;
                     if (s === 'failed') return token.colorError;
                     if (s === 'running') return token.colorPrimary;

@@ -80,6 +80,7 @@ const nodeTypes = {
   docker_build: BuildNode,
   kaniko_build: KanikoNode,
   approval: ApprovalNode,
+  host_deploy: AnsibleNode,
 };
 
 // 显式定义全局单例，防止 React Flow 引用抖动
@@ -187,7 +188,13 @@ const DesignerCore = () => {
         const data = res.data || res;
         setPipelineInfo(data);
         if (data.graph_data) {
-          const remoteNodes = data.graph_data.nodes || [];
+          // 核心修复：确保每个节点都有 position 字段，防止 ReactFlow 渲染报错
+          const rawNodes = data.graph_data.nodes || [];
+          const remoteNodes = rawNodes.map((node: any, index: number) => ({
+            ...node,
+            position: node.position || { x: 100 + index * 250, y: 150 }
+          }));
+          
           const remoteEdges = data.graph_data.edges || [];
           setNodesState(remoteNodes);
           setEdgesState(remoteEdges);
