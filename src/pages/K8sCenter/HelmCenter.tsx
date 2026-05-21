@@ -151,7 +151,7 @@ const HelmCenter: React.FC = () => {
     staleTime: 10 * 60 * 1000
   });
 
-  const { data: helmData, isLoading: helmLoading, refetch: refetchHelm } = useQuery({
+  const { data: helmData, isLoading: helmLoading, refetch: refetchHelm, dataUpdatedAt, isFetching } = useQuery({
     queryKey: ['k8s', selectedCluster?.id, 'helm', selectedNamespace],
     queryFn: () => getHelmList(selectedCluster?.id!, { namespace: selectedNamespace }),
     enabled: !!selectedCluster,
@@ -353,6 +353,8 @@ const HelmCenter: React.FC = () => {
     { title: t('helm.revision'), dataIndex: 'revision', key: 'revision', width: 70 },
     { title: t('helm.updateTime'), dataIndex: 'updated', key: 'updated', width: 180, render: (v: string) => formatDateTime(v) },
     { title: t('helm.status'), dataIndex: 'status', key: 'status', render: (v: string) => <Tag>{v}</Tag> },
+    { title: t('helm.description') || '描述', dataIndex: 'description', key: 'description', width: 250, ellipsis: true },
+    { title: t('helm.appVersion') || '应用版本', dataIndex: 'app_version', key: 'app_version', width: 120, render: (v: string) => <Tag color="blue">{v || '-'}</Tag> },
     { title: t('helm.chartVersion'), dataIndex: 'chart', key: 'chart' },
     { title: t('helm.action'), key: 'actions', render: (_: any, row: any) =>
           hasPermission('helm:chart:helm_rollback') && (
@@ -387,7 +389,18 @@ const HelmCenter: React.FC = () => {
               disabled={!selectedCluster}
               options={namespacesData?.map((ns: string) => ({ label: ns, value: ns }))}
             />
-            <Button icon={<ReloadOutlined />} onClick={() => refetchHelm()} disabled={!selectedCluster}>{t('helm.refreshList')}</Button>
+            <Button 
+              icon={<ReloadOutlined spin={isFetching} />} 
+              onClick={() => refetchHelm()} 
+              disabled={!selectedCluster}
+            >
+              {t('helm.refreshList')}
+            </Button>
+            {dataUpdatedAt && (
+              <Text type="secondary" style={{ fontSize: '12px', marginLeft: '-8px' }}>
+                <span className="opacity-50">|</span> 上次更新: {new Date(dataUpdatedAt).toLocaleTimeString()}
+              </Text>
+            )}
             <div className="flex-1 text-right">
               <Space>
                 { hasPermission('helm:repo:view') && (
@@ -523,7 +536,16 @@ const HelmCenter: React.FC = () => {
           </div>
         </div>
       </Modal>
-      <Modal title={t('helm.releaseHistory', { name: activeRelease?.name })} open={isHistoryVisible} onCancel={() => setIsHistoryVisible(false)} footer={null} width={isMobile ? '95vw' : 750} bodyStyle={{ overflowX: 'auto' }}><Table columns={historyColumns} dataSource={Array.isArray(historyData) ? historyData : []} loading={historyLoading} rowKey="revision" pagination={false} /></Modal>
+      <Modal title={t('helm.releaseHistory', { name: activeRelease?.name })} open={isHistoryVisible} onCancel={() => setIsHistoryVisible(false)} footer={null} width={isMobile ? '95vw' : 850} bodyStyle={{ overflowX: 'auto' }}>
+        <Table 
+          columns={historyColumns} 
+          dataSource={Array.isArray(historyData) ? historyData : []} 
+          loading={historyLoading} 
+          rowKey="revision" 
+          pagination={false} 
+          scroll={{ x: 'max-content' }}
+        />
+      </Modal>
       <Modal title={t('helm.repoManager')} open={isRepoModalVisible} onCancel={() => setIsRepoModalVisible(false)} footer={null} width={900} destroyOnClose><HelmRepoManager /></Modal>
     </div>
   );

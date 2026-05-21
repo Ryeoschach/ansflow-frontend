@@ -1136,6 +1136,8 @@
     "revision": "修订版本",
     "updateTime": "更新时间",
     "chartVersion": "Chart 版本",
+    "appVersion": "应用版本",
+    "description": "描述",
     "rollback": "回滚",
     "releaseHistory": "{{name}} 版本历史"
   },
