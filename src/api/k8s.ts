@@ -147,3 +147,21 @@ export const testHelmRepo = (id: number) =>
 
 export const getHelmRepoCharts = (id: number) =>
     request.get(`/helm_repositories/${id}/charts_list/`);
+
+// ========================
+// GitOps 应用 接口
+// ========================
+export const getK8sApplications = (params?: any): Promise<PaginatedResponse<any>> =>
+    request.get<PaginatedResponse<any>>('/k8s_applications/', { params }) as any;
+
+export const createK8sApplication = (data: any) =>
+    request.post('/k8s_applications/', data);
+
+export const updateK8sApplication = (id: number, data: any) =>
+    request.put(`/k8s_applications/${id}/`, data);
+
+export const deleteK8sApplication = (id: number) =>
+    request.delete(`/k8s_applications/${id}/`);
+
+export const syncK8sApplication = (id: number) =>
+    request.post(`/k8s_applications/${id}/sync/`);

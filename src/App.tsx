@@ -49,6 +49,7 @@ const RoleManagement = lazy(() => import('./pages/System/RoleManagement'));
 const MenuManagement = lazy(() => import('./pages/System/MenuManagement'));
 const PermissionManagement = lazy(() => import('./pages/System/PermissionManagement'));
 const HostManagement = lazy(() => import("./pages/Hosts"));
+const HostBaseline = lazy(() => import("./pages/Hosts/HostBaseline"));
 const PlatformManagement = lazy(() => import("./pages/Platforms"));
 const Environment = lazy(() => import("./pages/Environments"));
 const ResourcePoolManagement = lazy(() => import("./pages/ResourcePool"));
@@ -63,6 +64,7 @@ const ImageRegistries = lazy(() => import('./pages/Pipeline/ImageRegistries'));
 const Artifacts = lazy(() => import('./pages/Pipeline/Artifacts'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const K8sCenter = lazy(() => import("./pages/K8sCenter"));
+const GitOpsCenter = lazy(() => import("./pages/K8sCenter/GitOpsCenter"));
 const HelmCenter = lazy(() => import("./pages/K8sCenter/HelmCenter"));
 const PipelineList = lazy(() => import("./pages/Pipeline"));
 const PipelineDesigner = lazy(() => import("./pages/Pipeline/Designer"));
@@ -393,11 +395,13 @@ function App() {
                 <Route path="v1/task/schedules" element={<ScheduleCenter />} />
                 <Route path="v1/k8s/helm" element={<HelmCenter />} />
                 <Route path="v1/k8s/management" element={<K8sCenter />} />
+                <Route path="v1/k8s/gitops" element={<GitOpsCenter />} />
                 <Route path="v1/ci-envs" element={<CIEnvironments />} />
                 <Route path="v1/system/users" element={<UserManagement />} />
                 <Route path="v1/system/roles" element={<RoleManagement />} />
                 <Route path="v1/system/menus" element={<MenuManagement />} />
                 <Route path="v1/system/hosts" element={<HostManagement />} />
+                <Route path="v1/system/host-baselines" element={<HostBaseline />} />
                 <Route path="v1/system/config" element={<ConfigCenter />} />
                 <Route path="v1/pipeline/list" element={<PipelineList />} />
                 <Route path="v1/pipeline/artifacts" element={<Artifacts />} />

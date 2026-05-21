@@ -34,6 +34,7 @@ import {
   SyncOutlined,
   CodeOutlined,
   ConsoleSqlOutlined,
+  RocketOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -67,6 +68,7 @@ import useK8sStore from "../../store/useK8sStore";
 import K8sTerminal from './components/K8sTerminal';
 import K8sStreamingLogs from './components/K8sStreamingLogs';
 import K8sYamlEditor from './components/K8sYamlEditor';
+import GitOpsCenter from './components/GitOpsCenter';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -975,6 +977,16 @@ const K8sCenter: React.FC = () => {
           <Tabs
             defaultActiveKey="pods"
             items={[
+              {
+                key: 'gitops',
+                label: (
+                  <Space>
+                    <RocketOutlined />
+                    <span>GitOps 应用</span>
+                  </Space>
+                ),
+                children: <GitOpsCenter />,
+              },
               {
                 key: 'nodes',
                 label: (

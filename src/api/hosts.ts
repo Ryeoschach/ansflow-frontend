@@ -76,3 +76,12 @@ export const getResourcePools = (params?: Record<string, any>): Promise<Paginate
 export const createResourcePool = (data: any) => request.post('/resource_pools/', data);
 export const updateResourcePool = (id: number, data: any) => request.patch(`/resource_pools/${id}/`, data);
 export const deleteResourcePool = (id: number) => request.delete(`/resource_pools/${id}/`);
+
+// ========================
+// 主机基线 (Host Baseline) 接口
+// ========================
+export const getHostBaselines = (params?: Record<string, any>): Promise<PaginatedResponse<any>> => request.get('/host_baselines/', { params });
+export const createHostBaseline = (data: any) => request.post('/host_baselines/', data);
+export const updateHostBaseline = (id: number, data: any) => request.patch(`/host_baselines/${id}/`, data);
+export const deleteHostBaseline = (id: number) => request.delete(`/host_baselines/${id}/`);
+export const checkHostBaselineManual = (id: number) => request.post(`/host_baselines/${id}/check/`);
