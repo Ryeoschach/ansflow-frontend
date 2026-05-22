@@ -164,7 +164,14 @@
     "batchRun": "批量执行",
     "batchRunConfirm": "确认批量执行",
     "batchRunTip": "将执行选中的 {{count}} 个任务模板",
-    "batchRunTriggered": "批量任务已触发执行"
+    "batchRunTriggered": "批量任务已触发执行",
+    "manualTemplates": "人工模板区",
+    "aiDrafts": "AI 草稿暂存区",
+    "promote": "转至人工区",
+    "promoteTitle": "转至人工区 (升级为正式剧本)",
+    "promoteSuccess": "转正成功",
+    "promoteName": "新剧本名称",
+    "promoteNamePlaceholder": "请输入转正后的正式剧本名称"
   },
   "schedule": {
     "title": "定时调度",
@@ -351,7 +358,16 @@
     "cronExample1": "每天凌晨 2:00 准时触发",
     "cronExample2": "每隔 15 分钟触发一次",
     "cronExample3": "每周五 23:00 触发",
-    "enableTimer": "开启定时器"
+    "enableTimer": "开启定时器",
+    "manualTemplates": "人工模板区",
+    "aiDrafts": "AI 草稿暂存区",
+    "promote": "转至人工区",
+    "promoteTitle": "转至人工区 (升级为正式模板)",
+    "promoteSuccess": "转正成功",
+    "promoteName": "新模板名称",
+    "promoteDesc": "新模板描述",
+    "promoteNamePlaceholder": "请输入转正后的正式模板名称",
+    "promoteDescPlaceholder": "请输入转正后的模板描述"
   },
   "host": {
     "title": "主机管理",

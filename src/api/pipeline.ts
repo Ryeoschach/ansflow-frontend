@@ -129,3 +129,6 @@ export const getPipelineVersion = (id: number): Promise<PipelineVersion> =>
 
 export const rollbackPipeline = (pipelineId: number, versionId: number): Promise<any> =>
   request.post(`/pipelines/${pipelineId}/rollback/`, { version_id: versionId }) as any;
+
+export const promotePipeline = (id: number, data: { name?: string; desc?: string }): Promise<any> =>
+  request.post(`/pipelines/${id}/promote/`, data) as any;

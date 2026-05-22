@@ -254,7 +254,14 @@
     "batchRun": "Batch Run",
     "batchRunConfirm": "Confirm Batch Run",
     "batchRunTip": "Will execute {{count}} selected task templates",
-    "batchRunTriggered": "Batch tasks triggered"
+    "batchRunTriggered": "Batch tasks triggered",
+    "manualTemplates": "Manual Templates",
+    "aiDrafts": "AI Drafts",
+    "promote": "Promote to Manual",
+    "promoteTitle": "Promote to Manual Area",
+    "promoteSuccess": "Promoted successfully",
+    "promoteName": "New Task Name",
+    "promoteNamePlaceholder": "Enter new task name for manual area"
   },
   "schedule": {
     "title": "Schedule",
@@ -441,7 +448,16 @@
     "cronExample1": "Trigger at 2:00 AM daily",
     "cronExample2": "Trigger every 15 minutes",
     "cronExample3": "Trigger every Friday at 23:00",
-    "enableTimer": "Enable Timer"
+    "enableTimer": "Enable Timer",
+    "manualTemplates": "Manual Templates",
+    "aiDrafts": "AI Drafts",
+    "promote": "Promote to Manual",
+    "promoteTitle": "Promote to Manual Area (Upgrade to Formal Template)",
+    "promoteSuccess": "Promoted successfully",
+    "promoteName": "New Pipeline Name",
+    "promoteDesc": "New Pipeline Description",
+    "promoteNamePlaceholder": "Enter new name for manual area",
+    "promoteDescPlaceholder": "Enter new description for manual area"
   },
   "host": {
     "title": "Host Management",

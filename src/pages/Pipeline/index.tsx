@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-    Table, Button, Space, Input, App, Popconfirm, Tag, Typography, Tabs, Card as AntdCard, Tooltip
+    Table, Button, Space, Input, App, Popconfirm, Tag, Typography, Tabs, Card as AntdCard, Tooltip, Segmented, Modal, Form
 } from 'antd';
 import {
   PlusOutlined,
@@ -17,7 +17,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getPipelines, deletePipeline, executePipeline } from '../../api/pipeline';
+import { getPipelines, deletePipeline, executePipeline, promotePipeline } from '../../api/pipeline';
 import dayjs from 'dayjs';
 import History from './History';
 import ScheduleList from './Schedule';
@@ -43,19 +43,24 @@ const TemplateList = () => {
   const [versionPipelineName, setVersionPipelineName] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [createType, setCreateType] = useState<'manual' | 'ai'>('manual');
+  const [promoteModalVisible, setPromoteModalVisible] = useState(false);
+  const [promotingRecord, setPromotingRecord] = useState<any>(null);
+  const [promoteForm] = Form.useForm();
 
   const { data: pipelineData, isLoading } = useQuery({
-    queryKey: ['pipelines', searchText, page, pageSize],
+    queryKey: ['pipelines', searchText, page, pageSize, createType],
     queryFn: () => getPipelines({ 
         search: searchText,
         page: page,
-        size: pageSize
+        size: pageSize,
+        create_type: createType
     }),
   });
 
   useEffect(() => {
     setPage(1);
-  }, [searchText]);
+  }, [searchText, createType]);
 
   const deleteMutation = useMutation({
     mutationFn: deletePipeline,
@@ -64,6 +69,18 @@ const TemplateList = () => {
       queryClient.invalidateQueries({ queryKey: ['pipelines'] });
     },
     onError: (err: any) => message.error(`${t('pipeline.deleteFailed')}: ${err.message}`)
+  });
+
+  const promoteMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name?: string; desc?: string } }) => promotePipeline(id, data),
+    onSuccess: () => {
+      message.success(t('pipeline.promoteSuccess'));
+      setPromoteModalVisible(false);
+      setPromotingRecord(null);
+      promoteForm.resetFields();
+      queryClient.invalidateQueries({ queryKey: ['pipelines'] });
+    },
+    onError: (err: any) => message.error(`${t('common.error')}: ${err.message}`)
   });
 
   const executeMutation = useMutation({
@@ -148,17 +165,38 @@ const TemplateList = () => {
       key: 'action',
       render: (_: any, record: any) => (
         <Space size="small">
-          {hasPermission('pipeline:template:execute') && (
-          <Button
-            type="primary"
-            size="small"
-            icon={<PlayCircleOutlined />}
-            onClick={() => executeMutation.mutate(record.id)}
-            loading={executeMutation.isPending}
-            className="rounded-lg shadow-none font-bold text-xs"
-          >
-            {t('pipeline.execute')}
-          </Button>
+          {createType === 'manual' ? (
+            hasPermission('pipeline:template:execute') && (
+              <Button
+                type="primary"
+                size="small"
+                icon={<PlayCircleOutlined />}
+                onClick={() => executeMutation.mutate(record.id)}
+                loading={executeMutation.isPending}
+                className="rounded-lg shadow-none font-bold text-xs"
+              >
+                {t('pipeline.execute')}
+              </Button>
+            )
+          ) : (
+            hasPermission('pipeline:template:edit') && (
+              <Button
+                type="primary"
+                size="small"
+                icon={<RocketOutlined />}
+                onClick={() => {
+                  setPromotingRecord(record);
+                  promoteForm.setFieldsValue({
+                    name: record.name.replace(/^AI_Auto_Draft_/, ''),
+                    desc: record.desc
+                  });
+                  setPromoteModalVisible(true);
+                }}
+                className="rounded-lg shadow-none font-bold text-xs bg-ans-success hover:bg-ans-success/80 border-0"
+              >
+                {t('pipeline.promote')}
+              </Button>
+            )
           )}
           {hasPermission('pipeline:template:edit') && (
           <Button
@@ -202,15 +240,26 @@ const TemplateList = () => {
   return (
     <div className="flex flex-col h-full bg-ans-bg-container">
         <div className="mb-6 flex justify-between items-center px-1">
-            <Input
-              placeholder={t('pipeline.searchPlaceholder')}
-              prefix={<SearchOutlined className="opacity-30" />}
-              value={searchText}
-              onChange={e => setSearchText(e.target.value)}
-              className="w-80 h-10 rounded-ans-md border-ans-border hover:border-ans-primary transition-all bg-ans-bg-layout/20"
-              allowClear
-            />
-            {hasPermission('pipeline:template:add') && (
+            <Space size="middle">
+                <Input
+                  placeholder={t('pipeline.searchPlaceholder')}
+                  prefix={<SearchOutlined className="opacity-30" />}
+                  value={searchText}
+                  onChange={e => setSearchText(e.target.value)}
+                  className="w-80 h-10 rounded-ans-md border-ans-border hover:border-ans-primary transition-all bg-ans-bg-layout/20"
+                  allowClear
+                />
+                <Segmented
+                  value={createType}
+                  onChange={(val) => setCreateType(val as 'manual' | 'ai')}
+                  options={[
+                    { label: t('pipeline.manualTemplates'), value: 'manual' },
+                    { label: t('pipeline.aiDrafts'), value: 'ai' }
+                  ]}
+                  className="bg-ans-bg-layout/20 p-1 rounded-ans-md"
+                />
+            </Space>
+            {createType === 'manual' && hasPermission('pipeline:template:add') && (
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -251,6 +300,43 @@ const TemplateList = () => {
             open={versionDrawerOpen}
             onClose={() => setVersionDrawerOpen(false)}
         />
+
+        <Modal
+          title={t('pipeline.promoteTitle')}
+          open={promoteModalVisible}
+          onCancel={() => {
+            setPromoteModalVisible(false);
+            setPromotingRecord(null);
+            promoteForm.resetFields();
+          }}
+          onOk={() => promoteForm.submit()}
+          confirmLoading={promoteMutation.isPending}
+        >
+          <Form
+            form={promoteForm}
+            layout="vertical"
+            onFinish={(values) => {
+              if (promotingRecord) {
+                promoteMutation.mutate({ id: promotingRecord.id, data: values });
+              }
+            }}
+            className="mt-4"
+          >
+            <Form.Item
+              label={t('pipeline.promoteName')}
+              name="name"
+              rules={[{ required: true, message: t('pipeline.promoteNamePlaceholder') }]}
+            >
+              <Input placeholder={t('pipeline.promoteNamePlaceholder')} />
+            </Form.Item>
+            <Form.Item
+              label={t('pipeline.promoteDesc')}
+              name="desc"
+            >
+              <Input.TextArea rows={4} placeholder={t('pipeline.promoteDescPlaceholder')} />
+            </Form.Item>
+          </Form>
+        </Modal>
     </div>
   );
 };

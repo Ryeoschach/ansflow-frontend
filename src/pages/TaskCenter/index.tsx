@@ -14,6 +14,7 @@ import {
     App, Tooltip,
     Collapse,
     Descriptions,
+    Segmented,
 } from 'antd';
 import {
     PlusOutlined,
@@ -24,9 +25,10 @@ import {
     DeleteOutlined,
     MinusCircleOutlined,
     ClockCircleOutlined,
+    RocketOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getAnsibleTasks, createAnsibleTask, updateAnsibleTask, runAnsibleTask, deleteAnsibleTask } from '../../api/tasks';
+import { getAnsibleTasks, createAnsibleTask, updateAnsibleTask, runAnsibleTask, deleteAnsibleTask, promoteAnsibleTask } from '../../api/tasks';
 import { getResourcePools } from '../../api/hosts';
 import useAppStore from '../../store/useAppStore';
 import useBreakpoint from '../../utils/useBreakpoint';
@@ -58,14 +60,22 @@ const TaskCenter: React.FC = () => {
     const [batchModalOpen, setBatchModalOpen] = useState(false);
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [createType, setCreateType] = useState<'manual' | 'ai'>('manual');
+    const [promoteModalVisible, setPromoteModalVisible] = useState(false);
+    const [promotingRecord, setPromotingRecord] = useState<any>(null);
+    const [promoteForm] = Form.useForm();
     const isDark = document.documentElement.classList.contains('dark');
 
     // 1. 获取任务模板列表
     const { data: taskData, isLoading: listLoading } = useQuery({
-        queryKey: ['ansible-tasks', page, pageSize],
-        queryFn: () => getAnsibleTasks({ page, size: pageSize }),
+        queryKey: ['ansible-tasks', page, pageSize, createType],
+        queryFn: () => getAnsibleTasks({ page, size: pageSize, create_type: createType }),
         enabled: !!token,
     });
+
+    useEffect(() => {
+        setPage(1);
+    }, [createType]);
 
     useEffect(() => {
         const editTaskId = searchParams.get('edit_task_id');
@@ -114,6 +124,18 @@ const TaskCenter: React.FC = () => {
             message.success(t('taskCenter.templateDeleteSuccess'));
             queryClient.invalidateQueries({ queryKey: ['ansible-tasks'] });
         }
+    });
+
+    const promoteMutation = useMutation({
+        mutationFn: ({ id, data }: { id: number; data: { name?: string } }) => promoteAnsibleTask(id, data),
+        onSuccess: () => {
+            message.success(t('taskCenter.promoteSuccess'));
+            setPromoteModalVisible(false);
+            setPromotingRecord(null);
+            promoteForm.resetFields();
+            queryClient.invalidateQueries({ queryKey: ['ansible-tasks'] });
+        },
+        onError: (err: any) => message.error(`${t('common.error')}: ${err.message}`)
     });
 
     const batchRunMutation = useMutation({
@@ -222,19 +244,41 @@ const TaskCenter: React.FC = () => {
             key: 'action',
             render: (_: any, record: any) => (
                 <Space size={0}>
-                    {hasPermission('tasks:ansible_tasks:run') && (
-                        <Tooltip title={t('taskCenter.runNow')}>
-                            <Button
-                                type="link"
-                                size="small"
-                                icon={<PlaySquareOutlined />}
-                                style={{ color: 'var(--ans-primary)' }}
-                                onClick={() => { setPreviewRecord(record); setPreviewModalOpen(true); }}
-                                loading={runMutation.isPending && runMutation.variables === record.id}
-                            >
-                                {t('taskCenter.runNow')}
-                            </Button>
-                        </Tooltip>
+                    {createType === 'manual' ? (
+                        hasPermission('tasks:ansible_tasks:run') && (
+                            <Tooltip title={t('taskCenter.runNow')}>
+                                <Button
+                                    type="link"
+                                    size="small"
+                                    icon={<PlaySquareOutlined />}
+                                    style={{ color: 'var(--ans-primary)' }}
+                                    onClick={() => { setPreviewRecord(record); setPreviewModalOpen(true); }}
+                                    loading={runMutation.isPending && runMutation.variables === record.id}
+                                >
+                                    {t('taskCenter.runNow')}
+                                </Button>
+                            </Tooltip>
+                        )
+                    ) : (
+                        hasPermission('tasks:ansible_tasks:edit') && (
+                            <Tooltip title={t('taskCenter.promote')}>
+                                <Button
+                                    type="link"
+                                    size="small"
+                                    icon={<RocketOutlined />}
+                                    style={{ color: 'var(--ans-success, #52c41a)' }}
+                                    onClick={() => {
+                                        setPromotingRecord(record);
+                                        promoteForm.setFieldsValue({
+                                            name: record.name.replace(/^AI_Auto_Task_/, ''),
+                                        });
+                                        setPromoteModalVisible(true);
+                                    }}
+                                >
+                                    {t('taskCenter.promote')}
+                                </Button>
+                            </Tooltip>
+                        )
                     )}
                     {hasPermission('tasks:ansible_tasks:edit') && (
                         <Tooltip title={t('common.edit')}>
@@ -249,7 +293,7 @@ const TaskCenter: React.FC = () => {
                             </Button>
                         </Tooltip>
                     )}
-                    {hasPermission('tasks:ansible_tasks:add') && (
+                    {createType === 'manual' && hasPermission('tasks:ansible_tasks:add') && (
                         <Tooltip title={t('taskCenter.clone')}>
                             <Button
                                 type="link"
@@ -295,24 +339,35 @@ const TaskCenter: React.FC = () => {
                     <span className="font-bold tracking-tight text-ans-text-primary">{t('taskCenter.title')}</span>
                     <Link 
                         to="/v1/task/schedules" 
-                        className="text-xs transition-all duration-300 opacity-60 hover:opacity-100 flex items-center gap-1"
+                        className="text-xs transition-all duration-300 opacity-60 hover:opacity-100 flex items-center gap-1 font-semibold"
                         style={{ color: 'var(--ans-text-primary)' }}
                     >
                         <ClockCircleOutlined style={{ fontSize: 12 }} /> {t('schedule.title')}
                     </Link>
+                    <Segmented
+                        value={createType}
+                        onChange={(val) => setCreateType(val as 'manual' | 'ai')}
+                        options={[
+                            { label: t('taskCenter.manualTemplates'), value: 'manual' },
+                            { label: t('taskCenter.aiDrafts'), value: 'ai' }
+                        ]}
+                        className="bg-ans-bg-layout/20 p-0.5 rounded-ans-md ml-4 text-xs font-normal"
+                    />
                 </Space>
             }
             extra={
-                <Space>
-                    {hasPermission('tasks:ansible_tasks:run') && selectedRowKeys.length > 0 && (
-                        <Button icon={<PlaySquareOutlined />} onClick={() => setBatchModalOpen(true)}>
-                            {t('taskCenter.batchRun')} ({selectedRowKeys.length})
-                        </Button>
-                    )}
-                    {(hasPermission('*') || hasPermission('tasks:ansible_tasks:add')) && (
-                        <Button type="primary" icon={<PlusOutlined />} onClick={() => { form.resetFields(); setEditingTask(null); setContentValue(''); setExtraVars([]); form.setFieldValue('extra_vars', '{}'); setIsCreateModalOpen(true); }}>{t('taskCenter.createNewTemplate')}</Button>
-                    )}
-                </Space>
+                createType === 'manual' ? (
+                    <Space>
+                        {hasPermission('tasks:ansible_tasks:run') && selectedRowKeys.length > 0 && (
+                            <Button icon={<PlaySquareOutlined />} onClick={() => setBatchModalOpen(true)}>
+                                {t('taskCenter.batchRun')} ({selectedRowKeys.length})
+                            </Button>
+                        )}
+                        {(hasPermission('*') || hasPermission('tasks:ansible_tasks:add')) && (
+                            <Button type="primary" icon={<PlusOutlined />} onClick={() => { form.resetFields(); setEditingTask(null); setContentValue(''); setExtraVars([]); form.setFieldValue('extra_vars', '{}'); setIsCreateModalOpen(true); }}>{t('taskCenter.createNewTemplate')}</Button>
+                        )}
+                    </Space>
+                ) : null
             }
         >
             {listLoading ? (
@@ -324,7 +379,7 @@ const TaskCenter: React.FC = () => {
                 rowKey="id"
                 loading={listLoading}
                 scroll={{ x: 'max-content' }}
-                rowSelection={hasPermission('tasks:ansible_tasks:run') ? {
+                rowSelection={createType === 'manual' && hasPermission('tasks:ansible_tasks:run') ? {
                     selectedRowKeys,
                     onChange: setSelectedRowKeys,
                 } : undefined}
@@ -500,6 +555,36 @@ const TaskCenter: React.FC = () => {
                             <Tag key={task.id} className="mb-1 block">{task.name}</Tag>
                         ))}
                 </div>
+            </Modal>
+            <Modal
+                title={t('taskCenter.promoteTitle')}
+                open={promoteModalVisible}
+                onCancel={() => {
+                    setPromoteModalVisible(false);
+                    setPromotingRecord(null);
+                    promoteForm.resetFields();
+                }}
+                onOk={() => promoteForm.submit()}
+                confirmLoading={promoteMutation.isPending}
+            >
+                <Form
+                    form={promoteForm}
+                    layout="vertical"
+                    onFinish={(values) => {
+                        if (promotingRecord) {
+                            promoteMutation.mutate({ id: promotingRecord.id, data: values });
+                        }
+                    }}
+                    className="mt-4"
+                >
+                    <Form.Item
+                        label={t('taskCenter.promoteName')}
+                        name="name"
+                        rules={[{ required: true, message: t('taskCenter.promoteNamePlaceholder') }]}
+                    >
+                        <Input placeholder={t('taskCenter.promoteNamePlaceholder')} />
+                    </Form.Item>
+                </Form>
             </Modal>
         </Card>
     );
