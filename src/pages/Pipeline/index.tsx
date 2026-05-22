@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-    Table, Button, Space, Input, App, Popconfirm, Tag, Typography, Tabs, Card as AntdCard, Tooltip, Segmented, Modal, Form
+    Table, Button, Space, Input, App, Popconfirm, Tag, Typography, Tabs, Tooltip, Segmented, Modal, Form
 } from 'antd';
 import {
   PlusOutlined,
@@ -8,7 +8,6 @@ import {
   DeleteOutlined,
   EditOutlined,
   PlayCircleOutlined,
-  HistoryOutlined,
   ProjectOutlined,
   FieldTimeOutlined,
   RocketOutlined,
@@ -336,6 +335,49 @@ const TemplateList = () => {
               <Input.TextArea rows={4} placeholder={t('pipeline.promoteDescPlaceholder')} />
             </Form.Item>
           </Form>
+          {promotingRecord && promotingRecord.graph_data && Array.isArray(promotingRecord.graph_data.nodes) && promotingRecord.graph_data.nodes.length > 0 && (
+            <div style={{ marginTop: '16px', borderTop: '1px solid #303030', paddingTop: '16px' }}>
+              <div style={{ fontWeight: 500, marginBottom: '10px', color: 'rgba(255, 255, 255, 0.85)', fontSize: '13px' }}>
+                {t('pipeline.promoteNodesSummary', '包含的自愈动作节点 (级联转正)')}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
+                {promotingRecord.graph_data.nodes.map((node: any, idx: number) => {
+                  const label = node.data?.label || node.data?.name || node.id || `节点 ${idx + 1}`;
+                  const isAnsible = node.type === 'ansible';
+                  return (
+                    <div 
+                      key={node.id} 
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        padding: '6px 12px', 
+                        backgroundColor: isAnsible ? 'rgba(82, 196, 26, 0.08)' : 'rgba(255, 255, 255, 0.04)', 
+                        border: `1px solid ${isAnsible ? 'rgba(82, 196, 26, 0.25)' : '#303030'}`,
+                        borderRadius: '4px',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <span style={{ fontSize: '13px', color: '#d9d9d9' }}>
+                        {label}
+                      </span>
+                      <span 
+                        style={{ 
+                          fontSize: '11px', 
+                          padding: '2px 6px', 
+                          borderRadius: '10px',
+                          backgroundColor: isAnsible ? '#52c41a' : '#177ddc',
+                          color: '#fff',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        {isAnsible ? t('pipeline.nodeTypeAnsible', 'Ansible 剧本') : (node.type || '通用')}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </Modal>
     </div>
   );

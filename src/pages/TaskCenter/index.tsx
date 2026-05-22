@@ -47,7 +47,7 @@ const TaskCenter: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { message } = App.useApp();
-    const { token, hasPermission, designTokens } = useAppStore();
+    const { token, hasPermission } = useAppStore();
     const { isMobile } = useBreakpoint();
     const [form] = Form.useForm();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -271,6 +271,7 @@ const TaskCenter: React.FC = () => {
                                         setPromotingRecord(record);
                                         promoteForm.setFieldsValue({
                                             name: record.name.replace(/^AI_Auto_Task_/, ''),
+                                            content: record.content,
                                         });
                                         setPromoteModalVisible(true);
                                     }}
@@ -583,6 +584,22 @@ const TaskCenter: React.FC = () => {
                         rules={[{ required: true, message: t('taskCenter.promoteNamePlaceholder') }]}
                     >
                         <Input placeholder={t('taskCenter.promoteNamePlaceholder')} />
+                    </Form.Item>
+                    <Form.Item
+                        label={t('taskCenter.promoteContent', '剧本/命令内容')}
+                        name="content"
+                        rules={[{ required: true, message: t('taskCenter.promoteContentPlaceholder', '请输入剧本/命令内容') }]}
+                    >
+                        <Input.TextArea
+                            autoSize={{ minRows: 6, maxRows: 15 }}
+                            style={{
+                                fontFamily: 'SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace',
+                                fontSize: '13px',
+                                backgroundColor: '#141414',
+                                color: '#d9d9d9',
+                                border: '1px solid #434343',
+                            }}
+                        />
                     </Form.Item>
                 </Form>
             </Modal>

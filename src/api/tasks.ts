@@ -11,7 +11,7 @@ export const createAnsibleTask = (data: any): Promise<any> => request.post('/tas
 export const updateAnsibleTask = (id: number, data: any): Promise<any> => request.patch(`/tasks/${id}/`, data) as any;
 export const runAnsibleTask = (id: number): Promise<any> => request.post(`/tasks/${id}/run/`) as any;
 export const deleteAnsibleTask = (id: number): Promise<any> => request.delete(`/tasks/${id}/`) as any;
-export const promoteAnsibleTask = (id: number, data: { name?: string }): Promise<any> => request.post(`/tasks/${id}/promote/`, data) as any;
+export const promoteAnsibleTask = (id: number, data: { name?: string; content?: string }): Promise<any> => request.post(`/tasks/${id}/promote/`, data) as any;
 
 // ========================
 // 执行记录接口 (History)
