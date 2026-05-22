@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Card, Table, Button, Space, Modal, Form, Input, Select, Tag, Popconfirm,
-  Tabs, Typography, Tooltip, Descriptions, Timeline, App, Divider, Switch, Checkbox, Statistic, InputNumber
+  Tabs, Typography, Tooltip, Descriptions, Timeline, App, Divider, Switch, Checkbox, Statistic, InputNumber, Alert, Empty
 } from 'antd';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, HistoryOutlined,
@@ -451,6 +451,32 @@ const ConfigCenter: React.FC = () => {
                 />
               ),
             },
+            {
+              key: 'notification',
+              label: '通知配置',
+              children: (
+                <div className="py-4">
+                  <Alert 
+                    message="配置说明" 
+                    description="在此配置系统全局通知渠道（钉钉/飞书）。修改后将立即生效于所有关联流水线及审批流。" 
+                    type="info" 
+                    showIcon 
+                    className="mb-6"
+                  />
+                  {categoriesData?.results?.find((c: any) => c.name === 'notification') ? (
+                    <Table
+                      size="small"
+                      dataSource={categoriesData.results.find((c: any) => c.name === 'notification')?.items || []}
+                      columns={itemColumns}
+                      rowKey="id"
+                      pagination={false}
+                    />
+                  ) : (
+                    <Empty description="未找到通知分类配置，请检查后端初始化状态" />
+                  )}
+                </div>
+              )
+            }
           ]}
         />
       </Card>
