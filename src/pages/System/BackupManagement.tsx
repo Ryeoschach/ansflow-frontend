@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Card, Table, Button, Space, Modal, Upload, message, Typography, Popconfirm,
-  Statistic, Row, Col, Alert, Checkbox, theme
+  Statistic, Row, Col, Alert, Checkbox, theme, Input
 } from 'antd';
 import type { TablePaginationConfig } from 'antd';
 import {
@@ -25,6 +25,7 @@ const BackupManagement: React.FC = () => {
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [restoreLoading, setRestoreLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [passphrase, setPassphrase] = useState<string>('');
 
   // 获取模块列表
   const { data: modules = [] } = useQuery({
@@ -43,7 +44,7 @@ const BackupManagement: React.FC = () => {
 
   // 创建备份
   const createMutation = useMutation({
-    mutationFn: (mods?: string[]) => createBackup(mods),
+    mutationFn: ({ mods, pass }: { mods?: string[]; pass?: string }) => createBackup(mods, pass),
     onSuccess: (res: any) => {
       if (res.success) {
         message.success(t('backup.createSuccess'));
@@ -58,7 +59,7 @@ const BackupManagement: React.FC = () => {
 
   // 恢复备份
   const restoreMutation = useMutation({
-    mutationFn: ({filename, mods}: {filename: string, mods?: string[]}) => restoreBackup(filename, mods),
+    mutationFn: ({filename, mods, pass}: {filename: string, mods?: string[], pass?: string}) => restoreBackup(filename, mods, pass),
     onSuccess: (res: any) => {
       setRestoreLoading(false);
       setRestoreModalOpen(false);
@@ -109,7 +110,7 @@ const BackupManagement: React.FC = () => {
 
   // 上传并恢复
   const uploadMutation = useMutation({
-    mutationFn: (file: File) => uploadAndRestoreBackup(file, selectedModules),
+    mutationFn: ({ file, pass }: { file: File; pass?: string }) => uploadAndRestoreBackup(file, selectedModules, pass),
     onSuccess: (res: any) => {
       setRestoreLoading(false);
       setUploadModalOpen(false);
@@ -158,7 +159,7 @@ const BackupManagement: React.FC = () => {
 
   // 列表按时间倒序
   const sortedList = [...(Array.isArray(backupList) ? backupList : [])].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    (a, b) => dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf()
   );
 
   // 添加序号（ID）
@@ -215,6 +216,7 @@ const BackupManagement: React.FC = () => {
             onClick={() => {
               setCurrentFilename(record.filename);
               setSelectedModules(modules.map((m: any) => m.key)); // 默认全选
+              setPassphrase('');
               setRestoreModalOpen(true);
             }}
           >
@@ -286,13 +288,18 @@ const BackupManagement: React.FC = () => {
               icon={<DatabaseOutlined />} 
               onClick={() => {
                 setSelectedModules(modules.map((m: any) => m.key));
+                setPassphrase('');
                 setCreateModalOpen(true);
               }} 
               loading={createMutation.isPending}
             >
               {t('backup.create')}
             </Button>
-            <Button icon={<UploadOutlined />} onClick={() => setUploadModalOpen(true)}>
+            <Button icon={<UploadOutlined />} onClick={() => {
+              setSelectedModules(modules.map((m: any) => m.key));
+              setPassphrase('');
+              setUploadModalOpen(true);
+            }}>
               {t('backup.upload')}
             </Button>
           </Space>
@@ -311,7 +318,7 @@ const BackupManagement: React.FC = () => {
       <Modal
         title="选择备份范围"
         open={createModalOpen}
-        onOk={() => createMutation.mutate(selectedModules)}
+        onOk={() => createMutation.mutate({ mods: selectedModules, pass: passphrase })}
         onCancel={() => setCreateModalOpen(false)}
         confirmLoading={createMutation.isPending}
       >
@@ -330,6 +337,14 @@ const BackupManagement: React.FC = () => {
               ))}
             </Row>
           </Checkbox.Group>
+          <div className="mt-4">
+            <Text className="mb-2 block">备份加密密码（可选，输入则使用 AES-256-GCM 加密导出所有敏感凭据）：</Text>
+            <Input.Password
+              placeholder="请输入备份包加密密码"
+              value={passphrase}
+              onChange={(e) => setPassphrase(e.target.value)}
+            />
+          </div>
         </div>
       </Modal>
 
@@ -338,7 +353,7 @@ const BackupManagement: React.FC = () => {
         open={restoreModalOpen}
         onOk={() => {
           setRestoreLoading(true);
-          restoreMutation.mutate({ filename: currentFilename, mods: selectedModules });
+          restoreMutation.mutate({ filename: currentFilename, mods: selectedModules, pass: passphrase });
         }}
         onCancel={() => setRestoreModalOpen(false)}
         confirmLoading={restoreLoading}
@@ -366,6 +381,14 @@ const BackupManagement: React.FC = () => {
                 ))}
               </Row>
             </Checkbox.Group>
+          </div>
+          <div className="mt-4">
+            <Text className="mb-2 block">解密密码（可选，若备份包已加密，请输入密码以恢复敏感凭据）：</Text>
+            <Input.Password
+              placeholder="请输入解密密码"
+              value={passphrase}
+              onChange={(e) => setPassphrase(e.target.value)}
+            />
           </div>
         </div>
       </Modal>
@@ -403,6 +426,16 @@ const BackupManagement: React.FC = () => {
             </Checkbox.Group>
           </div>
 
+          <div className="mb-4">
+            <Text className="mb-2 block">解密密码（可选，若备份包已加密，请先输入解密密码再上传）：</Text>
+            <Input.Password
+              placeholder="请输入解密密码"
+              value={passphrase}
+              onChange={(e) => setPassphrase(e.target.value)}
+              disabled={restoreLoading}
+            />
+          </div>
+
           <Upload.Dragger
             accept=".json.gz"
             beforeUpload={(file) => {
@@ -411,7 +444,7 @@ const BackupManagement: React.FC = () => {
                 return false;
               }
               setRestoreLoading(true);
-              uploadMutation.mutate(file);
+              uploadMutation.mutate({ file, pass: passphrase });
               return false;
             }}
             showUploadList={false}

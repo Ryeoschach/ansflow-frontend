@@ -503,7 +503,43 @@
     "credentialPlaceholder": "Select specific credential for this host",
     "hostCreated": "Host created successfully",
     "hostUpdated": "Host updated successfully",
-    "hostDeleted": "Host deleted successfully"
+    "hostDeleted": "Host deleted successfully",
+    "baseline": {
+      "title": "Host Baseline Inspection",
+      "description": "Periodically scan physical/virtual machine configurations via Ansible to detect drift and automatically trigger AI diagnosis and self-healing.",
+      "create": "Create Baseline",
+      "editTitle": "Edit Baseline Configuration",
+      "createTitle": "Create Baseline Configuration",
+      "name": "Baseline Name",
+      "namePlaceholder": "e.g., Standard Nginx Service Status Check",
+      "targetPool": "Target Resource Pool",
+      "poolPlaceholder": "Select resource pool",
+      "nameRequired": "Please enter baseline name",
+      "resourcePoolRequired": "Please select target resource pool",
+      "enablePeriodic": "Enable Periodic Inspection",
+      "autoRemediate": "Auto Remediate",
+      "checkPlaybook": "Check Playbook",
+      "remediatePlaybook": "Remediate Playbook",
+      "saveSuccess": "Baseline configuration saved",
+      "updateSuccess": "Baseline configuration updated",
+      "deleteSuccess": "Baseline deleted",
+      "checkTaskDispatched": "Inspection task dispatched",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "lastCheck": "Last Inspection",
+      "neverChecked": "Never Inspected",
+      "statusCompliant": "Compliant",
+      "statusNonCompliant": "Non-Compliant",
+      "statusRunning": "Inspecting",
+      "viewLog": "View Log",
+      "active": "Active",
+      "inactive": "Disabled",
+      "confirmDeleteTitle": "Confirm delete baseline?",
+      "confirmDeleteContent": "After deletion, automatic inspection and alert triggering will be stopped.",
+      "inspectNow": "Inspect Now",
+      "defaultCheckPlaybook": "---\n- hosts: all\n  tasks:\n    - name: Check Nginx status\n      shell: systemctl is-active nginx",
+      "defaultRemediatePlaybook": "---\n- hosts: all\n  tasks:\n    - name: Attempt to restart Nginx\n      service: name=nginx state=restarted"
+    }
   },
   "resourcePool": {
     "title": "Resource Pool Management",
@@ -851,7 +887,13 @@
     "registryUsePlaceholder": "IDs allowed for image build references only",
     "credManagePlaceholder": "IDs allowed to modify username/password/private key",
     "credUsePlaceholder": "IDs allowed for SSH login only",
-    "allOption": "--- All ---"
+    "allOption": "--- All ---",
+    "searchMenusPlaceholder": "Search menu name...",
+    "selectAll": "Select All",
+    "clearAll": "Clear All",
+    "noMatchingMenus": "No matching menus found",
+    "searchPermsPlaceholder": "Search permission name, code, or description...",
+    "noMatchingPerms": "No matching functional permissions found"
   },
   "audit": {
     "title": "Environment Audit (Audit Logs)",
@@ -1921,5 +1963,35 @@
       "revoked": "Revoked",
       "retry": "Retry"
     }
+  },
+  "compliance": {
+    "title": "MLPS 2.0 Reference",
+    "description": "Based on the Classified Protection of Cybersecurity 2.0 (Level 3) standards, perform automated baseline scanning and compliance mapping audits on target host operating systems for identity authentication, access control, security auditing, and intrusion prevention.",
+    "overallCompliance": "Overall Compliance Rate",
+    "clauseCount": "Total Clauses",
+    "compliantRate": "Compliance Rate",
+    "compliantCount": "Compliant",
+    "nonCompliantCount": "Non-Compliant",
+    "pendingCount": "Pending/Unknown",
+    "clausesList": "MLPS Clauses Compliance List",
+    "associateBaselines": "Associate Baselines",
+    "clauseDetails": "Clause Details",
+    "associatedBaselines": "Associated Host Baselines",
+    "noBaselines": "No host baselines mapped to this clause yet.",
+    "triggerCheck": "Trigger All Inspections",
+    "remidiateAll": "Auto Remediate All",
+    "mappingSuccess": "Baseline association updated successfully",
+    "mappingFailed": "Association failed",
+    "triggerSuccess": "All compliance inspection tasks have been dispatched",
+    "triggerClauseSuccess": "Inspection tasks for this clause have been dispatched",
+    "frameworkLabel": "Compliance Standard",
+    "status": {
+      "success": "Compliant",
+      "failed": "Non-Compliant",
+      "pending": "Pending",
+      "running": "Inspecting"
+    },
+    "associateModalTitle": "Associate Host Baselines for Clause {{code}}",
+    "selectBaselines": "Please select host baselines to associate"
   }
 }

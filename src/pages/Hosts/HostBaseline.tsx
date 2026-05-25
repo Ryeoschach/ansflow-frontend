@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Table,
   Button,
@@ -40,6 +41,7 @@ import K8sYamlEditor from '../K8sCenter/components/K8sYamlEditor';
 const { Title, Text } = Typography;
 
 const HostBaselinePage: React.FC = () => {
+  const { t } = useTranslation();
   const { token } = theme.useToken();
   const { message, modal: antModal } = App.useApp();
   const queryClient = useQueryClient();
@@ -71,7 +73,7 @@ const HostBaselinePage: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: (data: any) => createHostBaseline(data),
     onSuccess: () => {
-      message.success('基线配置已保存');
+      message.success(t('host.baseline.saveSuccess'));
       setIsModalVisible(false);
       queryClient.invalidateQueries({ queryKey: ['host', 'baselines'] });
     },
@@ -80,7 +82,7 @@ const HostBaselinePage: React.FC = () => {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => updateHostBaseline(id, data),
     onSuccess: () => {
-      message.success('基线配置已更新');
+      message.success(t('host.baseline.updateSuccess'));
       setIsModalVisible(false);
       queryClient.invalidateQueries({ queryKey: ['host', 'baselines'] });
     },
@@ -89,17 +91,34 @@ const HostBaselinePage: React.FC = () => {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteHostBaseline(id),
     onSuccess: () => {
-      message.success('基线已删除');
+      message.success(t('host.baseline.deleteSuccess'));
       queryClient.invalidateQueries({ queryKey: ['host', 'baselines'] });
     },
   });
 
   const checkMutation = useMutation({
     mutationFn: (id: number) => checkHostBaselineManual(id),
-    onSuccess: () => {
-      message.success('巡检任务已下发');
+    onSuccess: (_, id) => {
+      message.success(t('host.baseline.checkTaskDispatched'));
+      
+      // 本地乐观更新：把该条记录的状态改为 'running'，从而自动触发轮询
+      queryClient.setQueryData(['host', 'baselines'], (oldData: any) => {
+        if (!oldData || !oldData.data) return oldData;
+        return {
+          ...oldData,
+          data: oldData.data.map((b: any) =>
+            b.id === id ? { ...b, last_check_status: 'running' } : b
+          )
+        };
+      });
+
+      // 延迟 1 秒后刷新，确保 Celery 已经在数据库中写入了 'running' 状态
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['host', 'baselines'] });
+      }, 1000);
     },
   });
+
 
   const showModal = (baseline?: any) => {
     setEditingBaseline(baseline || null);
@@ -109,45 +128,45 @@ const HostBaselinePage: React.FC = () => {
       setRemediatePlaybook(baseline.remediate_playbook || '');
     } else {
       form.resetFields();
-      setCheckPlaybook('---\n- hosts: all\n  tasks:\n    - name: 检查 Nginx 状态\n      shell: systemctl is-active nginx');
-      setRemediatePlaybook('---\n- hosts: all\n  tasks:\n    - name: 尝试重启 Nginx\n      service: name=nginx state=restarted');
+      setCheckPlaybook(t('host.baseline.defaultCheckPlaybook'));
+      setRemediatePlaybook(t('host.baseline.defaultRemediatePlaybook'));
     }
     setIsModalVisible(true);
   };
 
   const columns = [
     {
-      title: '基线名称',
+      title: t('host.baseline.name'),
       dataIndex: 'name',
       key: 'name',
       render: (text: string) => <Text strong>{text}</Text>,
     },
     {
-      title: '目标资源池',
+      title: t('host.baseline.targetPool'),
       dataIndex: 'pool_name',
       key: 'pool_name',
       render: (text: string) => <Tag color="cyan">{text}</Tag>,
     },
     {
-      title: '自动修复',
+      title: t('host.baseline.autoRemediate'),
       dataIndex: 'auto_remediate',
       key: 'auto_remediate',
-      render: (val: boolean) => (val ? <Tag color="green">已开启</Tag> : <Tag>未开启</Tag>),
+      render: (val: boolean) => (val ? <Tag color="green">{t('host.baseline.enabled')}</Tag> : <Tag>{t('host.baseline.disabled')}</Tag>),
     },
     {
-      title: '最近巡检',
+      title: t('host.baseline.lastCheck'),
       dataIndex: 'last_check_time',
       key: 'last_check_time',
       width: 280,
       render: (val: string, record: any) => {
-        if (!val) return <Text type="secondary">从未巡检</Text>;
+        if (!val) return <Text type="secondary">{t('host.baseline.neverChecked')}</Text>;
         const status = record.last_check_status || 'unknown';
         let color = 'default';
         let text = status;
 
-        if (status === 'success') { color = 'success'; text = '合规'; }
-        else if (status === 'failed') { color = 'error'; text = '违规'; }
-        else if (status === 'running') { color = 'processing'; text = '巡检中'; }
+        if (status === 'success') { color = 'success'; text = t('host.baseline.statusCompliant'); }
+        else if (status === 'failed') { color = 'error'; text = t('host.baseline.statusNonCompliant'); }
+        else if (status === 'running') { color = 'processing'; text = t('host.baseline.statusRunning'); }
 
         return (
           <Space direction="vertical" size={0}>
@@ -160,7 +179,7 @@ const HostBaselinePage: React.FC = () => {
                     size="small" 
                     onClick={() => window.open(`/v1/task/executions?id=${record.last_execution_id}`)}
                  >
-                    查看日志
+                    {t('host.baseline.viewLog')}
                  </Button>
                )}
             </Space>
@@ -170,19 +189,19 @@ const HostBaselinePage: React.FC = () => {
     },
 
     {
-      title: '状态',
+      title: t('common.status'),
       dataIndex: 'is_active',
       key: 'is_active',
       render: (val: boolean) => (
-        <Badge status={val ? 'success' : 'default'} text={val ? '启用中' : '已禁用'} />
+        <Badge status={val ? 'success' : 'default'} text={val ? t('host.baseline.active') : t('host.baseline.inactive')} />
       ),
     },
     {
-      title: '操作',
+      title: t('common.action'),
       key: 'action',
       render: (_: any, record: any) => (
         <Space>
-          <Tooltip title="立即巡检">
+          <Tooltip title={t('host.baseline.inspectNow')}>
             <Button
               type="link"
               size="small"
@@ -204,8 +223,8 @@ const HostBaselinePage: React.FC = () => {
             icon={<DeleteOutlined />}
             onClick={() => {
               antModal.confirm({
-                title: '确认删除基线?',
-                content: '删除后将停止自动巡检和告警触发。',
+                title: t('host.baseline.confirmDeleteTitle'),
+                content: t('host.baseline.confirmDeleteContent'),
                 onOk: () => deleteMutation.mutate(record.id),
               });
             }}
@@ -221,10 +240,10 @@ const HostBaselinePage: React.FC = () => {
         <Space direction="vertical" size={0}>
           <Title level={3} style={{ margin: 0 }}>
             <SafetyCertificateOutlined style={{ color: token.colorPrimary, marginRight: 8 }} />
-            主机基线巡检
+            {t('host.baseline.title')}
           </Title>
           <Text type="secondary">
-            通过 Ansible 定期扫描物理机/虚拟机配置状态，发现漂移并自动触发 AI 诊断与自愈
+            {t('host.baseline.description')}
           </Text>
         </Space>
       </div>
@@ -233,7 +252,7 @@ const HostBaselinePage: React.FC = () => {
         className="shadow-sm border-none"
         extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()}>
-            创建基线
+            {t('host.baseline.create')}
           </Button>
         }
       >
@@ -246,7 +265,7 @@ const HostBaselinePage: React.FC = () => {
       </Card>
 
       <Modal
-        title={editingBaseline ? '编辑基线配置' : '创建基线配置'}
+        title={editingBaseline ? t('host.baseline.editTitle') : t('host.baseline.createTitle')}
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         onOk={() => form.submit()}
@@ -266,19 +285,19 @@ const HostBaselinePage: React.FC = () => {
           }}
         >
           <div className="grid grid-cols-2 gap-x-6 mb-6">
-            <Form.Item name="name" label="基线名称" rules={[{ required: true }]}>
-              <Input placeholder="例如: 标准 Nginx 服务配置检查" />
+            <Form.Item name="name" label={t('host.baseline.name')} rules={[{ required: true, message: t('host.baseline.nameRequired') }]}>
+              <Input placeholder={t('host.baseline.namePlaceholder')} />
             </Form.Item>
-            <Form.Item name="resource_pool" label="目标资源池" rules={[{ required: true }]}>
+            <Form.Item name="resource_pool" label={t('host.baseline.targetPool')} rules={[{ required: true, message: t('host.baseline.resourcePoolRequired') }]}>
               <Select
                 options={(poolsData?.data || []).map((p: any) => ({ label: p.name, value: p.id }))}
-                placeholder="请选择资源池"
+                placeholder={t('host.baseline.poolPlaceholder')}
               />
             </Form.Item>
-            <Form.Item name="is_active" label="启用定期巡检" valuePropName="checked">
+            <Form.Item name="is_active" label={t('host.baseline.enablePeriodic')} valuePropName="checked">
               <Switch />
             </Form.Item>
-            <Form.Item name="auto_remediate" label="发现异常自动修复" valuePropName="checked">
+            <Form.Item name="auto_remediate" label={t('host.baseline.autoRemediate')} valuePropName="checked">
               <Switch />
             </Form.Item>
           </div>
@@ -286,7 +305,7 @@ const HostBaselinePage: React.FC = () => {
           <div className="flex gap-x-6" style={{ height: '400px' }}>
             <div className="flex-1 flex flex-col min-w-0">
               <Text strong className="mb-2 block">
-                <InfoCircleOutlined className="mr-1" /> 巡检剧本 (Check Playbook)
+                <InfoCircleOutlined className="mr-1" /> {t('host.baseline.checkPlaybook')}
               </Text>
               <div className="flex-1 overflow-hidden">
                 <K8sYamlEditor 
@@ -298,7 +317,7 @@ const HostBaselinePage: React.FC = () => {
             </div>
             <div className="flex-1 flex flex-col min-w-0">
               <Text strong className="mb-2 block">
-                <SafetyCertificateOutlined className="mr-1" /> 修复剧本 (Remediate Playbook)
+                <SafetyCertificateOutlined className="mr-1" /> {t('host.baseline.remediatePlaybook')}
               </Text>
               <div className="flex-1 overflow-hidden">
                 <K8sYamlEditor 

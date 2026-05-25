@@ -413,7 +413,43 @@
     "credentialPlaceholder": "选择此主机的特定登录凭据",
     "hostCreated": "主机创建成功",
     "hostUpdated": "主机更新成功",
-    "hostDeleted": "主机已删除"
+    "hostDeleted": "主机已删除",
+    "baseline": {
+      "title": "主机基线巡检",
+      "description": "通过 Ansible 定期扫描物理机/虚拟机配置状态，发现漂移并自动触发 AI 诊断与自愈",
+      "create": "创建基线",
+      "editTitle": "编辑基线配置",
+      "createTitle": "创建基线配置",
+      "name": "基线名称",
+      "namePlaceholder": "例如: 标准 Nginx 服务配置检查",
+      "targetPool": "目标资源池",
+      "poolPlaceholder": "请选择资源池",
+      "nameRequired": "请输入基线名称",
+      "resourcePoolRequired": "请选择目标资源池",
+      "enablePeriodic": "启用定期巡检",
+      "autoRemediate": "发现异常自动修复",
+      "checkPlaybook": "巡检剧本 (Check Playbook)",
+      "remediatePlaybook": "修复剧本 (Remediate Playbook)",
+      "saveSuccess": "基线配置已保存",
+      "updateSuccess": "基线配置已更新",
+      "deleteSuccess": "基线已删除",
+      "checkTaskDispatched": "巡检任务已下发",
+      "enabled": "已开启",
+      "disabled": "未开启",
+      "lastCheck": "最近巡检",
+      "neverChecked": "从未巡检",
+      "statusCompliant": "合规",
+      "statusNonCompliant": "违规",
+      "statusRunning": "巡检中",
+      "viewLog": "查看日志",
+      "active": "启用中",
+      "inactive": "已禁用",
+      "confirmDeleteTitle": "确认删除基线?",
+      "confirmDeleteContent": "删除后将停止自动巡检和告警触发。",
+      "inspectNow": "立即巡检",
+      "defaultCheckPlaybook": "---\n- hosts: all\n  tasks:\n    - name: 检查 Nginx 状态\n      shell: systemctl is-active nginx",
+      "defaultRemediatePlaybook": "---\n- hosts: all\n  tasks:\n    - name: 尝试重启 Nginx\n      service: name=nginx state=restarted"
+    }
   },
   "resourcePool": {
     "title": "资源池管理",
@@ -761,7 +797,13 @@
     "registryUsePlaceholder": "仅允许镜像构建引用的 ID",
     "credManagePlaceholder": "允许修改账号密码/私钥的 ID",
     "credUsePlaceholder": "仅允许 SSH 登录时使用的 ID",
-    "allOption": "--- 全部 ---"
+    "allOption": "--- 全部 ---",
+    "searchMenusPlaceholder": "搜索菜单名称...",
+    "selectAll": "全选",
+    "clearAll": "清除",
+    "noMatchingMenus": "未找到匹配的菜单",
+    "searchPermsPlaceholder": "搜索权限名称、标识或描述...",
+    "noMatchingPerms": "未找到匹配的功能权限"
   },
   "audit": {
     "title": "环境审计 (Audit Logs)",
@@ -1895,5 +1937,35 @@
       "revoked": "已撤销",
       "retry": "重试中"
     }
+  },
+  "compliance": {
+    "title": "等保2.0参考",
+    "description": "基于网络安全等级保护 2.0 (等保三级) 标准要求，对主机操作系统的身份鉴别、访问控制、安全审计、入侵防范等条款进行自动化基线扫描与合规映射审计。",
+    "overallCompliance": "整体等保合规率",
+    "clauseCount": "合规条款数",
+    "compliantRate": "合规率",
+    "compliantCount": "合规项",
+    "nonCompliantCount": "违规项",
+    "pendingCount": "待评估/未知",
+    "clausesList": "等保条款对照清单",
+    "associateBaselines": "关联主机基线",
+    "clauseDetails": "条款详细定义",
+    "associatedBaselines": "已关联主机基线",
+    "noBaselines": "该条款尚未关联任何主机基线",
+    "triggerCheck": "立即巡检所有",
+    "remidiateAll": "一键自动修复",
+    "mappingSuccess": "关联关系更新成功",
+    "mappingFailed": "关联失败",
+    "triggerSuccess": "合规扫描任务已全部下发",
+    "triggerClauseSuccess": "该条款关联的巡检任务已下发",
+    "frameworkLabel": "当前合规标准",
+    "status": {
+      "success": "合规",
+      "failed": "违规",
+      "pending": "待评估",
+      "running": "检查中"
+    },
+    "associateModalTitle": "为条款 {{code}} 关联主机基线",
+    "selectBaselines": "请选择需要绑定的基线"
   }
 }
