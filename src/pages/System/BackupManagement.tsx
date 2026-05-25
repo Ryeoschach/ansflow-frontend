@@ -367,7 +367,7 @@ const BackupManagement: React.FC = () => {
             className="mb-4"
           />
           <Text strong>选择要恢复的模块：</Text>
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <div className="mt-4 p-4 bg-ans-bg-container border border-ans-border rounded-lg">
             <Checkbox.Group 
               style={{ width: '100%' }} 
               value={selectedModules}
@@ -409,7 +409,7 @@ const BackupManagement: React.FC = () => {
             className="mb-4"
           />
           
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-dashed">
+          <div className="mb-6 p-4 bg-ans-bg-container border border-ans-border rounded-lg border-dashed">
             <Text strong className="mb-3 block">选择恢复模块：</Text>
             <Checkbox.Group 
               style={{ width: '100%' }} 
