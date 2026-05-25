@@ -21,7 +21,8 @@ import {
     getKnowledgeBases, createKnowledgeBase, updateKnowledgeBase, reindexKnowledgeBase, 
     getKnowledgeDocuments, deleteKnowledgeDocument, uploadKnowledgeDocument, getDocumentChunks,
     updateKnowledgeChunk, deleteKnowledgeChunk, testSearchKnowledgeBase,
-    AIProvider, AIModel, KnowledgeBase, KnowledgeDocument, DocumentChunk
+    getAIPrompts, updateAIPrompt, restoreAIPromptDefault,
+    AIProvider, AIModel, KnowledgeBase, KnowledgeDocument, DocumentChunk, AIPromptTemplate
 } from '../../api/ai';
 
 const { Title, Text, Paragraph } = Typography;
@@ -31,6 +32,11 @@ const AISettings: React.FC = () => {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('config');
+
+  // -- Prompts State --
+  const [isPromptDrawerOpen, setIsPromptDrawerOpen] = useState(false);
+  const [editingPrompt, setEditingPrompt] = useState<AIPromptTemplate | null>(null);
+  const [promptTemplateText, setPromptTemplateText] = useState("");
 
   // -- Knowledge Base State --
   const [isKBModalOpen, setIsKBModalOpen] = useState(false);
@@ -143,6 +149,12 @@ const AISettings: React.FC = () => {
     enabled: !!previewDoc && isPreviewDrawerOpen
   });
 
+  const { data: promptsData, isLoading: promptsLoading } = useQuery({
+    queryKey: ['aiPrompts'],
+    queryFn: () => getAIPrompts(),
+    enabled: queryEnabled
+  });
+
   // 当 configData 加载后，手动设置表单值
   const [configForm] = Form.useForm();
   React.useEffect(() => {
@@ -206,6 +218,31 @@ const AISettings: React.FC = () => {
   const chunkDeleteMutation = useMutation({
     mutationFn: (id: number) => deleteKnowledgeChunk(id),
     onSuccess: () => { message.success(t('common.deleteSuccess')); queryClient.invalidateQueries({ queryKey: ['docChunks', previewDoc?.id] }); }
+  });
+
+  // -- Prompt Mutations --
+  const updatePromptMutation = useMutation({
+    mutationFn: ({ id, template }: { id: number; template: string }) => updateAIPrompt(id, { template }),
+    onSuccess: () => {
+      message.success(t('ai.settings.saveSuccess'));
+      setIsPromptDrawerOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['aiPrompts'] });
+    },
+    onError: (err: any) => {
+      const errorMsg = err.response?.data?.template?.[0] || err.response?.data?.error || err?.message || t('common.error');
+      message.error(errorMsg);
+    }
+  });
+
+  const restorePromptMutation = useMutation({
+    mutationFn: (id: number) => restoreAIPromptDefault(id),
+    onSuccess: () => {
+      message.success(t('ai.settings.restoreConfirmOk'));
+      queryClient.invalidateQueries({ queryKey: ['aiPrompts'] });
+    },
+    onError: (err: any) => {
+      message.error(err.response?.data?.error || err?.message || t('common.error'));
+    }
   });
 
   // -- Upload Props --
@@ -551,6 +588,126 @@ const AISettings: React.FC = () => {
     );
   };
 
+  const REQUIRED_PLACEHOLDERS: Record<string, string[]> = {
+    "rag_chat": ["prefix", "kb_catalog", "context", "chat_history", "question"],
+    "log_diagnosis": ["prefix", "kb_catalog", "target_type", "target_name", "error_summary", "log_content", "context"],
+    "alert_diagnosis": ["prefix", "context", "query"],
+    "dag_generation": ["prompt_text"],
+    "dag_refine": ["current_pipeline", "prompt_text"],
+    "pipeline_explain": ["pipeline"],
+    "vision_ocr": []
+  };
+
+  const handleSavePrompt = () => {
+    if (!editingPrompt) return;
+    const required = REQUIRED_PLACEHOLDERS[editingPrompt.code] || [];
+    const missing = required.filter(v => !promptTemplateText.includes(`{${v}}`));
+    if (missing.length > 0) {
+      message.warning((t('ai.settings.variablesGuideTip') || 'Required placeholders missing:') + ' ' + missing.map(m => `{${m}}`).join(', '));
+      return;
+    }
+    updatePromptMutation.mutate({ id: editingPrompt.id, template: promptTemplateText });
+  };
+
+  const renderPromptsTab = () => {
+    const prompts = promptsData?.data || promptsData?.results || (Array.isArray(promptsData) ? promptsData : []);
+
+    const columns = [
+      {
+        title: t('ai.settings.promptName'),
+        dataIndex: 'name',
+        key: 'name',
+        width: '20%',
+        render: (text: string, record: AIPromptTemplate) => (
+          <Space direction="vertical" size={0}>
+            <Text strong>{text}</Text>
+            <Text type="secondary" style={{ fontSize: '12px' }}>{record.code}</Text>
+          </Space>
+        )
+      },
+      {
+        title: t('ai.settings.promptDesc'),
+        dataIndex: 'description',
+        key: 'description',
+        width: '35%',
+      },
+      {
+        title: t('ai.settings.promptTemplate'),
+        dataIndex: 'template',
+        key: 'template',
+        width: '25%',
+        ellipsis: true,
+        render: (text: string) => (
+          <Text type="secondary" ellipsis={{ tooltip: text }}>
+            {text}
+          </Text>
+        )
+      },
+      {
+        title: t('common.updateTime') || '更新时间',
+        dataIndex: 'update_time',
+        key: 'update_time',
+        width: '12%',
+        render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm') : '-'
+      },
+      {
+        title: t('common.actions') || '操作',
+        key: 'actions',
+        width: '8%',
+        render: (_: any, record: AIPromptTemplate) => (
+          <Space>
+            <Tooltip title={t('common.edit') || '编辑'}>
+              <Button 
+                type="text" 
+                icon={<EditOutlined />} 
+                onClick={() => {
+                  setEditingPrompt(record);
+                  setPromptTemplateText(record.template);
+                  setIsPromptDrawerOpen(true);
+                }} 
+              />
+            </Tooltip>
+            <Popconfirm
+              title={t('ai.settings.restoreConfirm')}
+              onConfirm={() => restorePromptMutation.mutate(record.id)}
+              okText={t('common.ok') || '确认'}
+              cancelText={t('common.cancel') || '取消'}
+            >
+              <Tooltip title={t('ai.settings.restoreDefault')}>
+                <Button 
+                  type="text" 
+                  danger 
+                  icon={<ReloadOutlined />} 
+                  loading={restorePromptMutation.isPending}
+                />
+              </Tooltip>
+            </Popconfirm>
+          </Space>
+        )
+      }
+    ];
+
+    return (
+      <div className="space-y-4">
+        <Alert
+          message={t('common.info') || '提示'}
+          description={t('ai.settings.customPromptDesc')}
+          type="info"
+          showIcon
+          className="mb-4"
+        />
+        <Table
+          dataSource={prompts}
+          columns={columns}
+          rowKey="id"
+          loading={promptsLoading}
+          pagination={false}
+          size="middle"
+        />
+      </div>
+    );
+  };
+
   const renderConfigTab = () => {
     const rawData = modelsData as any;
     const allModels: AIModel[] = Array.isArray(rawData) ? rawData : (rawData?.data || rawData?.results || []);
@@ -635,13 +792,114 @@ const AISettings: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       <Title level={4}>{t('ai.settings.pageTitle')}</Title>
-      <Card><Tabs activeKey={activeTab} onChange={setActiveTab}><Tabs.TabPane tab={<span><SettingOutlined />{t('ai.settings.globalConfig')}</span>} key="config">{renderConfigTab()}</Tabs.TabPane><Tabs.TabPane tab={<span><BookOutlined />{t('ai.settings.knowledgeBase')}</span>} key="knowledge">{renderKnowledgeTab()}</Tabs.TabPane><Tabs.TabPane tab={<span><ApiOutlined />{t('ai.settings.providers')}</span>} key="providers">{renderProviderTab()}</Tabs.TabPane><Tabs.TabPane tab={<span><RocketOutlined />{t('ai.settings.models')}</span>} key="models">{renderModelTab()}</Tabs.TabPane></Tabs></Card>
+      <Card>
+        <Tabs activeKey={activeTab} onChange={setActiveTab}>
+          <Tabs.TabPane tab={<span><SettingOutlined />{t('ai.settings.globalConfig')}</span>} key="config">
+            {renderConfigTab()}
+          </Tabs.TabPane>
+          <Tabs.TabPane tab={<span><SettingOutlined />{t('ai.settings.promptsTab')}</span>} key="prompts">
+            {renderPromptsTab()}
+          </Tabs.TabPane>
+          <Tabs.TabPane tab={<span><BookOutlined />{t('ai.settings.knowledgeBase')}</span>} key="knowledge">
+            {renderKnowledgeTab()}
+          </Tabs.TabPane>
+          <Tabs.TabPane tab={<span><ApiOutlined />{t('ai.settings.providers')}</span>} key="providers">
+            {renderProviderTab()}
+          </Tabs.TabPane>
+          <Tabs.TabPane tab={<span><RocketOutlined />{t('ai.settings.models')}</span>} key="models">
+            {renderModelTab()}
+          </Tabs.TabPane>
+        </Tabs>
+      </Card>
       <Modal title={editingProvider ? t('ai.settings.editProvider') : t('ai.settings.addProvider')} open={isProviderModalOpen} onCancel={() => setIsProviderModalOpen(false)} onOk={() => providerForm.submit()} confirmLoading={providerMutation.isPending}><Form form={providerForm} layout="vertical" onFinish={providerMutation.mutate}><Form.Item name="name" label={t('ai.settings.providerName')} rules={[{ required: true }]}><Input placeholder="如 DeepSeek 官方" /></Form.Item><Form.Item name="provider_type" label={t('ai.settings.providerType')} rules={[{ required: true }]}><Select onChange={(val) => { if (val === 'local') providerForm.setFieldValue('base_url', 'http://localhost'); if (val === 'lmstudio') providerForm.setFieldValue('base_url', 'http://localhost:1234/v1'); }}><Select.Option value="openai">OpenAI</Select.Option><Select.Option value="deepseek">DeepSeek</Select.Option><Select.Option value="anthropic">Anthropic</Select.Option><Select.Option value="ollama">Ollama (Local)</Select.Option><Select.Option value="lmstudio">LM Studio (Local)</Select.Option><Select.Option value="local">FastEmbed (Local)</Select.Option><Select.Option value="other">Other (OpenAI Compatible)</Select.Option></Select></Form.Item><Form.Item noStyle shouldUpdate={(prev, curr) => prev.provider_type !== curr.provider_type}>{({ getFieldValue }) => (<Form.Item name="base_url" label={t('ai.settings.apiUrl')} rules={[{ required: getFieldValue('provider_type') !== 'local' }]}><Input placeholder={getFieldValue('provider_type') === 'local' ? "本地模式无需配置" : "https://api.deepseek.com"} disabled={getFieldValue('provider_type') === 'local'} /></Form.Item>)}</Form.Item><Form.Item name="api_key" label={t('ai.settings.apiKey')}><Input.Password placeholder="输入 API Key" /></Form.Item><Form.Item name="is_active" label={t('ai.settings.isActive')} valuePropName="checked"><Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} /></Form.Item></Form></Modal>
       <Modal title={editingModel ? t('ai.settings.editModel') : t('ai.settings.addModel')} open={isModelModalOpen} onCancel={() => setIsModelModalOpen(false)} onOk={() => modelForm.submit()}><Form form={modelForm} layout="vertical" onFinish={(values) => { const m = editingModel ? updateAIModel(editingModel.id, values) : createAIModel(values); m.then(() => { message.success(t('ai.settings.saveSuccess')); setIsModelModalOpen(false); queryClient.invalidateQueries({ queryKey: ['aiModels'] }); }); }}><Form.Item name="provider" label={t('ai.settings.belongProvider')} rules={[{ required: true }]}><Select placeholder="选择供应商">{(Array.isArray(providersData) ? providersData : (providersData as any)?.data || (providersData as any)?.results || []).map((p: any) => (<Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>))}</Select></Form.Item><Form.Item name="display_name" label={t('ai.settings.displayName')} rules={[{ required: true }]}><Input placeholder="如 DeepSeek Chat V3" /></Form.Item>
 <Form.Item name="name" label={t('ai.settings.modelId')} rules={[{ required: true }]}><Input placeholder="如 deepseek-chat" /></Form.Item>
 <Form.Item name="capabilities" label="模型能力 (可多选)" rules={[{ required: true }]}><Checkbox.Group><Row><Col span={12}><Checkbox value="llm">{t('ai.settings.llm')}</Checkbox></Col><Col span={12}><Checkbox value="embedding">{t('ai.settings.embedding')}</Checkbox></Col><Col span={12}><Checkbox value="rerank">Rerank</Checkbox></Col><Col span={12}><Checkbox value="vision">Vision/OCR</Checkbox></Col></Row></Checkbox.Group></Form.Item>
 <Form.Item name="num_ctx" label="上下文窗口 (Tokens)" tooltip="模型支持的最大上下文长度"><Input type="number" placeholder="4096" /></Form.Item>
 <Form.Item name="is_active" label={t('ai.settings.isActive')} valuePropName="checked"><Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} /></Form.Item></Form></Modal>
+
+      <Drawer
+        title={editingPrompt ? `${t('ai.settings.editPrompt')} - ${editingPrompt.name}` : t('ai.settings.editPrompt')}
+        width={720}
+        onClose={() => setIsPromptDrawerOpen(false)}
+        open={isPromptDrawerOpen}
+        extra={
+          <Space>
+            <Button onClick={() => setIsPromptDrawerOpen(false)}>{t('common.cancel') || '取消'}</Button>
+            <Button 
+              type="primary" 
+              onClick={handleSavePrompt} 
+              loading={updatePromptMutation.isPending}
+              icon={<SaveOutlined />}
+            >
+              {t('common.save') || '保存'}
+            </Button>
+          </Space>
+        }
+      >
+        {editingPrompt && (
+          <Space direction="vertical" className="w-full" size="large">
+            <div>
+              <Text type="secondary">{t('ai.settings.promptCode')}: </Text>
+              <Tag color="blue">{editingPrompt.code}</Tag>
+            </div>
+            
+            <div>
+              <Text type="secondary">{t('ai.settings.promptDesc')}: </Text>
+              <Paragraph className="mt-1 bg-gray-50 p-2 rounded">{editingPrompt.description || '暂无描述'}</Paragraph>
+            </div>
+
+            {REQUIRED_PLACEHOLDERS[editingPrompt.code] && REQUIRED_PLACEHOLDERS[editingPrompt.code].length > 0 && (
+              <Card size="small" type="inner" title={t('ai.settings.variablesGuide')} headStyle={{ background: '#f5f5f5' }}>
+                <Text type="secondary">{t('ai.settings.variablesGuideTip')}</Text>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {REQUIRED_PLACEHOLDERS[editingPrompt.code].map(v => (
+                    <Tag 
+                      key={v} 
+                      color={promptTemplateText.includes(`{${v}}`) ? "success" : "error"}
+                      title={promptTemplateText.includes(`{${v}}`) ? "已使用" : "未使用 (必需)"}
+                    >
+                      {`{${v}}`}
+                    </Tag>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <Text strong>{t('ai.settings.promptTemplate')}</Text>
+                <Button 
+                  type="link" 
+                  size="small" 
+                  icon={<ReloadOutlined />}
+                  onClick={() => {
+                    Modal.confirm({
+                      title: t('ai.settings.restoreConfirm'),
+                      onOk: () => {
+                        restorePromptMutation.mutate(editingPrompt.id, {
+                          onSuccess: (data: any) => {
+                            setPromptTemplateText(data.template);
+                          }
+                        });
+                      }
+                    });
+                  }}
+                >
+                  {t('ai.settings.restoreDefault')}
+                </Button>
+              </div>
+              <TextArea
+                value={promptTemplateText}
+                onChange={(e) => setPromptTemplateText(e.target.value)}
+                autoSize={{ minRows: 15, maxRows: 25 }}
+                style={{ fontFamily: 'monospace', fontSize: '13px' }}
+                placeholder="请输入提示词模板..."
+              />
+            </div>
+          </Space>
+        )}
+      </Drawer>
     </div>
   );
 };

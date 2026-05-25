@@ -1795,7 +1795,20 @@
       "hybridSearch": "混合检索",
       "ocrTip": "智能提示",
       "ocrDescription": "对于无文本层的扫描件或图片型 PDF，系统将自动触发 OCR (光学字符识别) 进行高精度解析。",
-      "uploadHint": "支持 PDF, Markdown (.md), Text (.txt) 格式。"
+      "uploadHint": "支持 PDF, Markdown (.md), Text (.txt) 格式。",
+      "promptsTab": "自定义提示词",
+      "promptsTabTip": "管理大模型任务所需的各种 Prompt 提示词模板",
+      "promptName": "模板名称",
+      "promptCode": "模板代码",
+      "promptDesc": "描述说明",
+      "promptTemplate": "模板内容",
+      "editPrompt": "编辑提示词模板",
+      "variablesGuide": "占位符变量指南",
+      "variablesGuideTip": "请确保编辑后的模板中包含以下必需的变量占位符，否则调用 AI 时可能会报错：",
+      "restoreDefault": "恢复系统默认",
+      "restoreConfirm": "确认恢复为系统默认初始值？",
+      "restoreConfirmOk": "恢复默认成功",
+      "customPromptDesc": "支持修改各 AI 场景下的提示词模板。大括号占位符为必需系统变量。如果需要在提示词中表达 JSON 或纯文本大括号，请使用双大括号 {{ 和 }} 进行转义。"
     }
   },
   "alertCenter": {

@@ -242,3 +242,24 @@ export const saveDiagnosisToKnowledge = (historyId: number, messageId: number, t
 // 诊断接口的 URL (主要用于 fetch 拼接)
 export const DIAGNOSE_URL = '/api/v1/ai/chat-histories/';
 export const CHAT_URL_PREFIX = '/api/v1/ai/chat-histories/';
+
+export interface AIPromptTemplate {
+  id: number;
+  name: string;
+  code: string;
+  template: string;
+  description?: string;
+  is_system: boolean;
+  create_time: string;
+  update_time: string;
+}
+
+// AI 提示词管理
+export const getAIPrompts = (params?: Record<string, any>): Promise<PaginatedResponse<AIPromptTemplate>> =>
+  request.get('/ai/prompts/', { params }) as any;
+
+export const updateAIPrompt = (id: number, data: Partial<AIPromptTemplate>): Promise<AIPromptTemplate> =>
+  request.patch(`/ai/prompts/${id}/`, data) as any;
+
+export const restoreAIPromptDefault = (id: number): Promise<AIPromptTemplate> =>
+  request.post(`/ai/prompts/${id}/restore_default/`) as any;

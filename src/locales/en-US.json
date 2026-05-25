@@ -204,7 +204,20 @@
       "hybridSearch": "Hybrid Search",
       "ocrTip": "Smart Tip",
       "ocrDescription": "For scanned or image-based PDFs without a text layer, the system will automatically trigger OCR (Optical Character Recognition) for high-precision parsing.",
-      "uploadHint": "Supports PDF, Markdown (.md), and Text (.txt) formats."
+      "uploadHint": "Supports PDF, Markdown (.md), and Text (.txt) formats.",
+      "promptsTab": "AI Prompts",
+      "promptsTabTip": "Manage prompt templates required for AI models",
+      "promptName": "Template Name",
+      "promptCode": "Template Code",
+      "promptDesc": "Description",
+      "promptTemplate": "Template Content",
+      "editPrompt": "Edit Prompt Template",
+      "variablesGuide": "Required Placeholders",
+      "variablesGuideTip": "Please ensure the edited template contains the following required placeholders, otherwise AI requests might fail:",
+      "restoreDefault": "Restore Default",
+      "restoreConfirm": "Are you sure you want to restore this template to system default?",
+      "restoreConfirmOk": "Restored successfully",
+      "customPromptDesc": "Allows editing prompts for different AI scenarios. Placeholder brackets represent required system variables. Escape literal curly brackets in JSON or plain text with double brackets: {{ and }}."
     }
   },
   "taskCenter": {
