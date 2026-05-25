@@ -890,7 +890,7 @@ const AISettings: React.FC = () => {
                   {t('ai.settings.restoreDefault')}
                 </Button>
               </div>
-              <TextArea
+              <Input.TextArea
                 value={promptTemplateText}
                 onChange={(e) => setPromptTemplateText(e.target.value)}
                 autoSize={{ minRows: 15, maxRows: 25 }}
