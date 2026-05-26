@@ -35,6 +35,7 @@ import {
   CodeOutlined,
   ConsoleSqlOutlined,
   RocketOutlined,
+  ShareAltOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -63,6 +64,7 @@ import { K8sResource } from '../../types';
 import request from "../../utils/requests";
 import useAppStore from "../../store/useAppStore.ts";
 import useBreakpoint from '../../utils/useBreakpoint';
+import ShareAssetModal from '../../components/ShareAssetModal';
 
 import useK8sStore from "../../store/useK8sStore";
 import K8sTerminal from './components/K8sTerminal';
@@ -109,7 +111,7 @@ const K8sCenter: React.FC = () => {
   const { t } = useTranslation();
   const { token } = theme.useToken();
   const { message, modal } = App.useApp();
-  const { hasPermission } = useAppStore();
+  const { hasPermission, currentProject } = useAppStore();
   const { isMobile } = useBreakpoint();
   
   // 接入 Zustand 持久化状态集
@@ -123,6 +125,7 @@ const K8sCenter: React.FC = () => {
   
   // 仅保留临时选中的集群对象用于 UI 回显
   const [selectedCluster, setSelectedCluster] = useState<K8sResource | null>(null);
+  const [sharingCluster, setSharingCluster] = useState<any>(null);
   
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
@@ -791,6 +794,17 @@ const K8sCenter: React.FC = () => {
                   </Tooltip>
                       )}
 
+                  {(hasPermission('*') || hasPermission('k8s:cluster:edit')) && (
+                  <Tooltip title="跨项目授权">
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<ShareAltOutlined style={{ color: '#1677ff' }} />}
+                      onClick={() => setSharingCluster(record)}
+                    />
+                  </Tooltip>
+                  )}
+
                   {hasPermission('k8s:cluster:edit') && (
                   <Tooltip title={t('k8s.modifyConfig')}>
                     <Button
@@ -1147,6 +1161,17 @@ const K8sCenter: React.FC = () => {
           />
         )}
       </Modal>
+
+      {sharingCluster && currentProject && (
+        <ShareAssetModal
+          open={!!sharingCluster}
+          onClose={() => setSharingCluster(null)}
+          assetType="k8s_cluster"
+          assetId={sharingCluster.id}
+          assetName={sharingCluster.name}
+          fromProjectId={currentProject.id}
+        />
+      )}
     </div>
   );
 };

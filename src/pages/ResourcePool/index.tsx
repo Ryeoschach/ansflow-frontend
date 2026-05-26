@@ -25,6 +25,7 @@ import {
     DatabaseOutlined,
     ArrowRightOutlined,
     CloseCircleOutlined,
+    ShareAltOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -40,6 +41,7 @@ import useAppStore from '../../store/useAppStore';
 import useBreakpoint from '../../utils/useBreakpoint';
 import { TableSkeleton } from '../../components/Skeletons';
 import { useTranslation } from 'react-i18next';
+import ShareAssetModal from '../../components/ShareAssetModal';
 
 const { Text } = Typography;
 
@@ -47,12 +49,13 @@ const ResourcePoolManagement: React.FC = () => {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
     const { message } = App.useApp();
-    const { isDark, token: authToken, hasPermission } = useAppStore();
+    const { isDark, token: authToken, hasPermission, currentProject } = useAppStore();
     const { token: antdToken } = theme.useToken();
     const { isMobile } = useBreakpoint();
     const [form] = Form.useForm();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPool, setEditingPool] = useState<any>(null);
+    const [sharingPool, setSharingPool] = useState<any>(null);
 
     const [listFilters, setListFilters] = useState({
         name: '',
@@ -218,6 +221,15 @@ const ResourcePoolManagement: React.FC = () => {
             key: 'action',
             render: (_: any, record: any) => (
                 <Space size="middle">
+                    {(hasPermission('*') || hasPermission('resource:resources:edit')) && (
+                        <Tooltip title="跨项目授权">
+                            <Button
+                                type="text"
+                                icon={<ShareAltOutlined style={{ color: '#1677ff' }} />}
+                                onClick={() => setSharingPool(record)}
+                            />
+                        </Tooltip>
+                    )}
                     <Tooltip title={t('resourcePool.edit')}>
                         <Button type="text" icon={<EditOutlined />} onClick={() => showModal(record)} />
                     </Tooltip>
@@ -488,6 +500,17 @@ const ResourcePoolManagement: React.FC = () => {
                     </Form.Item>
                 </Form>
             </Modal>
+
+            {sharingPool && currentProject && (
+                <ShareAssetModal
+                    open={!!sharingPool}
+                    onClose={() => setSharingPool(null)}
+                    assetType="resource_pool"
+                    assetId={sharingPool.id}
+                    assetName={sharingPool.name}
+                    fromProjectId={currentProject.id}
+                />
+            )}
         </Card>
     );
 };

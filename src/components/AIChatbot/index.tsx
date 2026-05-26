@@ -77,6 +77,7 @@ const AIChatbot: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<any>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
+    const socketRef = useRef<WebSocket | null>(null);
     
     // 追踪当前诊断的告警 ID
     const [diagnosedAlertId, setDiagnosedAlertId] = useState<number | null>(null);
@@ -85,6 +86,15 @@ const AIChatbot: React.FC = () => {
     useEffect(() => {
         localStorage.setItem('ansflow-ai-personality', personality);
     }, [personality]);
+
+    // 组件卸载时关闭连接
+    useEffect(() => {
+        return () => {
+            if (socketRef.current) {
+                socketRef.current.close();
+            }
+        };
+    }, []);
 
     // 加载可用模型和默认配置
     useEffect(() => {
@@ -526,88 +536,135 @@ const AIChatbot: React.FC = () => {
         }
     };
 
-    const streamResponse = async (hid: number, question: string) => {
-        setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-        setPipelineDraft(null); // Reset draft for new query
-        setAnsibleDraft(null);
-        
-        abortControllerRef.current = new AbortController();
+    const streamResponse = (hid: number, question: string) => {
+        return new Promise<void>((resolve, reject) => {
+            setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+            setPipelineDraft(null); // Reset draft for new query
+            setAnsibleDraft(null);
 
-        const response = await fetch(`/api/v1/ai/chat-histories/${hid}/chat/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${appToken}` },
-            signal: abortControllerRef.current.signal,
-            body: JSON.stringify({ 
-                question, 
-                personality,
-                llm_id: selectedLLMId
-            })
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsHost = window.location.host;
+            const currentProject = useAppStore.getState().currentProject;
+            const projectId = currentProject?.id || 'default';
+            const wsUrl = `${wsProtocol}//${wsHost}/ws/ai/chat/?token=${appToken}&project_id=${projectId}`;
+
+            const ws = new WebSocket(wsUrl);
+            socketRef.current = ws;
+
+            let assistantReply = '';
+
+            ws.onopen = () => {
+                ws.send(JSON.stringify({
+                    question,
+                    history_id: hid,
+                    personality,
+                    llm_id: selectedLLMId
+                }));
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'start') {
+                        return;
+                    }
+                    if (data.type === 'chunk') {
+                        const chunk = data.text;
+                        assistantReply += chunk;
+
+                        // 1. 提取消息 ID
+                        if (assistantReply.includes('__MESSAGE_ID__:')) {
+                            const match = assistantReply.match(/__MESSAGE_ID__:(\d+)/);
+                            if (match) {
+                                const msgId = parseInt(match[1]);
+                                setMessages(prev => {
+                                    const newMessages = [...prev];
+                                    newMessages[newMessages.length - 1].id = msgId;
+                                    return newMessages;
+                                });
+                                assistantReply = assistantReply.replace(/__MESSAGE_ID__:\d+/, '').trim();
+                            }
+                        }
+
+                        // 2. 提取流水线草案 (JSON)
+                        if (assistantReply.includes('__PIPELINE_DRAFT__:')) {
+                            const startIndex = assistantReply.indexOf('__PIPELINE_DRAFT__:');
+                            const jsonStart = assistantReply.indexOf('{', startIndex);
+                            const jsonEnd = assistantReply.lastIndexOf('}');
+                            
+                            if (jsonStart !== -1 && jsonEnd > jsonStart) {
+                                const jsonStr = assistantReply.substring(jsonStart, jsonEnd + 1);
+                                try {
+                                    const draft = JSON.parse(jsonStr);
+                                    setPipelineDraft(draft);
+                                    assistantReply = (assistantReply.substring(0, startIndex) + assistantReply.substring(jsonEnd + 1)).trim();
+                                } catch (e) {}
+                            }
+                        }
+
+                        // 3. 提取 Ansible 任务草案 (JSON)
+                        if (assistantReply.includes('__ANSIBLE_DRAFT__:')) {
+                            const startIndex = assistantReply.indexOf('__ANSIBLE_DRAFT__:');
+                            const jsonStart = assistantReply.indexOf('{', startIndex);
+                            const jsonEnd = assistantReply.lastIndexOf('}');
+                            
+                            if (jsonStart !== -1 && jsonEnd > jsonStart) {
+                                const jsonStr = assistantReply.substring(jsonStart, jsonEnd + 1);
+                                try {
+                                    const draft = JSON.parse(jsonStr);
+                                    setAnsibleDraft(draft);
+                                    assistantReply = (assistantReply.substring(0, startIndex) + assistantReply.substring(jsonEnd + 1)).trim();
+                                } catch (e) {}
+                            }
+                        }
+
+                        setMessages(prev => {
+                            const newMessages = [...prev];
+                            newMessages[newMessages.length - 1].content = assistantReply;
+                            return newMessages;
+                        });
+                    } else if (data.type === 'end') {
+                        const msgId = data.message_id;
+                        const refs = data.referenced_docs;
+                        setMessages(prev => {
+                            const newMessages = [...prev];
+                            const lastMsg = newMessages[newMessages.length - 1];
+                            if (msgId) lastMsg.id = msgId;
+                            if (refs) lastMsg.referenced_docs = refs;
+                            return newMessages;
+                        });
+                        ws.close();
+                    } else if (data.type === 'error') {
+                        message.error(`AI 错误: ${data.message}`);
+                        reject(new Error(data.message));
+                        ws.close();
+                    }
+                } catch (e) {
+                    console.error('Error parsing WS message:', e);
+                }
+            };
+
+            ws.onclose = (event) => {
+                socketRef.current = null;
+                setLoading(false);
+                if (event.code === 4001) {
+                    message.error('WebSocket 连接被拒：未认证的用户');
+                    reject(new Error('Unauthenticated'));
+                } else if (event.code === 4003) {
+                    message.error('WebSocket 连接被拒：无项目访问权限');
+                    reject(new Error('Forbidden'));
+                } else {
+                    resolve();
+                }
+            };
+
+            ws.onerror = (err) => {
+                console.error('WS Error:', err);
+                socketRef.current = null;
+                setLoading(false);
+                reject(err);
+            };
         });
-
-        if (!response.body) return;
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let assistantReply = '';
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            const chunk = decoder.decode(value);
-            assistantReply += chunk;
-
-            // 1. 提取消息 ID
-            if (assistantReply.includes('__MESSAGE_ID__:')) {
-                const match = assistantReply.match(/__MESSAGE_ID__:(\d+)/);
-                if (match) {
-                    const msgId = parseInt(match[1]);
-                    setMessages(prev => {
-                        const newMessages = [...prev];
-                        newMessages[newMessages.length - 1].id = msgId;
-                        return newMessages;
-                    });
-                    assistantReply = assistantReply.replace(/__MESSAGE_ID__:\d+/, '').trim();
-                }
-            }
-
-            // 2. 提取流水线草案 (JSON)
-            if (assistantReply.includes('__PIPELINE_DRAFT__:')) {
-                const startIndex = assistantReply.indexOf('__PIPELINE_DRAFT__:');
-                const jsonStart = assistantReply.indexOf('{', startIndex);
-                const jsonEnd = assistantReply.lastIndexOf('}');
-                
-                if (jsonStart !== -1 && jsonEnd > jsonStart) {
-                    const jsonStr = assistantReply.substring(jsonStart, jsonEnd + 1);
-                    try {
-                        const draft = JSON.parse(jsonStr);
-                        setPipelineDraft(draft);
-                        assistantReply = (assistantReply.substring(0, startIndex) + assistantReply.substring(jsonEnd + 1)).trim();
-                    } catch (e) {}
-                }
-            }
-
-            // 3. 提取 Ansible 任务草案 (JSON)
-            if (assistantReply.includes('__ANSIBLE_DRAFT__:')) {
-                const startIndex = assistantReply.indexOf('__ANSIBLE_DRAFT__:');
-                const jsonStart = assistantReply.indexOf('{', startIndex);
-                const jsonEnd = assistantReply.lastIndexOf('}');
-                
-                if (jsonStart !== -1 && jsonEnd > jsonStart) {
-                    const jsonStr = assistantReply.substring(jsonStart, jsonEnd + 1);
-                    try {
-                        const draft = JSON.parse(jsonStr);
-                        setAnsibleDraft(draft);
-                        assistantReply = (assistantReply.substring(0, startIndex) + assistantReply.substring(jsonEnd + 1)).trim();
-                    } catch (e) {}
-                }
-            }
-
-            setMessages(prev => {
-                const newMessages = [...prev];
-                newMessages[newMessages.length - 1].content = assistantReply;
-                return newMessages;
-            });
-        }
-        setLoading(false);
     };
 
     const handleRegisterAnsibleTask = async () => {
@@ -1117,8 +1174,12 @@ const AIChatbot: React.FC = () => {
                                             e.stopPropagation();
                                             if (abortControllerRef.current) {
                                                 abortControllerRef.current.abort();
-                                                setAiStatus('idle');
                                             }
+                                            if (socketRef.current) {
+                                                socketRef.current.close();
+                                                socketRef.current = null;
+                                            }
+                                            setAiStatus('idle');
                                         }} 
                                         className="flex-shrink-0 w-10 h-10 flex items-center justify-center shadow-md border-gray-300 text-gray-500 hover:text-red-500 hover:border-red-500" 
                                     />

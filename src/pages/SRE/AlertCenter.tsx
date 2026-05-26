@@ -21,12 +21,14 @@ import {
   BookOutlined,
   ArrowRightOutlined,
   UserOutlined,
-  ThunderboltOutlined
+  ThunderboltOutlined,
+  ShareAltOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import useAppStore from '@/store/useAppStore';
+import ShareAssetModal from '@/components/ShareAssetModal';
 import { 
   getAlertEvents, ignoreAlert, getHealingPolicies, 
   createHealingPolicy, updateHealingPolicy, deleteHealingPolicy,
@@ -47,6 +49,7 @@ const AlertCenter: React.FC = () => {
     const queryClient = useQueryClient();
     const { message, modal } = App.useApp();
     const setAiDiagnosis = useAppStore(state => state.setAiDiagnosis);
+    const { hasPermission, currentProject } = useAppStore();
     const [activeTab, setActiveTab] = useState('alerts');
 
     // --- 告警事件相关状态 ---
@@ -58,6 +61,7 @@ const AlertCenter: React.FC = () => {
     // --- 自愈策略相关状态 ---
     const [policyModalVisible, setPolicyModalVisible] = useState(false);
     const [editingPolicy, setEditingPolicy] = useState<any>(null);
+    const [sharingPolicy, setSharingPolicy] = useState<any>(null);
     const [policyForm] = Form.useForm();
     const [policyParams, setPolicyParams] = useState<any>({ page: 1, size: 20 });
     const [selectedPolicyKeys, setSelectedPolicyKeys] = useState<React.Key[]>([]);
@@ -374,6 +378,14 @@ const AlertCenter: React.FC = () => {
             key: 'action',
             render: (_: any, record: any) => (
                 <Space>
+                    <Tooltip title="跨项目授权">
+                        <Button
+                            type="link"
+                            size="small"
+                            icon={<ShareAltOutlined style={{ color: '#1677ff' }} />}
+                            onClick={() => setSharingPolicy(record)}
+                        />
+                    </Tooltip>
                     <Button
                         type="link"
                         size="small"
@@ -792,6 +804,17 @@ const AlertCenter: React.FC = () => {
                     </Space>
                 </Form>
             </Modal>
+
+            {sharingPolicy && currentProject && (
+                <ShareAssetModal
+                    open={!!sharingPolicy}
+                    onClose={() => setSharingPolicy(null)}
+                    assetType="self_healing_policy"
+                    assetId={sharingPolicy.id}
+                    assetName={sharingPolicy.name}
+                    fromProjectId={currentProject.id}
+                />
+            )}
         </div>
     );
 };

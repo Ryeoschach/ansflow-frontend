@@ -78,6 +78,12 @@ interface AppState {
   // AI 诊断触发
   aiDiagnosisConfig: { target_type: 'pipeline' | 'task' | 'alert'; target_id: number | string; target_name?: string; history_id?: number } | null;
   setAiDiagnosis: (config: { target_type: 'pipeline' | 'task' | 'alert'; target_id: number | string; target_name?: string; history_id?: number } | null) => void;
+
+  // 项目/工作区物理隔离
+  projects: any[];
+  setProjects: (projects: any[]) => void;
+  currentProject: any | null;
+  setCurrentProject: (project: any | null) => void;
 }
 
 interface PersistedState {
@@ -90,6 +96,7 @@ interface PersistedState {
   pipelineActiveTab: string;
   language: string;
   avatar: string | null;
+  currentProject: any | null;
 }
 
 /**
@@ -166,6 +173,11 @@ const useAppStore = create<AppState>()(
     toggleMobileSidebar: () => set((state) => ({ mobileSidebarOpen: !state.mobileSidebarOpen })),
     aiDiagnosisConfig: null,
     setAiDiagnosis: (aiDiagnosisConfig) => set({ aiDiagnosisConfig }),
+
+    projects: [],
+    setProjects: (projects) => set({ projects }),
+    currentProject: null,
+    setCurrentProject: (currentProject) => set({ currentProject }),
     }), {
     name: 'ansflow-app-storage',
     version: 3, // 升级版本号以强制清理旧的缓存
@@ -179,6 +191,7 @@ const useAppStore = create<AppState>()(
       pipelineActiveTab: state.pipelineActiveTab,
       language: state.language,
       avatar: state.avatar,
+      currentProject: state.currentProject,
     }),
   })
 );

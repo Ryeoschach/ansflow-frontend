@@ -17,6 +17,11 @@ request.interceptors.request.use(
             config.headers.Authorization = `Bearer ${token}`;
         }
         
+        const currentProject = useAppStore.getState().currentProject;
+        if (currentProject?.id) {
+            config.headers['X-Project-ID'] = String(currentProject.id);
+        }
+        
         const state = useAppStore.getState();
         // 初始加载中且不是刷新请求，则不发送 Header 或直接拦截
         if (state.isInitializing && config.url !== '/auth/refresh/' && config.url !== '/account/me/') {

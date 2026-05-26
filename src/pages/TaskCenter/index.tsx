@@ -26,6 +26,7 @@ import {
     MinusCircleOutlined,
     ClockCircleOutlined,
     RocketOutlined,
+    ShareAltOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAnsibleTasks, createAnsibleTask, updateAnsibleTask, runAnsibleTask, deleteAnsibleTask, promoteAnsibleTask } from '../../api/tasks';
@@ -35,6 +36,7 @@ import useBreakpoint from '../../utils/useBreakpoint';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { TableSkeleton } from '../../components/Skeletons';
 import { useTranslation } from 'react-i18next';
+import ShareAssetModal from '../../components/ShareAssetModal';
 import CodeMirror from '@uiw/react-codemirror';
 import { yaml } from '@codemirror/lang-yaml';
 
@@ -47,11 +49,12 @@ const TaskCenter: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { message } = App.useApp();
-    const { token, hasPermission } = useAppStore();
+    const { token, hasPermission, currentProject } = useAppStore();
     const { isMobile } = useBreakpoint();
     const [form] = Form.useForm();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<any>(null);
+    const [sharingTask, setSharingTask] = useState<any>(null);
     const [contentValue, setContentValue] = useState('');
     const [extraVars, setExtraVars] = useState<Array<{ key: string; value: string }>>([]);
     const [previewModalOpen, setPreviewModalOpen] = useState(false);
@@ -280,6 +283,16 @@ const TaskCenter: React.FC = () => {
                                 </Button>
                             </Tooltip>
                         )
+                    )}
+                    {(hasPermission('*') || hasPermission('tasks:ansible_tasks:edit')) && (
+                        <Tooltip title="跨项目授权">
+                            <Button
+                                type="link"
+                                size="small"
+                                icon={<ShareAltOutlined style={{ color: '#1677ff' }} />}
+                                onClick={() => setSharingTask(record)}
+                            />
+                        </Tooltip>
                     )}
                     {hasPermission('tasks:ansible_tasks:edit') && (
                         <Tooltip title={t('common.edit')}>
@@ -603,6 +616,16 @@ const TaskCenter: React.FC = () => {
                     </Form.Item>
                 </Form>
             </Modal>
+            {sharingTask && currentProject && (
+                <ShareAssetModal
+                    open={!!sharingTask}
+                    onClose={() => setSharingTask(null)}
+                    assetType="ansible_task"
+                    assetId={sharingTask.id}
+                    assetName={sharingTask.name}
+                    fromProjectId={currentProject.id}
+                />
+            )}
         </Card>
     );
 };

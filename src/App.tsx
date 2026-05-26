@@ -10,6 +10,7 @@ import enUS from 'antd/locale/en_US';
 import useAppStore from './store/useAppStore';
 import { useTranslation } from 'react-i18next';
 import { getMe } from './api/user';
+import { getProjects } from './api/rbac';
 import LoginPage from './pages/Login';
 import AppErrorBoundary from './components/ErrorBoundary';
 
@@ -79,6 +80,8 @@ const AISettings = lazy(() => import("./pages/System/AISettings"));
 const AlertCenter = lazy(() => import("./pages/SRE/AlertCenter"));
 const TaskPulse = lazy(() => import("./pages/SRE/TaskPulse"));
 const Profile = lazy(() => import("./pages/Profile"));
+const ProjectManagement = lazy(() => import("./pages/System/ProjectManagement"));
+const AssetShareCenter = lazy(() => import("./pages/System/AssetShareCenter"));
 
 
 const queryClient = new QueryClient({
@@ -371,6 +374,34 @@ function App() {
           setPermissions([]);
         }
       });
+
+      // 获取当前用户的项目列表
+      getProjects({ page_size: 1000 }).then((res: any) => {
+        const storeToken = useAppStore.getState().token;
+        if (storeToken === token) {
+          const projectsList = res.data || [];
+          useAppStore.getState().setProjects(projectsList);
+          
+          const currentProject = useAppStore.getState().currentProject;
+          if (projectsList.length > 0) {
+            const exists = currentProject && projectsList.some((p: any) => p.id === currentProject.id);
+            if (!exists) {
+              const defaultProj = projectsList.find((p: any) => p.code === 'default') || projectsList[0];
+              useAppStore.getState().setCurrentProject(defaultProj);
+            } else {
+              const updatedProj = projectsList.find((p: any) => p.id === currentProject.id);
+              useAppStore.getState().setCurrentProject(updatedProj);
+            }
+          } else {
+            useAppStore.getState().setCurrentProject(null);
+          }
+        }
+      }).catch((err: any) => {
+        console.error("Failed to load projects:", err);
+      });
+    } else {
+      useAppStore.getState().setProjects([]);
+      useAppStore.getState().setCurrentProject(null);
     }
   }, [token, setPermissions, setCurrentUser, setToken]);
 
@@ -425,6 +456,8 @@ function App() {
                 <Route path="v1/system/periodic-tasks" element={<PeriodicTask />} />
                 <Route path="v1/ai-rag/config" element={<AISettings />} />
                 <Route path="v1/system/vault" element={<CredentialVault />} />
+                <Route path="v1/system/projects" element={<ProjectManagement />} />
+                <Route path="v1/system/asset-shares" element={<AssetShareCenter />} />
                 <Route path="*" element={<div>^^页面正在开发中^^</div>} />
               </Route>
             </Routes>

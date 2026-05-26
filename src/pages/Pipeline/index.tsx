@@ -12,7 +12,8 @@ import {
   FieldTimeOutlined,
   RocketOutlined,
   ClockCircleOutlined,
-  BranchesOutlined
+  BranchesOutlined,
+  ShareAltOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -22,6 +23,7 @@ import History from './History';
 import ScheduleList from './Schedule';
 import VersionHistoryDrawer from './VersionHistory';
 import useAppStore from '../../store/useAppStore';
+import ShareAssetModal from '../../components/ShareAssetModal';
 import { useTranslation } from 'react-i18next';
 
 const { Title, Text } = Typography;
@@ -34,7 +36,7 @@ const TemplateList = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { hasPermission } = useAppStore();
+  const { hasPermission, currentProject } = useAppStore();
   const [searchText, setSearchText] = useState('');
   const { message, modal } = App.useApp();
   const [versionDrawerOpen, setVersionDrawerOpen] = useState(false);
@@ -46,6 +48,7 @@ const TemplateList = () => {
   const [promoteModalVisible, setPromoteModalVisible] = useState(false);
   const [promotingRecord, setPromotingRecord] = useState<any>(null);
   const [promoteForm] = Form.useForm();
+  const [sharingPipeline, setSharingPipeline] = useState<any>(null);
 
   const { data: pipelineData, isLoading } = useQuery({
     queryKey: ['pipelines', searchText, page, pageSize, createType],
@@ -219,6 +222,14 @@ const TemplateList = () => {
               className="rounded-lg"
             />
           </Tooltip>
+          <Tooltip title="跨项目授权">
+            <Button
+              size="small"
+              icon={<ShareAltOutlined style={{ color: '#1677ff' }} />}
+              onClick={() => setSharingPipeline(record)}
+              className="rounded-lg"
+            />
+          </Tooltip>
           {hasPermission('pipeline:template:delete') && (
           <Popconfirm
             title={t('pipeline.confirmDeleteTitle')}
@@ -299,6 +310,17 @@ const TemplateList = () => {
             open={versionDrawerOpen}
             onClose={() => setVersionDrawerOpen(false)}
         />
+
+        {sharingPipeline && currentProject && (
+            <ShareAssetModal
+                open={!!sharingPipeline}
+                onClose={() => setSharingPipeline(null)}
+                assetType="pipeline"
+                assetId={sharingPipeline.id}
+                assetName={sharingPipeline.name}
+                fromProjectId={currentProject.id}
+            />
+        )}
 
         <Modal
           title={t('pipeline.promoteTitle')}

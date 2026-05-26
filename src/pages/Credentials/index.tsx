@@ -17,8 +17,9 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCredentials, createCredential, updateCredential, deleteCredential, verifyCredential } from "../../api/hosts.ts";
 import useAppStore from "../../store/useAppStore.ts";
-import { DeleteOutlined, EditOutlined, PlusOutlined, LockOutlined, UserOutlined, CheckCircleOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined, PlusOutlined, LockOutlined, UserOutlined, CheckCircleOutlined, ShareAltOutlined } from "@ant-design/icons";
 import {TableSkeleton} from "../../components/Skeletons";
+import ShareAssetModal from '../../components/ShareAssetModal';
 import { useBreakpoint } from '@/utils/useBreakpoint';
 import { useTranslation } from 'react-i18next';
 
@@ -28,7 +29,7 @@ const CredentialManagement: React.FC = () => {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
     const { message } = App.useApp();
-    const { hasPermission } = useAppStore();
+    const { hasPermission, currentProject } = useAppStore();
     const { isMobile } = useBreakpoint();
     const [form] = Form.useForm();
     const [testForm] = Form.useForm();
@@ -39,6 +40,7 @@ const CredentialManagement: React.FC = () => {
     const [authType, setAuthType] = useState<'password' | 'key'>('password');
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [sharingCred, setSharingCred] = useState<any>(null);
 
     const { data: credData, isLoading } = useQuery({
         queryKey: ['ssh-credentials', page, pageSize],
@@ -146,6 +148,13 @@ const CredentialManagement: React.FC = () => {
             key: 'action',
             render: (_: any, record: any) => (
                 <Space size="middle">
+                    <Tooltip title="跨项目授权">
+                        <Button
+                            type="text"
+                            icon={<ShareAltOutlined style={{ color: '#1677ff' }} />}
+                            onClick={() => setSharingCred(record)}
+                        />
+                    </Tooltip>
                     <Tooltip title={t('credential.testConnectivity')}>
                         <Button
                             type="text"
@@ -295,6 +304,18 @@ const CredentialManagement: React.FC = () => {
                     </Form.Item>
                 </Form>
             </Modal>
+
+            {/* 跨项目授权弹窗 */}
+            {sharingCred && currentProject && (
+                <ShareAssetModal
+                    open={!!sharingCred}
+                    onClose={() => setSharingCred(null)}
+                    assetType="ssh_credential"
+                    assetId={sharingCred.id}
+                    assetName={sharingCred.name}
+                    fromProjectId={currentProject.id}
+                />
+            )}
         </Card>
     );
 };

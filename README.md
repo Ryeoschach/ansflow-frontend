@@ -55,6 +55,13 @@ Enterprise-level DevOps pipeline platform frontend, built with React 18 + TypeSc
 - **Notification Config Panel**: Graphically toggle channels, define bot Webhooks, select alert thresholds (e.g. error only), and check event whitelist tags. Supports configuring the new `webhook_token` parameter to secure SRE Webhook receivers via Bearer HTTP headers or URL parameters (allowing any requests if empty).
 - **MLPS 2.0 Audits Panel**: Compliance score dashboard for host infrastructure with one-click security scanning and patch execution.
 
+### 5. WebSocket Streaming
+- **Real-time Streaming Chat**: AI chatbot Floating Panel chatbot upgraded to WebSocket connections to support word-by-word typewriter-style streaming responses.
+
+### 6. Project Multi-Tenancy & Asset Sharing
+- **Workspace Isolation**: Global Project Selector dropdown in Header with React Query auto-invalidation. Operations on Hosts, Credentials, Pipelines, Tasks, Clusters, and Policies list tables feature a 🔗 Share action button that opens a `ShareAssetModal`, letting users grant `read`, `use`, or `full` permissions to other workspace projects.
+- **Asset Share Center**: Dedicated workspace view `/v1/system/asset-shares` to manage shared-in and shared-out assets, perform filtering, audit operations, and revoke access keys.
+
 ---
 
 ## Getting Started

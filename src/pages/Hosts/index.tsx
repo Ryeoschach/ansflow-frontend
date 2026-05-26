@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Table, Card, Button, Modal, Form, Input, Space, Tooltip, Popconfirm, Select, InputNumber, Tag, App, Alert } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, DesktopOutlined, CloudUploadOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, PlusOutlined, DesktopOutlined, CloudUploadOutlined, ShareAltOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {getHosts, createHost, updateHost, deleteHost, getEnvironments, getPlatforms, getCredentials, bulkImportHost} from '../../api/hosts.ts';
 import useAppStore from '../../store/useAppStore';
 import {TableSkeleton} from "../../components/Skeletons";
+import ShareAssetModal from '../../components/ShareAssetModal';
 import { useBreakpoint } from '@/utils/useBreakpoint';
 import { useTranslation } from 'react-i18next';
 
@@ -12,7 +13,7 @@ const HostManagement: React.FC = () => {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
     const { message } = App.useApp();
-    const { hasPermission } = useAppStore();
+    const { hasPermission, currentProject } = useAppStore();
     const { token } = useAppStore.getState();
     const { isMobile } = useBreakpoint();
     const [form] = Form.useForm();
@@ -20,6 +21,7 @@ const HostManagement: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [editingHost, setEditingHost] = useState<any>(null);
+    const [sharingHost, setSharingHost] = useState<any>(null);
 
     // 分页与筛选参数
     const [params, setParams] = useState({ page: 1, size: 10, search: '' });
@@ -172,6 +174,13 @@ const HostManagement: React.FC = () => {
             key: 'action',
             render: (_: any, record: any) => (
                 <Space size="middle">
+                    <Tooltip title="跨项目授权">
+                        <Button
+                            type="text"
+                            icon={<ShareAltOutlined style={{ color: '#1677ff' }} />}
+                            onClick={() => setSharingHost(record)}
+                        />
+                    </Tooltip>
                     <Tooltip title={t('host.edit')}>
                         <Button type="text" icon={<EditOutlined />} onClick={() => {
                             setEditingHost(record);
@@ -361,6 +370,18 @@ const HostManagement: React.FC = () => {
                     </Form.Item>
                 </Form>
             </Modal>
+
+            {/* 跨项目授权弹窗 */}
+            {sharingHost && currentProject && (
+                <ShareAssetModal
+                    open={!!sharingHost}
+                    onClose={() => setSharingHost(null)}
+                    assetType="host"
+                    assetId={sharingHost.id}
+                    assetName={sharingHost.hostname}
+                    fromProjectId={currentProject.id}
+                />
+            )}
         </Card>
     );
 };
