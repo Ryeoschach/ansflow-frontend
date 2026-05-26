@@ -52,7 +52,7 @@ Enterprise-level DevOps pipeline platform frontend, built with React 18 + TypeSc
 
 ### 4. Configuration & Compliance Dashboards
 - **Custom AI Prompt Editor**: Visual interface to edit prompts for 7 core LLM scenarios, with a dynamic variable guide (color-coded indicators for required inputs) and frontend safety checks to prevent missing placeholders.
-- **Notification Config Panel**: Graphically toggle channels, define bot Webhooks, select alert thresholds (e.g. error only), and check event whitelist tags.
+- **Notification Config Panel**: Graphically toggle channels, define bot Webhooks, select alert thresholds (e.g. error only), and check event whitelist tags. Supports configuring the new `webhook_token` parameter to secure SRE Webhook receivers via Bearer HTTP headers or URL parameters (allowing any requests if empty).
 - **MLPS 2.0 Audits Panel**: Compliance score dashboard for host infrastructure with one-click security scanning and patch execution.
 
 ---
