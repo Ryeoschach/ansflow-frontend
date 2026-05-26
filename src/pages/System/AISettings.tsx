@@ -321,7 +321,7 @@ const AISettings: React.FC = () => {
           </Space>
         );
       } },
-      { title: "上下文", dataIndex: 'num_ctx', key: 'num_ctx', render: (val: number) => <Text type="secondary" size="small">{val || 4096}</Text> },
+      { title: "上下文", dataIndex: 'num_ctx', key: 'num_ctx', render: (val: number) => <Text type="secondary" style={{ fontSize: '12px' }}>{val || 4096}</Text> },
       {
         title: t('common.action'), key: 'action', width: 120,
         render: (_: any, record: AIModel) => (
@@ -611,7 +611,7 @@ const AISettings: React.FC = () => {
   };
 
   const renderPromptsTab = () => {
-    const prompts = promptsData?.data || promptsData?.results || (Array.isArray(promptsData) ? promptsData : []);
+    const prompts = (promptsData as any)?.data || (promptsData as any)?.results || (Array.isArray(promptsData) ? promptsData : []);
 
     const columns = [
       {

@@ -449,10 +449,10 @@ const RoleManagement: React.FC = () => {
                                                 const isChecking = !prev.includes(childId);
                                                 let next = isChecking 
                                                     ? [...prev, childId] 
-                                                    : prev.filter(id => id !== childId);
+                                                    : prev.filter((id: string) => id !== childId);
 
                                                 // 计算当前该父菜单下还有多少个选中的子菜单
-                                                const checkedChildren = childIds.filter(id => next.includes(id));
+                                                const checkedChildren = childIds.filter((id: string) => next.includes(id));
                                                 
                                                 if (checkedChildren.length > 0) {
                                                     // 只要有至少一个子菜单被选中，父菜单就必须处于选中状态

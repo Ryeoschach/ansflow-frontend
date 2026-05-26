@@ -178,7 +178,7 @@ export const syncAIProviderModels = (id: number): Promise<any> =>
   request.post(`/ai/providers/${id}/sync_models/`);
 
 // 模型管理
-export const getAIModels = (params?: { model_type?: string }): Promise<PaginatedResponse<AIModel>> =>
+export const getAIModels = (params?: Record<string, any>): Promise<PaginatedResponse<AIModel>> =>
   request.get('/ai/models/', { params }) as any;
 
 export const createAIModel = (data: Partial<AIModel>): Promise<AIModel> =>

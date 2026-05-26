@@ -411,7 +411,7 @@ const ComplianceManagement: React.FC = () => {
               </Title>
 
               {(selectedClause.baseline_details || []).length > 0 ? (
-                <Table
+                <Table<any>
                   dataSource={selectedClause.baseline_details}
                   rowKey="mapping_id"
                   pagination={false}

@@ -51,16 +51,20 @@ const ConfigCenter: React.FC = () => {
     queryFn: () => getCategories(),
   });
 
+  const categoriesList = Array.isArray(categoriesData)
+    ? categoriesData
+    : (categoriesData as any)?.results || (categoriesData as any)?.data || [];
+
   // 获取选中分类的详情（含 items）
-  const { data: categoryDetail, refetch: refetchCategoryDetail } = useQuery({
+  const { data: categoryDetail, isLoading: categoryDetailLoading, refetch: refetchCategoryDetail } = useQuery({
     queryKey: ['config_category_detail', selectedCategory?.id],
     queryFn: () => getCategory(selectedCategory!.id),
     enabled: !!selectedCategory,
   });
 
   // 获取通知分类详情
-  const notificationCategory = (categoriesData as any)?.results?.find((c: any) => c.name === 'notification');
-  const { data: notificationCategoryDetail, refetch: refetchNotificationDetail } = useQuery({
+  const notificationCategory = categoriesList.find((c: any) => c.name === 'notification');
+  const { data: notificationCategoryDetail, isLoading: notificationLoading, refetch: refetchNotificationDetail } = useQuery({
     queryKey: ['config_category_detail', notificationCategory?.id],
     queryFn: () => getCategory(notificationCategory!.id),
     enabled: !!notificationCategory?.id,
@@ -71,6 +75,10 @@ const ConfigCenter: React.FC = () => {
     queryKey: ['config_change_logs'],
     queryFn: () => getChangeLogs(),
   });
+
+  const changeLogsList = Array.isArray(changeLogsData)
+    ? changeLogsData
+    : (changeLogsData as any)?.results || (changeLogsData as any)?.data || [];
 
   // 创建/更新分类
   const categoryMutation = useMutation({
@@ -168,7 +176,7 @@ const ConfigCenter: React.FC = () => {
   const handleOpenRollback = (item: ConfigItem) => {
     setSelectedItem(item);
     // 获取该 item 的所有变更记录
-    const logs = ((changeLogsData as any)?.results || changeLogsData?.data || [])?.filter((l: ConfigChangeLog) => l.item === item.id) || [];
+    const logs = changeLogsList.filter((l: ConfigChangeLog) => l.item === item.id) || [];
     setRollbackLogs(logs);
     setIsRollbackModalOpen(true);
   };
@@ -260,7 +268,7 @@ const ConfigCenter: React.FC = () => {
               onChange={(checked) => {
                 updateConfigItem(record.id, { value: checked ? 'true' : 'false' }).then(() => {
                   message.success(t('common.success'));
-                  if (selectedCategory) refetchCategoryDetail();
+                  queryClient.invalidateQueries({ queryKey: ['config_category_detail'] });
                 }).catch((err: any) => message.error(err?.message || t('common.error')));
               }}
               disabled={!hasPermission('config:item:edit')}
@@ -290,7 +298,7 @@ const ConfigCenter: React.FC = () => {
               onChange={(checkedValues) => {
                 updateConfigItem(record.id, { value: JSON.stringify(checkedValues) }).then(() => {
                   message.success(t('common.success'));
-                  if (selectedCategory) refetchCategoryDetail();
+                  queryClient.invalidateQueries({ queryKey: ['config_category_detail'] });
                 }).catch((err: any) => message.error(err?.message || t('common.error')));
               }}
               disabled={!hasPermission('config:item:edit')}
@@ -305,7 +313,7 @@ const ConfigCenter: React.FC = () => {
               if (newValue !== v) {
                 updateConfigItem(record.id, { value: newValue }).then(() => {
                   message.success(t('common.success'));
-                  if (selectedCategory) refetchCategoryDetail();
+                  queryClient.invalidateQueries({ queryKey: ['config_category_detail'] });
                 }).catch((err: any) => message.error(err?.message || t('common.error')));
               }
             }}
@@ -394,14 +402,14 @@ const ConfigCenter: React.FC = () => {
         <Card size="small" className="shadow-sm border-none bg-emerald-50 dark:bg-emerald-900/10">
           <Statistic
             title={t('configCenter.totalCategories')}
-            value={(categoriesData as any)?.count || (categoriesData as any)?.data?.length || 0}
+            value={(categoriesData as any)?.total || (categoriesData as any)?.count || categoriesList.length || 0}
             prefix={<InfoCircleOutlined className="text-emerald-600" />}
           />
         </Card>
         <Card size="small" className="shadow-sm border-none bg-green-50 dark:bg-green-900/10">
           <Statistic
             title={t('configCenter.totalItems')}
-            value={(categoriesData as any)?.results?.reduce((acc: number, cur: any) => acc + cur.item_count, 0) || 0}
+            value={categoriesList.reduce((acc: number, cur: any) => acc + (cur.item_count || 0), 0)}
             prefix={<CheckCircleOutlined className="text-green-600" />}
           />
         </Card>
@@ -429,7 +437,7 @@ const ConfigCenter: React.FC = () => {
                     </div>
                     <Table
                       size="small"
-                      dataSource={(categoriesData as any)?.results || categoriesData?.data || []}
+                      dataSource={categoriesList}
                       columns={categoryColumns}
                       rowKey="id"
                       loading={categoriesLoading}
@@ -451,7 +459,7 @@ const ConfigCenter: React.FC = () => {
               children: (
                 <Table
                   size="small"
-                  dataSource={(changeLogsData as any)?.results || changeLogsData?.data || []}
+                  dataSource={changeLogsList}
                   columns={changeLogColumns}
                   rowKey="id"
                   loading={logsLoading}
@@ -479,7 +487,7 @@ const ConfigCenter: React.FC = () => {
                       columns={itemColumns}
                       rowKey="id"
                       pagination={false}
-                      loading={!notificationCategoryDetail}
+                      loading={notificationLoading}
                     />
                   ) : (
                     <Empty description="未找到通知分类配置，请检查后端初始化状态" />
@@ -698,7 +706,7 @@ const ConfigCenter: React.FC = () => {
             dataSource={categoryDetail?.items || []}
             columns={itemColumns}
             rowKey="id"
-            loading={!categoryDetail}
+            loading={categoryDetailLoading}
             pagination={false}
             scroll={{ x: 'max-content' }}
           />

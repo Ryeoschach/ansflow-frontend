@@ -139,7 +139,7 @@ const GitOpsCenter: React.FC = () => {
           <Text style={{ fontSize: '12px' }}>
             <GithubOutlined /> {record.git_repo}
           </Text>
-          <Tag size="small" color="blue">
+          <Tag color="blue">
             Branch: {record.git_branch}
           </Tag>
         </Space>
@@ -337,8 +337,9 @@ const GitOpsCenter: React.FC = () => {
               name="path"
               label="Helm Chart 路径"
               rules={[{ required: true }]}
+              help="相对于仓库根目录的路径"
             >
-              <Input placeholder="." help="相对于仓库根目录的路径" />
+              <Input placeholder="." />
             </Form.Item>
           </div>
         </Form>
