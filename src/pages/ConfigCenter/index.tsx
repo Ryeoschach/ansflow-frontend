@@ -58,6 +58,14 @@ const ConfigCenter: React.FC = () => {
     enabled: !!selectedCategory,
   });
 
+  // 获取通知分类详情
+  const notificationCategory = (categoriesData as any)?.results?.find((c: any) => c.name === 'notification');
+  const { data: notificationCategoryDetail, refetch: refetchNotificationDetail } = useQuery({
+    queryKey: ['config_category_detail', notificationCategory?.id],
+    queryFn: () => getCategory(notificationCategory!.id),
+    enabled: !!notificationCategory?.id,
+  });
+
   // 获取变更日志
   const { data: changeLogsData, isLoading: logsLoading, refetch: refetchLogs } = useQuery({
     queryKey: ['config_change_logs'],
@@ -101,7 +109,7 @@ const ConfigCenter: React.FC = () => {
     onSuccess: () => {
       message.success(editingItem ? t('common.success') : t('common.success'));
       setIsItemModalOpen(false);
-      if (selectedCategory) refetchCategoryDetail();
+      queryClient.invalidateQueries({ queryKey: ['config_category_detail'] });
       queryClient.invalidateQueries({ queryKey: ['config_change_logs'] });
     },
     onError: (err: any) => message.error(err?.message || t('common.error')),
@@ -112,7 +120,7 @@ const ConfigCenter: React.FC = () => {
     mutationFn: deleteConfigItem,
     onSuccess: () => {
       message.success(t('common.success'));
-      if (selectedCategory) refetchCategoryDetail();
+      queryClient.invalidateQueries({ queryKey: ['config_category_detail'] });
       queryClient.invalidateQueries({ queryKey: ['config_change_logs'] });
     },
     onError: (err: any) => message.error(err?.message || t('common.error')),
@@ -126,7 +134,7 @@ const ConfigCenter: React.FC = () => {
       message.success(t('configCenter.rollbackSuccess'));
       setIsRollbackModalOpen(false);
       rollbackForm.resetFields();
-      if (selectedCategory) refetchCategoryDetail();
+      queryClient.invalidateQueries({ queryKey: ['config_category_detail'] });
       queryClient.invalidateQueries({ queryKey: ['config_change_logs'] });
     },
     onError: (err: any) => message.error(err?.message || t('common.error')),
@@ -378,6 +386,7 @@ const ConfigCenter: React.FC = () => {
           refetchCategories();
           refetchLogs();
           if (selectedCategory) refetchCategoryDetail();
+          if (notificationCategory) refetchNotificationDetail();
         }} />
       </div>
 
@@ -463,13 +472,14 @@ const ConfigCenter: React.FC = () => {
                     showIcon 
                     className="mb-6"
                   />
-                  {categoriesData?.results?.find((c: any) => c.name === 'notification') ? (
+                  {notificationCategory ? (
                     <Table
                       size="small"
-                      dataSource={categoriesData.results.find((c: any) => c.name === 'notification')?.items || []}
+                      dataSource={notificationCategoryDetail?.items || []}
                       columns={itemColumns}
                       rowKey="id"
                       pagination={false}
+                      loading={!notificationCategoryDetail}
                     />
                   ) : (
                     <Empty description="未找到通知分类配置，请检查后端初始化状态" />
