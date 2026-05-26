@@ -219,7 +219,7 @@ const ConfigCenter: React.FC = () => {
           {hasPermission('config:category:edit') && (
             <Button type="text" icon={<EditOutlined />} onClick={() => openCategoryModal(record)} />
           )}
-          {hasPermission('config:category:delete') && (
+          {hasPermission('config:category:delete') && record.name !== 'notification' && record.name !== 'system' && (
             <Popconfirm
               title={t('configCenter.confirmDeleteCategory')}
               onConfirm={() => deleteCategoryMutation.mutate(record.id)}
