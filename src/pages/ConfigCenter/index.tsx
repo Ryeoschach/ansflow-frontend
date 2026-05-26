@@ -349,7 +349,7 @@ const ConfigCenter: React.FC = () => {
               <Button type="text" icon={<HistoryOutlined />} onClick={() => handleOpenRollback(record)} />
             </Tooltip>
           )}
-          {hasPermission('config:item:delete') && (
+          {hasPermission('config:item:delete') && record.category_name !== 'notification' && record.category_name !== 'system' && (
             <Popconfirm
               title={t('configCenter.confirmDeleteItem')}
               onConfirm={() => deleteItemMutation.mutate(record.id)}
@@ -689,11 +689,18 @@ const ConfigCenter: React.FC = () => {
       {/* 分类详情 Modal */}
       <Modal
         title={
-          <Space>
-            <Text strong>{selectedCategory?.label}</Text>
-            {selectedCategory && <Tag>{selectedCategory.name}</Tag>}
-            {selectedCategory?.description && <Text type="secondary" className="text-sm">{selectedCategory.description}</Text>}
-          </Space>
+          <div className="flex justify-between items-center w-full pr-8">
+            <Space>
+              <Text strong>{selectedCategory?.label}</Text>
+              {selectedCategory && <Tag>{selectedCategory.name}</Tag>}
+              {selectedCategory?.description && <Text type="secondary" className="text-sm">{selectedCategory.description}</Text>}
+            </Space>
+            {hasPermission('config:item:edit') && selectedCategory?.name !== 'notification' && selectedCategory?.name !== 'system' && (
+              <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => openItemModal()}>
+                {t('configCenter.addItem')}
+              </Button>
+            )}
+          </div>
         }
         open={isCategoryDetailModalOpen}
         onCancel={() => setIsCategoryDetailModalOpen(false)}

@@ -41,6 +41,7 @@ export const deleteCategory = (id: number): Promise<any> =>
 export interface ConfigItem {
   id: number;
   category: number;
+  category_name?: string;
   key: string;
   value: any;
   value_type: 'string' | 'int' | 'float' | 'bool' | 'json';
