@@ -100,3 +100,19 @@ export const markNotificationRead = (id: number): Promise<any> =>
 // 标记所有通知为已读
 export const markAllNotificationsRead = (): Promise<any> =>
     request.post('/system/notifications/mark-all-read/');
+
+// 获取流水线报表数据
+export const getPipelineReport = (params?: any): Promise<any> =>
+    request.get('/system/reports/pipeline/', { params }) as any;
+
+// 获取 Ansible 执行报表数据
+export const getAnsibleReport = (params?: any): Promise<any> =>
+    request.get('/system/reports/ansible/', { params }) as any;
+
+// 获取等保合规报表数据
+export const getComplianceReport = (params?: any): Promise<any> =>
+    request.get('/system/reports/compliance/', { params }) as any;
+
+// 触发异步导出系统多维报表
+export const exportSystemReport = (data: any): Promise<any> =>
+    request.post('/system/reports/export/', data);

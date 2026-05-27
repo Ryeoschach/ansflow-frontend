@@ -2037,6 +2037,7 @@
     "healingFailedCount": "Healing Failed",
     "exportCsv": "Export CSV Report",
     "selectTimeRange": "Select Time Range",
-    "searchAlertName": "Search Alert Name"
+    "searchAlertName": "Search Alert Name",
+    "exportSubmitted": "Report generation task submitted. You will receive a download link in the Notification Center once the archive package is ready."
   }
 }

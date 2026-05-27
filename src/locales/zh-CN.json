@@ -2011,6 +2011,7 @@
     "healingFailedCount": "自愈失败数",
     "exportCsv": "导出 CSV 报表",
     "selectTimeRange": "选择时间范围",
-    "searchAlertName": "搜索告警名称"
+    "searchAlertName": "搜索告警名称",
+    "exportSubmitted": "报表生成任务已提交，多维报表包生成完成后将在通知中心收到下载提示"
   }
 }
