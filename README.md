@@ -62,6 +62,11 @@ Enterprise-level DevOps pipeline platform frontend, built with React 18 + TypeSc
 - **Workspace Isolation**: Global Project Selector dropdown in Header with React Query auto-invalidation. Operations on Hosts, Credentials, Pipelines, Tasks, Clusters, and Policies list tables feature a 🔗 Share action button that opens a `ShareAssetModal`, letting users grant `read`, `use`, or `full` permissions to other workspace projects.
 - **Asset Share Center**: Dedicated workspace view `/v1/system/asset-shares` to manage shared-in and shared-out assets, perform filtering, audit operations, and revoke access keys.
 
+### 7. Multi-Dimensional Operation Reports
+- **Route**: `/v1/system/reports` and `/v1/sre/report`
+- **Widgets**: Dynamic charting for SRE Alert self-healing (healing success rate, daily counts), DAG Pipelines (overall success rates, execution time logs, failure frequency leaderboards), Ansible Playbook executions (module usage, host resource allocation), and Compliance Baseline scoring trends.
+- **Data Exporting**: Asynchronous CSV report packet builder and notification link downloader.
+
 ---
 
 ## Getting Started
