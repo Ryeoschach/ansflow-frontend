@@ -60,7 +60,11 @@
   "header": {
     "platformTitle": "运维自动化平台",
     "profile": "个人中心",
-    "logout": "退出登录"
+    "logout": "退出登录",
+    "notifications": "通知中心",
+    "markAllRead": "全部标记已读",
+    "noNotifications": "暂无通知",
+    "downloadReport": "下载报表"
   },
   "auth": {
     "login": "登录",
@@ -1983,5 +1987,30 @@
     },
     "associateModalTitle": "为条款 {{code}} 关联主机基线",
     "selectBaselines": "请选择需要绑定的基线"
+  },
+  "report": {
+    "title": "告警自愈报表",
+    "subtitle": "提供告警发生频次、自愈成功率以及自愈执行趋势等数据统计与导出功能。",
+    "totalAlerts": "告警总数",
+    "firingAlerts": "活动告警数",
+    "resolvedAlerts": "已恢复告警数",
+    "healingTriggered": "自愈执行数",
+    "healingSuccess": "自愈成功数",
+    "healingFailed": "自愈失败数",
+    "healingSuccessRate": "自愈成功率",
+    "trendTitle": "告警发生与自愈趋势",
+    "severityTitle": "告警级别分布",
+    "healingStatusTitle": "自愈状态分布",
+    "alertName": "告警名称",
+    "severity": "严重程度",
+    "count": "发生次数",
+    "resolvedCount": "已恢复数",
+    "recoveryRate": "恢复率",
+    "healingCount": "自愈次数",
+    "healingSuccessCount": "自愈成功数",
+    "healingFailedCount": "自愈失败数",
+    "exportCsv": "导出 CSV 报表",
+    "selectTimeRange": "选择时间范围",
+    "searchAlertName": "搜索告警名称"
   }
 }

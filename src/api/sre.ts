@@ -85,3 +85,11 @@ export const bindHealingPipeline = (alertId: number, data: { pipeline_id: number
 // AIGC 生成流水线
 export const generatePipeline = (prompt: string): Promise<any> =>
   request.post('/ai/chat-histories/generate-pipeline/', { prompt }) as any;
+
+// 获取告警统计报表
+export const getAlertReport = (params?: { start_time?: string; end_time?: string }): Promise<any> =>
+  request.get('/sre/alerts/report/', { params }) as any;
+
+// 导出告警统计报表为 CSV (异步触发)
+export const exportAlertReport = (params?: { start_time?: string; end_time?: string }): Promise<{ message: string }> =>
+  request.post('/sre/alerts/export-report/', params) as any;

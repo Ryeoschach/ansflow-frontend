@@ -46,7 +46,11 @@
   "header": {
     "platformTitle": "DevOps Automation Platform",
     "profile": "Profile",
-    "logout": "Logout"
+    "logout": "Logout",
+    "notifications": "Notifications",
+    "markAllRead": "Mark all as read",
+    "noNotifications": "No notifications",
+    "downloadReport": "Download Report"
   },
   "auth": {
     "login": "Login",
@@ -2009,5 +2013,30 @@
     },
     "associateModalTitle": "Associate Host Baselines for Clause {{code}}",
     "selectBaselines": "Please select host baselines to associate"
+  },
+  "report": {
+    "title": "Alert & Self-Healing Report",
+    "subtitle": "Provides statistics and export functionality for alert frequencies, self-healing success rates, and trends.",
+    "totalAlerts": "Total Alerts",
+    "firingAlerts": "Firing Alerts",
+    "resolvedAlerts": "Resolved Alerts",
+    "healingTriggered": "Healing Executed",
+    "healingSuccess": "Healing Succeeded",
+    "healingFailed": "Healing Failed",
+    "healingSuccessRate": "Healing Success Rate",
+    "trendTitle": "Alert and Healing Trend",
+    "severityTitle": "Alert Severity Distribution",
+    "healingStatusTitle": "Self-Healing Status Distribution",
+    "alertName": "Alert Name",
+    "severity": "Severity",
+    "count": "Occurrences",
+    "resolvedCount": "Resolved",
+    "recoveryRate": "Recovery Rate",
+    "healingCount": "Healing Executed",
+    "healingSuccessCount": "Healing Succeeded",
+    "healingFailedCount": "Healing Failed",
+    "exportCsv": "Export CSV Report",
+    "selectTimeRange": "Select Time Range",
+    "searchAlertName": "Search Alert Name"
   }
 }

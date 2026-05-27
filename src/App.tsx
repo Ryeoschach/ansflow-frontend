@@ -79,6 +79,7 @@ const PeriodicTask = lazy(() => import("./pages/System/PeriodicTask"));
 const AISettings = lazy(() => import("./pages/System/AISettings"));
 const AlertCenter = lazy(() => import("./pages/SRE/AlertCenter"));
 const TaskPulse = lazy(() => import("./pages/SRE/TaskPulse"));
+const SreReport = lazy(() => import("./pages/SRE/Report"));
 const Profile = lazy(() => import("./pages/Profile"));
 const ProjectManagement = lazy(() => import("./pages/System/ProjectManagement"));
 const AssetShareCenter = lazy(() => import("./pages/System/AssetShareCenter"));
@@ -452,6 +453,7 @@ function App() {
                 <Route path="v1/system/approvals" element={<ApprovalCenter />} />
                 <Route path="v1/sre/alerts" element={<AlertCenter />} />
                 <Route path="v1/sre/pulse" element={<TaskPulse />} />
+                <Route path="v1/sre/report" element={<SreReport />} />
                 <Route path="v1/system/backups" element={<BackupManagement />} />
                 <Route path="v1/system/periodic-tasks" element={<PeriodicTask />} />
                 <Route path="v1/ai-rag/config" element={<AISettings />} />

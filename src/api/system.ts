@@ -75,3 +75,28 @@ export interface CeleryStatsResponse {
 
 export const getCeleryStats = (): Promise<CeleryStatsResponse> =>
     request.get<CeleryStatsResponse>('/system/health/celery_stats/') as any;
+
+export interface UserNotification {
+    id: number;
+    title: string;
+    content: string;
+    is_read: boolean;
+    extra_data: {
+        download_url?: string;
+        type?: string;
+        [key: string]: any;
+    };
+    create_time: string;
+}
+
+// 获取通知列表
+export const getUserNotifications = (): Promise<UserNotification[]> =>
+    request.get('/system/notifications/') as any;
+
+// 标记单条通知为已读
+export const markNotificationRead = (id: number): Promise<any> =>
+    request.post(`/system/notifications/${id}/mark-read/`);
+
+// 标记所有通知为已读
+export const markAllNotificationsRead = (): Promise<any> =>
+    request.post('/system/notifications/mark-all-read/');
