@@ -75,9 +75,9 @@ const Header: React.FC = () => {
 
                     // 动态更新通知列表
                     queryClient.setQueryData<UserNotification[]>(['userNotifications'], (prev) => {
-                        if (!prev) return [newNotif];
-                        if (prev.some(n => n.id === newNotif.id)) return prev;
-                        return [newNotif, ...prev];
+                        const list: UserNotification[] = Array.isArray(prev) ? prev : ((prev as any)?.data || []);
+                        if (list.some(n => n.id === newNotif.id)) return list;
+                        return [newNotif, ...list];
                     });
                 }
             } catch (err) {
@@ -93,8 +93,8 @@ const Header: React.FC = () => {
         mutationFn: markNotificationRead,
         onSuccess: (_, id) => {
             queryClient.setQueryData<UserNotification[]>(['userNotifications'], (prev) => {
-                if (!prev) return [];
-                return prev.map(n => n.id === id ? { ...n, is_read: true } : n);
+                const list: UserNotification[] = Array.isArray(prev) ? prev : ((prev as any)?.data || []);
+                return list.map(n => n.id === id ? { ...n, is_read: true } : n);
             });
         }
     });
@@ -103,13 +103,14 @@ const Header: React.FC = () => {
         mutationFn: markAllNotificationsRead,
         onSuccess: () => {
             queryClient.setQueryData<UserNotification[]>(['userNotifications'], (prev) => {
-                if (!prev) return [];
-                return prev.map(n => ({ ...n, is_read: true }));
+                const list: UserNotification[] = Array.isArray(prev) ? prev : ((prev as any)?.data || []);
+                return list.map(n => ({ ...n, is_read: true }));
             });
         }
     });
 
-    const unreadCount = notifications.filter(n => !n.is_read).length;
+    const notificationList: UserNotification[] = Array.isArray(notifications) ? notifications : ((notifications as any)?.data || []);
+    const unreadCount = notificationList.filter(n => !n.is_read).length;
 
     const notificationContent = (
         <div className="w-80 sm:w-96 flex flex-col max-h-[480px]">
@@ -129,7 +130,7 @@ const Header: React.FC = () => {
             </div>
             <div className="overflow-y-auto flex-1 max-h-[360px]">
                 <List
-                    dataSource={notifications}
+                    dataSource={notificationList}
                     locale={{ emptyText: <div className="py-8 text-neutral-400 text-center">{t('header.noNotifications')}</div> }}
                     renderItem={(item: UserNotification) => (
                         <List.Item 
