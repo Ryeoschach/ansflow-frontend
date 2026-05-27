@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Table, Card, Tag, Space, Button, Typography, App, Drawer,
   Descriptions, Divider, Badge, Tabs, Modal, Form, Input,
-  Select, Switch, Tooltip, Popconfirm, theme, Progress
+  Select, Switch, Tooltip, Popconfirm, theme, Progress, DatePicker
 } from 'antd';
 import { 
   SyncOutlined, 
@@ -42,6 +42,7 @@ import useWebSocket from 'react-use-websocket';
 
 const { Text, Title } = Typography;
 const { Search } = Input;
+const { RangePicker } = DatePicker;
 
 const AlertCenter: React.FC = () => {
     const { t } = useTranslation();
@@ -90,7 +91,7 @@ const AlertCenter: React.FC = () => {
         queryKey: ['pipeline_run_detail', selectedAlert?.latest_run_id],
         queryFn: () => getPipelineRunDetail(selectedAlert.latest_run_id),
         enabled: !!selectedAlert?.latest_run_id && detailVisible,
-        staleTime: Infinity,
+        refetchInterval: 3000,
     });
 
     const wsUrl = (selectedAlert?.latest_run_id && detailVisible) ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/pipeline/${selectedAlert.latest_run_id}/` : null;
@@ -214,6 +215,7 @@ const AlertCenter: React.FC = () => {
             title: t('alertCenter.level'),
             dataIndex: 'severity',
             key: 'severity',
+            sorter: true,
             render: (val: string) => {
                 let color = 'orange';
                 if (val === 'critical') color = 'red';
@@ -227,6 +229,7 @@ const AlertCenter: React.FC = () => {
             title: t('alertCenter.status'),
             dataIndex: 'status',
             key: 'status',
+            sorter: true,
             render: (val: string) => {
                 const s = statusMap[val] || { color: 'default', text: val };
                 return <Tag icon={s.icon} color={s.color}>{s.text}</Tag>;
@@ -236,13 +239,23 @@ const AlertCenter: React.FC = () => {
             title: t('alertCenter.healingProgress'),
             dataIndex: 'healing_status',
             key: 'healing_status',
+            sorter: true,
             render: (val: string, record: any) => {
                 const s = healingStatusMap[val] || { color: 'default', text: val };
                 const isAuto = record.is_auto_execute;
                 const policyName = record.matched_policy_name;
                 
+                // 呼吸灯效果：针对还没有结果（非 success, failed, ignored 且非 none）的自愈状态
+                const isIntermediate = ['analyzing', 'executing'].includes(val);
+                const wrapBreathing = (children: React.ReactNode) => {
+                    if (isIntermediate) {
+                        return <div style={{ animation: 'breath 2s infinite ease-in-out', display: 'inline-block', width: '100%' }}>{children}</div>;
+                    }
+                    return children;
+                };
+                
                 if (val === 'awaiting_approval' && record.latest_ticket_id) {
-                    return (
+                    return wrapBreathing(
                         <Link to={`/v1/system/approvals?id=${record.latest_ticket_id}`}>
                             <Space direction="vertical" size={0}>
                                 <Space size={4}>
@@ -258,17 +271,17 @@ const AlertCenter: React.FC = () => {
                 }
                 
                 if (val === 'executing' && record.latest_run_id) {
-                    return (
+                    return wrapBreathing(
                         <Tooltip title={`策略: ${policyName || '未知'} | 运行 ID: #${record.latest_run_id} ${isAuto ? '(自动触发)' : ''}`}>
                             <Space direction="vertical" size={2} className="w-24">
                                 <Badge status="warning" text={t('alertCenter.healingInProgress')} />
                                 <Progress percent={30} size={[80, 4]} showInfo={false} status="active" />
-                            </Space>
+                             </Space>
                         </Tooltip>
                     );
                 }
                 
-                return (
+                return wrapBreathing(
                     <Space direction="vertical" size={0}>
                         <Space size={4}>
                             <Badge status={s.color as any} text={s.text} />
@@ -291,6 +304,7 @@ const AlertCenter: React.FC = () => {
             title: t('alertCenter.createTime'),
             dataIndex: 'create_time',
             key: 'create_time',
+            sorter: true,
             render: (val: string) => new Date(val).toLocaleString()
         },
         {
@@ -414,6 +428,13 @@ const AlertCenter: React.FC = () => {
 
     return (
         <div className="flex flex-col gap-6">
+            <style dangerouslySetInnerHTML={{ __html: `
+                @keyframes breath {
+                    0% { opacity: 0.4; }
+                    50% { opacity: 1; }
+                    100% { opacity: 0.4; }
+                }
+            ` }} />
             <div className="flex justify-between items-center px-4 pt-2">
                 <div>
                     <Title level={3} className="m-0!">{t('alertCenter.pageTitle')}</Title>
@@ -451,12 +472,57 @@ const AlertCenter: React.FC = () => {
                             children: (
                                 <div className="pt-4 flex flex-col gap-4">
                                     <div className="flex justify-between items-center">
-                                        <Space>
+                                        <Space wrap>
                                             <Search 
                                                 placeholder={t('alertCenter.alertName')} 
                                                 allowClear 
                                                 onSearch={(val) => setAlertParams({ ...alertParams, alert_name__icontains: val, page: 1 })}
-                                                className="w-64"
+                                                className="w-60"
+                                            />
+                                            <Select
+                                                placeholder={t('alertCenter.level') || '级别'}
+                                                allowClear
+                                                style={{ width: 120 }}
+                                                onChange={(val) => {
+                                                    const { severity, ...rest } = alertParams;
+                                                    setAlertParams({ ...rest, ...(val ? { severity: val } : {}), page: 1 });
+                                                }}
+                                                options={[
+                                                    { label: t('alertCenter.severity.critical', 'Critical'), value: 'critical' },
+                                                    { label: t('alertCenter.severity.warning', 'Warning'), value: 'warning' },
+                                                    { label: t('alertCenter.severity.info', 'Info'), value: 'info' },
+                                                ]}
+                                            />
+                                            <Select
+                                                placeholder={t('alertCenter.status') || '状态'}
+                                                allowClear
+                                                style={{ width: 120 }}
+                                                onChange={(val) => {
+                                                    const { status, ...rest } = alertParams;
+                                                    setAlertParams({ ...rest, ...(val ? { status: val } : {}), page: 1 });
+                                                }}
+                                                options={[
+                                                    { label: t('alertCenter.statusText.firing', 'Firing'), value: 'firing' },
+                                                    { label: t('alertCenter.statusText.resolved', 'Resolved'), value: 'resolved' },
+                                                ]}
+                                            />
+                                            <RangePicker
+                                                placeholder={[t('alertCenter.startTime') || '开始时间', t('alertCenter.endTime') || '结束时间']}
+                                                allowClear
+                                                style={{ width: 260 }}
+                                                onChange={(dates) => {
+                                                    if (dates && dates[0] && dates[1]) {
+                                                        setAlertParams({
+                                                            ...alertParams,
+                                                            create_time__gte: dates[0].toISOString(),
+                                                            create_time__lte: dates[1].toISOString(),
+                                                            page: 1
+                                                        });
+                                                    } else {
+                                                        const { create_time__gte, create_time__lte, ...rest } = alertParams;
+                                                        setAlertParams({ ...rest, page: 1 });
+                                                    }
+                                                }}
                                             />
                                             {selectedAlertKeys.length > 0 && (
                                                 <Button 
@@ -488,7 +554,17 @@ const AlertCenter: React.FC = () => {
                                             total: alertData?.total,
                                             current: alertParams.page,
                                             pageSize: alertParams.size,
-                                            onChange: (page) => setAlertParams({ ...alertParams, page })
+                                        }}
+                                        onChange={(pagination: any, filters: any, sorter: any) => {
+                                            const ordering = sorter.order 
+                                                ? (sorter.order === 'descend' ? `-${sorter.field}` : sorter.field)
+                                                : undefined;
+                                            setAlertParams({
+                                                ...alertParams,
+                                                page: pagination.current,
+                                                size: pagination.pageSize,
+                                                ordering,
+                                            });
                                         }}
                                     />
                                 </div>

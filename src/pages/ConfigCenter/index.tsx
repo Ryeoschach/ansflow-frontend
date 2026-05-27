@@ -290,6 +290,8 @@ const ConfigCenter: React.FC = () => {
             { label: t('configCenter.notifyOnApprovalRequested'), value: 'approval_requested' },
             { label: t('configCenter.notifyOnApprovalResult'), value: 'approval_result' },
             { label: t('configCenter.notifyOnTaskResult'), value: 'task_result' },
+            { label: t('configCenter.notifyOnAlertFiring'), value: 'alert_firing' },
+            { label: t('configCenter.notifyOnAlertResolved'), value: 'alert_resolved' },
           ];
           return (
             <Checkbox.Group

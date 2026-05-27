@@ -135,7 +135,7 @@ const DistributionCharts: React.FC<DistributionChartsProps> = ({ data, isLoading
 
     return (
         <Row gutter={[24, 24]}>
-            <Col xs={24} md={12}>
+            <Col xs={24} md={12} lg={8}>
                 <Card 
                     title={<span className="text-[11px] font-bold text-ans-text-secondary uppercase tracking-widest">{t('dashboard.platformDist')}</span>} 
                     className="ans-card"
@@ -157,7 +157,7 @@ const DistributionCharts: React.FC<DistributionChartsProps> = ({ data, isLoading
                     )}
                 </Card>
             </Col>
-            <Col xs={24} md={12}>
+            <Col xs={24} md={12} lg={8}>
                 <Card 
                     title={<span className="text-[11px] font-bold text-ans-text-secondary uppercase tracking-widest">{t('dashboard.envDist')}</span>} 
                     className="ans-card"
@@ -174,6 +174,28 @@ const DistributionCharts: React.FC<DistributionChartsProps> = ({ data, isLoading
                             </Col>
                             <Col span={13} className="pl-6 border-l border-solid border-ans-border">
                                 {renderDetailList(data?.envDistribution || [])}
+                            </Col>
+                        </Row>
+                    )}
+                </Card>
+            </Col>
+            <Col xs={24} md={12} lg={8}>
+                <Card 
+                    title={<span className="text-[11px] font-bold text-ans-text-secondary uppercase tracking-widest">{t('dashboard.alertSeverityDist') || '告警级别分布'}</span>} 
+                    className="ans-card"
+                >
+                    {isLoading ? (
+                        <Skeleton active paragraph={{ rows: 3 }} />
+                    ) : (
+                        <Row align="middle" gutter={24}>
+                            <Col span={11}>
+                                <ReactECharts 
+                                    option={getPieOption(data?.alertSeverityDistribution || [])} 
+                                    style={{ height: 200 }} 
+                                />
+                            </Col>
+                            <Col span={13} className="pl-6 border-l border-solid border-ans-border">
+                                {renderDetailList(data?.alertSeverityDistribution || [])}
                             </Col>
                         </Row>
                     )}
