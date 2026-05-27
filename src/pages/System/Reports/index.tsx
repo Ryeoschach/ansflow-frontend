@@ -5,9 +5,9 @@ import ReactECharts from 'echarts-for-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import useAppStore from '../../../store/useAppStore';
-import { getAlertReport } from '../../../api/sre';
 import { getPipelineReport, getAnsibleReport, getComplianceReport, exportSystemReport } from '../../../api/system';
 import { getEnvironments, getPlatforms, getResourcePools } from '../../../api/hosts';
+import SreReport from '../../SRE/Report';
 import dayjs from 'dayjs';
 import { message } from '../../../utils/antd';
 
@@ -25,7 +25,6 @@ const SystemReports: React.FC = () => {
     ]);
 
     // Search and filter states
-    const [alertSearchText, setAlertSearchText] = useState('');
     const [ansibleFilters, setAnsibleFilters] = useState({
         envId: undefined as number | undefined,
         platformId: undefined as number | undefined,
@@ -77,11 +76,7 @@ const SystemReports: React.FC = () => {
         enabled: activeTab === 'compliance'
     });
 
-    const { data: alertData, isLoading: isAlertLoading } = useQuery({
-        queryKey: ['sreAlertReport', startTimeStr, endTimeStr],
-        queryFn: () => getAlertReport({ start_time: startTimeStr, end_time: endTimeStr }),
-        enabled: activeTab === 'sre' && !!timeRange[0]
-    });
+
 
     // Helper options queries
     const { data: envsData } = useQuery({
@@ -284,38 +279,7 @@ const SystemReports: React.FC = () => {
         }
     ];
 
-    // SRE Alert copy table from SreReport
-    const sreSummary = alertData?.summary || { total_alerts: 0, firing_alerts: 0, resolved_alerts: 0, healing_triggered: 0, healing_success: 0, healing_failed: 0, healing_success_rate: 0 };
-    const sreTrend = alertData?.trend || [];
-    const sreSeverityDist = alertData?.severity_distribution || [];
-    const sreStatusDist = alertData?.healing_status_distribution || [];
-    const sreAlertsByName = alertData?.alerts_by_name || [];
-    const filteredSreAlerts = sreAlertsByName.filter((item: any) =>
-        item.alert_name.toLowerCase().includes(alertSearchText.toLowerCase())
-    );
 
-    const getSreTrendOption = () => {
-        return {
-            tooltip: { trigger: 'axis' },
-            legend: { data: ['告警触发', '已恢复', '自愈触发'], bottom: 0, textStyle: { color: isDark ? '#fff' : '#000' } },
-            grid: { left: '3%', right: '3%', bottom: '10%', top: '30', containLabel: true },
-            xAxis: { type: 'category', boundaryGap: false, data: sreTrend.map((item: any) => item.date), axisLabel: { color: isDark ? '#aaa' : '#555' } },
-            yAxis: { type: 'value', splitLine: { lineStyle: { color: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' } } },
-            series: [
-                { name: '告警触发', type: 'line', data: sreTrend.map((item: any) => item.total), itemStyle: { color: '#faad14' } },
-                { name: '已恢复', type: 'line', data: sreTrend.map((item: any) => item.resolved), itemStyle: { color: '#52c41a' } },
-                { name: '自愈触发', type: 'line', data: sreTrend.map((item: any) => item.healing), itemStyle: { color: '#13c2c2' } }
-            ]
-        };
-    };
-
-    const alertColumns = [
-        { title: '告警名称', dataIndex: 'alert_name', key: 'alert_name' },
-        { title: '严重程度', dataIndex: 'severity', key: 'severity', render: (text: string) => <Tag color={text === 'critical' ? 'red' : 'orange'}>{text}</Tag> },
-        { title: '触发频次', dataIndex: 'count', key: 'count', sorter: (a: any, b: any) => a.count - b.count },
-        { title: '自愈执行次数', dataIndex: 'healing_count', key: 'healing_count' },
-        { title: '自愈成功率 (%)', dataIndex: 'healing_success_rate', key: 'healing_success_rate', render: (text: number) => <Progress percent={text} size="small" status={text >= 90 ? 'success' : 'normal'} /> }
-    ];
 
     return (
         <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
@@ -610,77 +574,7 @@ const SystemReports: React.FC = () => {
                     {
                         key: 'sre',
                         label: <span><AlertOutlined />告警自愈报表</span>,
-                        children: (
-                            <div className="flex flex-col gap-6">
-                                {isAlertLoading ? <Skeleton active paragraph={{ rows: 8 }} /> : (
-                                    <>
-                                        {/* Metrics */}
-                                        <Row gutter={[24, 24]}>
-                                            <Col xs={24} sm={12} lg={6}>
-                                                <Card className="ans-card shadow-sm">
-                                                    <div className="flex flex-col">
-                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">总告警触发次数</Text>
-                                                        <Title level={2} className="my-1 font-bold">{sreSummary.total_alerts}</Title>
-                                                    </div>
-                                                </Card>
-                                            </Col>
-                                            <Col xs={24} sm={12} lg={6}>
-                                                <Card className="ans-card shadow-sm">
-                                                    <div className="flex flex-col">
-                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">触发自愈次数</Text>
-                                                        <Title level={2} className="my-1 font-bold text-info">{sreSummary.healing_triggered}</Title>
-                                                    </div>
-                                                </Card>
-                                            </Col>
-                                            <Col xs={24} sm={12} lg={6}>
-                                                <Card className="ans-card shadow-sm">
-                                                    <div className="flex flex-col">
-                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">自愈成功率</Text>
-                                                        <Title level={2} className="my-1 font-bold text-success">{sreSummary.healing_success_rate}%</Title>
-                                                    </div>
-                                                </Card>
-                                            </Col>
-                                            <Col xs={24} sm={12} lg={6}>
-                                                <Card className="ans-card shadow-sm">
-                                                    <div className="flex flex-col">
-                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">活动中告警</Text>
-                                                        <Title level={2} className="my-1 font-bold text-warning">{sreSummary.firing_alerts}</Title>
-                                                    </div>
-                                                </Card>
-                                            </Col>
-                                        </Row>
-
-                                        {/* Charts */}
-                                        <Row gutter={[24, 24]}>
-                                            <Col xs={24}>
-                                                <Card title="告警与自愈执行趋势" className="ans-card shadow-sm h-[380px]">
-                                                    <ReactECharts option={getSreTrendOption()} style={{ height: 280 }} />
-                                                </Card>
-                                            </Col>
-                                        </Row>
-
-                                        {/* Table list */}
-                                        <Card title="按名称统计告警分类列表" className="ans-card shadow-sm" extra={
-                                            <Input
-                                                placeholder="搜索告警名称"
-                                                prefix={<SearchOutlined />}
-                                                value={alertSearchText}
-                                                onChange={e => setAlertSearchText(e.target.value)}
-                                                style={{ width: 240 }}
-                                            />
-                                        }>
-                                            <Table
-                                                dataSource={filteredSreAlerts}
-                                                columns={alertColumns}
-                                                rowKey="alert_name"
-                                                size="middle"
-                                                pagination={{ pageSize: 10 }}
-                                            />
-                                        </Card>
-                                    </>
-                                )}
-                            </div>
-                        )
+                        children: <SreReport hideHeader timeRange={timeRange} onTimeRangeChange={setTimeRange} />
                     }
                 ]}
             />

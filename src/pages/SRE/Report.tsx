@@ -12,23 +12,36 @@ import { message } from '../../utils/antd';
 const { Title, Paragraph, Text } = Typography;
 const { RangePicker } = DatePicker;
 
-const SreReport: React.FC = () => {
+interface SreReportProps {
+    hideHeader?: boolean;
+    timeRange?: [dayjs.Dayjs, dayjs.Dayjs];
+    onTimeRangeChange?: (val: [dayjs.Dayjs, dayjs.Dayjs]) => void;
+}
+
+const SreReport: React.FC<SreReportProps> = ({
+    hideHeader = false,
+    timeRange: propTimeRange,
+    onTimeRangeChange
+}) => {
     const { t } = useTranslation();
     const { isDark } = useAppStore();
     const { token } = theme.useToken();
     const [searchText, setSearchText] = useState('');
-    const [timeRange, setTimeRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
+    const [localTimeRange, setLocalTimeRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
         dayjs().subtract(7, 'day'),
         dayjs()
     ]);
 
-    const startTimeStr = timeRange[0].startOf('day').toISOString();
-    const endTimeStr = timeRange[1].endOf('day').toISOString();
+    const activeTimeRange = propTimeRange || localTimeRange;
+    const setActiveTimeRange = onTimeRangeChange || setLocalTimeRange;
+
+    const startTimeStr = activeTimeRange[0].startOf('day').toISOString();
+    const endTimeStr = activeTimeRange[1].endOf('day').toISOString();
 
     const { data: reportData, isLoading } = useQuery({
         queryKey: ['sreAlertReport', startTimeStr, endTimeStr],
         queryFn: () => getAlertReport({ start_time: startTimeStr, end_time: endTimeStr }),
-        enabled: !!timeRange[0] && !!timeRange[1]
+        enabled: !!activeTimeRange[0] && !!activeTimeRange[1]
     });
 
     const handleExport = async () => {
@@ -325,36 +338,38 @@ const SreReport: React.FC = () => {
     return (
         <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
             {/* Header section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h2 className="text-3xl font-extrabold mb-1 tracking-tight text-ans-text-primary italic">
-                        {t('report.title')}
-                    </h2>
-                    <p className="text-ans-text-secondary text-sm font-medium opacity-80">
-                        {t('report.subtitle')}
-                    </p>
+            {!hideHeader && (
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 className="text-3xl font-extrabold mb-1 tracking-tight text-ans-text-primary italic">
+                            {t('report.title')}
+                        </h2>
+                        <p className="text-ans-text-secondary text-sm font-medium opacity-80">
+                            {t('report.subtitle')}
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <RangePicker 
+                            value={activeTimeRange} 
+                            onChange={(val) => {
+                                if (val && val[0] && val[1]) {
+                                    setActiveTimeRange([val[0], val[1]]);
+                                }
+                            }}
+                            className="ans-range-picker shadow-sm"
+                        />
+                        <Button 
+                            type="primary" 
+                            icon={<DownloadOutlined />} 
+                            onClick={handleExport}
+                            className="ans-btn shadow-sm"
+                            disabled={isLoading || summary.total_alerts === 0}
+                        >
+                            {t('report.exportCsv')}
+                        </Button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    <RangePicker 
-                        value={timeRange} 
-                        onChange={(val) => {
-                            if (val && val[0] && val[1]) {
-                                setTimeRange([val[0], val[1]]);
-                            }
-                        }}
-                        className="ans-range-picker shadow-sm"
-                    />
-                    <Button 
-                        type="primary" 
-                        icon={<DownloadOutlined />} 
-                        onClick={handleExport}
-                        className="ans-btn shadow-sm"
-                        disabled={isLoading || summary.total_alerts === 0}
-                    >
-                        {t('report.exportCsv')}
-                    </Button>
-                </div>
-            </div>
+            )}
 
             {/* Metrics cards grid */}
             {isLoading ? (
