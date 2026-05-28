@@ -36,3 +36,4 @@ memory/
 *.prompt
 CLAUDE.md
 GEMINI.md
+.gitignore

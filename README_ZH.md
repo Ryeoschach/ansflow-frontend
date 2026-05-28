@@ -1,11 +1,22 @@
 # AnsFlow 前端
 
+<p align="left">
+  <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 18">
+  <img src="https://img.shields.io/badge/TypeScript-Ready-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Vite-Ready-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite">
+  <img src="https://img.shields.io/badge/版本-v2.0.0-orange?style=for-the-badge" alt="版本">
+  <a href="./README.md"><img src="https://img.shields.io/badge/Lang-English-red?style=for-the-badge" alt="English"></a>
+</p>
+
+> **企业级 DevOps 流水线平台前端**，基于 React 18 + TypeScript + Vite 构建。集成了 **AI 智能助手**、**SRE 告警中心**与 **AIGC 编排**。
+
 [English](./README.md) | 中文说明
 
-企业级 DevOps 流水线平台前端，基于 React 18 + TypeScript + Vite 构建。集成了 **AI 智能助手**、**SRE 告警中心**与 **AIGC 编排**。
-
-**当前版本**：v2.0.0  
-**核心能力**：智能问答 / 自动诊断 / 告警自愈 / 意图编排
+### 🌟 核心能力
+* 🤖 **智能问答**：集成上下文感知与 Markdown 渲染的实时 AI 助手。
+* 🔍 **自动诊断**：一键生成自愈排障建议与详尽日志追踪。
+* ⚡ **告警自愈**：结合进度条与状态跟踪的 SRE 告警自愈中心。
+* ⛓️ **意图编排**：基于 ReactFlow 的可视化 DAG 拓扑编排。
 
 ---
 

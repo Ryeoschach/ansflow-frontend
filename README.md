@@ -1,11 +1,22 @@
 # AnsFlow Frontend
 
+<p align="left">
+  <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 18">
+  <img src="https://img.shields.io/badge/TypeScript-Ready-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Vite-Ready-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite">
+  <img src="https://img.shields.io/badge/Version-v2.0.0-orange?style=for-the-badge" alt="Version">
+  <a href="./README_ZH.md"><img src="https://img.shields.io/badge/Lang-中文说明-red?style=for-the-badge" alt="中文说明"></a>
+</p>
+
+> **Enterprise-level DevOps pipeline platform frontend**, built with React 18 + TypeScript + Vite. Integrated with **AI Assistant**, **SRE Alert Center**, and **AIGC Orchestration**.
+
 English | [中文说明](./README_ZH.md)
 
-Enterprise-level DevOps pipeline platform frontend, built with React 18 + TypeScript + Vite. Integrated with **AI Assistant**, **SRE Alert Center**, and **AIGC Orchestration**.
-
-**Current Version**: v2.0.0  
-**Core Capabilities**: Intelligent Q&A / Auto Diagnosis / Alert Self-healing / Intent Orchestration
+### 🌟 Core Capabilities
+* 🤖 **Intelligent Q&A**: Real-time AI Assistant with context awareness and Markdown rendering.
+* 🔍 **Auto Diagnosis**: Self-healing recommendation pipelines and logs trace.
+* ⚡ **Alert Self-healing**: SRE Alert Center integrating visual tracking progress.
+* ⛓️ **Intent Orchestration**: Interactive ReactFlow DAG flowchart.
 
 ---
 
