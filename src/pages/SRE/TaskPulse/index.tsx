@@ -10,11 +10,12 @@ import {
   ExclamationCircleOutlined,
   HistoryOutlined,
   SearchOutlined,
-  InfoCircleOutlined
+  InfoCircleOutlined,
+  DeleteOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { getPulseStats, getWorkerNodes, getTaskPulseList, revokeTaskPulse } from '@/api/pulse';
+import { getPulseStats, getWorkerNodes, getTaskPulseList, revokeTaskPulse, deleteWorkerNode } from '@/api/pulse';
 import request from '@/utils/requests'; 
 import dayjs from 'dayjs';
 
@@ -71,6 +72,31 @@ const TaskPulse: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['pulseTasks'] });
     },
   });
+
+  const deleteWorkerMutation = useMutation({
+    mutationFn: deleteWorkerNode,
+    onSuccess: () => {
+      message.success(t('pulse.deleteWorkerSuccess') || '节点已成功删除');
+      queryClient.invalidateQueries({ queryKey: ['pulseWorkers'] });
+      queryClient.invalidateQueries({ queryKey: ['pulseStats'] });
+    },
+    onError: (err: any) => {
+      message.error(err?.response?.data?.message || '删除节点失败');
+    }
+  });
+
+  const handleDeleteWorker = (id: number, hostname: string) => {
+    Modal.confirm({
+      title: t('pulse.deleteWorkerTitle') || '确认删除节点？',
+      content: t('pulse.deleteWorkerContent') || `您确定要删除离线节点 ${hostname} 吗？`,
+      okText: t('common.ok') || '确认',
+      cancelText: t('common.cancel') || '取消',
+      okType: 'danger',
+      onOk: () => {
+        deleteWorkerMutation.mutate(id);
+      }
+    });
+  };
 
   const getStateTag = (state: string) => {
     const config: any = {
@@ -188,10 +214,22 @@ const TaskPulse: React.FC = () => {
           <Card bordered={false} className="shadow-sm">
             <Statistic
               title={t('pulse.health')}
-              value={100}
+              value={stats?.total_workers > 0 ? Math.round((stats.online_workers / stats.total_workers) * 100) : 100}
               suffix="%"
-              valueStyle={{ color: token.colorSuccess }}
-              prefix={<CheckCircleOutlined />}
+              valueStyle={{ 
+                color: !stats?.total_workers || stats.online_workers === stats.total_workers
+                  ? token.colorSuccess 
+                  : (stats.online_workers / stats.total_workers) >= 0.5 
+                    ? token.colorWarning 
+                    : token.colorError 
+              }}
+              prefix={
+                !stats?.total_workers || stats.online_workers === stats.total_workers
+                  ? <CheckCircleOutlined />
+                  : (stats.online_workers / stats.total_workers) >= 0.5
+                    ? <ExclamationCircleOutlined className="text-yellow-500" />
+                    : <CloseCircleOutlined className="text-red-500" />
+              }
             />
           </Card>
         </Col>
@@ -216,8 +254,23 @@ const TaskPulse: React.FC = () => {
                     onClick={() => fetchWorkerDetail(w.id)}
                   >
                     <div className="flex justify-between items-center">
-                      <span className="font-bold truncate" style={{ maxWidth: '120px' }}>{w.hostname}</span>
-                      <Badge status={w.status === 'online' ? 'success' : 'default'} text={w.status === 'online' ? t('common.online') : t('common.offline')} />
+                      <span className="font-bold truncate" style={{ maxWidth: '120px' }} title={w.hostname}>{w.hostname}</span>
+                      <Space>
+                        <Badge status={w.status === 'online' ? 'success' : 'default'} text={w.status === 'online' ? t('common.online') : t('common.offline')} />
+                        {w.status === 'offline' && (
+                          <Button 
+                            type="text" 
+                            danger 
+                            size="small" 
+                            style={{ padding: 0, height: 'auto', display: 'flex', alignItems: 'center' }}
+                            icon={<DeleteOutlined style={{ fontSize: '13px' }} />} 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteWorker(w.id, w.hostname);
+                            }}
+                          />
+                        )}
+                      </Space>
                     </div>
                     <div className="mt-2 text-neutral-500 text-xs flex justify-between">
                       <span>{t('pulse.processed')}: {w.processed_count || 0}</span>

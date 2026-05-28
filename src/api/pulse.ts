@@ -19,3 +19,7 @@ export const getPulseThroughput = (): Promise<any[]> => {
 export const revokeTaskPulse = (id: number) => {
   return request.post(`/pulse/tasks/${id}/revoke/`);
 };
+
+export const deleteWorkerNode = (id: number) => {
+  return request.delete(`/pulse/workers/${id}/`);
+};

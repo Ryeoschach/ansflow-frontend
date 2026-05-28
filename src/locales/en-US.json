@@ -2298,7 +2298,10 @@
       "pending": "Pending",
       "revoked": "Revoked",
       "retry": "Retry"
-    }
+    },
+    "deleteWorkerSuccess": "Worker node deleted successfully",
+    "deleteWorkerTitle": "Delete Worker Node?",
+    "deleteWorkerContent": "Are you sure you want to delete this offline worker node?"
   },
   "compliance": {
     "title": "MLPS 2.0 Reference",
