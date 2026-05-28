@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, List, Tag, Typography, theme, Empty, Button } from 'antd';
 import { WarningOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
 
@@ -13,6 +14,7 @@ interface FiringAlertsWidgetProps {
 const FiringAlertsWidget: React.FC<FiringAlertsWidgetProps> = ({ data, isLoading }) => {
     const { token } = theme.useToken();
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const alerts = data?.firingAlerts || [];
 
     return (
@@ -20,19 +22,19 @@ const FiringAlertsWidget: React.FC<FiringAlertsWidgetProps> = ({ data, isLoading
             title={
                 <div className="flex items-center gap-2">
                     <WarningOutlined className="text-red-500 animate-pulse" />
-                    <span className="text-sm font-bold text-red-600">活动告警 (Top 5)</span>
+                    <span className="text-sm font-bold text-red-600">{t('dashboard.firingAlertsTop')}</span>
                 </div>
             }
             extra={
                 <Button type="link" size="small" onClick={() => navigate('/v1/sre/alerts')}>
-                    查看全部 <ArrowRightOutlined />
+                    {t('dashboard.viewAll')} <ArrowRightOutlined />
                 </Button>
             }
             className="shadow-sm border-0"
             styles={{ body: { padding: '12px' } }}
         >
             {alerts.length === 0 ? (
-                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无活动告警" />
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('dashboard.noFiringAlerts')} />
             ) : (
                 <List
                     size="small"

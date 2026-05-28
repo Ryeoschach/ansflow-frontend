@@ -22,10 +22,11 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createAssetShare, deleteAssetShare, getSharedOut,
-  AssetType, SharePermission, PERMISSION_LABELS, AssetShare,
+  AssetType, SharePermission, AssetShare,
 } from '../../api/assetShare';
 import { getProjects } from '../../api/rbac';
 import useAppStore from '../../store/useAppStore';
+import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
 
@@ -48,6 +49,7 @@ const ShareAssetModal: React.FC<ShareAssetModalProps> = ({
   open, onClose, assetType, assetId, assetName, fromProjectId,
 }) => {
   const { message } = App.useApp();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
   const currentProject = useAppStore((s) => s.currentProject);
@@ -78,12 +80,12 @@ const ShareAssetModal: React.FC<ShareAssetModalProps> = ({
   const createMutation = useMutation({
     mutationFn: createAssetShare,
     onSuccess: () => {
-      message.success('授权成功');
+      message.success(t('assetShare.grantSuccess'));
       form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['shared-out'] });
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.non_field_errors?.[0] || '授权失败');
+      message.error(err.response?.data?.non_field_errors?.[0] || t('assetShare.grantFailed'));
     },
   });
 
@@ -91,7 +93,7 @@ const ShareAssetModal: React.FC<ShareAssetModalProps> = ({
   const deleteMutation = useMutation({
     mutationFn: deleteAssetShare,
     onSuccess: () => {
-      message.success('已撤销授权');
+      message.success(t('assetShare.revoked'));
       queryClient.invalidateQueries({ queryKey: ['shared-out'] });
     },
   });
@@ -108,44 +110,44 @@ const ShareAssetModal: React.FC<ShareAssetModalProps> = ({
 
   const columns = [
     {
-      title: '目标项目',
+      title: t('assetShare.targetProject'),
       dataIndex: 'to_project_name',
       key: 'to_project_name',
       render: (name: string) => <Text strong>{name}</Text>,
     },
     {
-      title: '权限',
+      title: t('assetShare.permission'),
       dataIndex: 'permission',
       key: 'permission',
       render: (p: SharePermission) => (
-        <Tag color={PERMISSION_COLOR[p]}>{PERMISSION_LABELS[p]}</Tag>
+        <Tag color={PERMISSION_COLOR[p]}>{t(`assetShare.${p}`)}</Tag>
       ),
     },
     {
-      title: '授权人',
+      title: t('assetShare.sharedBy'),
       dataIndex: 'shared_by_name',
       key: 'shared_by_name',
       render: (name: string) => <Text type="secondary">{name ?? '-'}</Text>,
     },
     {
-      title: '授权时间',
+      title: t('assetShare.sharedAt'),
       dataIndex: 'create_time',
       key: 'create_time',
       render: (t: string) => new Date(t).toLocaleString(),
     },
     {
-      title: '操作',
+      title: t('common.actions'),
       key: 'action',
       render: (_: any, record: AssetShare) => (
         <Popconfirm
-          title="确认撤销该项授权？"
+          title={t('assetShare.revokeConfirm')}
           onConfirm={() => deleteMutation.mutate(record.id)}
-          okText="撤销"
+          okText={t('assetShare.revoke')}
           okButtonProps={{ danger: true }}
-          cancelText="取消"
+          cancelText={t('common.cancel')}
         >
           <Button type="text" danger icon={<DeleteOutlined />} size="small">
-            撤销
+            {t('assetShare.revoke')}
           </Button>
         </Popconfirm>
       ),
@@ -157,7 +159,7 @@ const ShareAssetModal: React.FC<ShareAssetModalProps> = ({
       title={
         <Space>
           <ShareAltOutlined style={{ color: '#1677ff' }} />
-          <span>跨项目授权</span>
+          <span>{t('assetShare.crossProjectGrant')}</span>
           <Tag color="processing">{assetName}</Tag>
         </Space>
       }
@@ -177,11 +179,11 @@ const ShareAssetModal: React.FC<ShareAssetModalProps> = ({
       >
         <Form.Item
           name="to_project"
-          rules={[{ required: true, message: '请选择目标项目' }]}
+          rules={[{ required: true, message: t('assetShare.selectTargetRequired') }]}
           style={{ flex: 1, minWidth: 180 }}
         >
           <Select
-            placeholder="选择目标项目"
+            placeholder={t('assetShare.selectTarget')}
             showSearch
             filterOption={(input, opt) =>
               (opt?.label as string)?.toLowerCase().includes(input.toLowerCase())
@@ -194,9 +196,9 @@ const ShareAssetModal: React.FC<ShareAssetModalProps> = ({
           <Select
             style={{ width: 130 }}
             options={[
-              { label: '只读', value: 'read' },
-              { label: '可执行', value: 'use' },
-              { label: '完全控制', value: 'full' },
+              { label: t('assetShare.read'), value: 'read' },
+              { label: t('assetShare.use'), value: 'use' },
+              { label: t('assetShare.full'), value: 'full' },
             ]}
           />
         </Form.Item>
@@ -208,14 +210,14 @@ const ShareAssetModal: React.FC<ShareAssetModalProps> = ({
             icon={<PlusOutlined />}
             loading={createMutation.isPending}
           >
-            授权
+            {t('assetShare.grant')}
           </Button>
         </Form.Item>
       </Form>
 
       <Divider style={{ margin: '8px 0 12px' }}>
         <Space>
-          <span>已授权项目</span>
+          <span>{t('assetShare.grantedProjects')}</span>
           <Badge count={existingShares.length} showZero color="#1677ff" />
         </Space>
       </Divider>
@@ -227,7 +229,7 @@ const ShareAssetModal: React.FC<ShareAssetModalProps> = ({
         loading={sharesLoading}
         size="small"
         pagination={false}
-        locale={{ emptyText: '暂无授权记录，此资产仅当前项目可见' }}
+        locale={{ emptyText: t('assetShare.emptyCurrentAsset') }}
       />
     </Modal>
   );

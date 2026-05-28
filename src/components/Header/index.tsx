@@ -263,7 +263,7 @@ const Header: React.FC = () => {
                             }}
                             className="font-medium text-xs h-6 leading-6"
                             style={{ width: 130 }}
-                            placeholder="选择项目"
+                            placeholder={t('common.selectProject')}
                             options={projects.map((p: any) => ({
                                 value: p.id,
                                 label: p.name,
@@ -293,8 +293,8 @@ const Header: React.FC = () => {
                     }}
                     size="small"
                     options={[
-                        { value: 'zh-CN', label: '中文' },
-                        { value: 'en-US', label: 'English' },
+                        { value: 'zh-CN', label: t('common.languageZh') },
+                        { value: 'en-US', label: t('common.languageEn') },
                     ]}
                     style={{ width: 80 }}
                 />

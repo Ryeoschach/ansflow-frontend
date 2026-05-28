@@ -306,9 +306,9 @@ const DesignerCore = () => {
         llm_id: selectedLLMId
       });
       form.setFieldsValue(res);
-      message.success('AI 已为您推荐配置参数');
+      message.success(t('pipelineDesigner.aiRecommendedParams'));
     } catch (e: any) {
-      message.error(`AI 辅助失败: ${e.message || '未知错误'}`);
+      message.error(t('pipelineDesigner.aiAssistFailed', { message: e.message || t('pipelineDesigner.unknownError') }));
     } finally {
       setIsNodeAILoading(false);
     }
@@ -339,7 +339,7 @@ const DesignerCore = () => {
           },
           data: {
             ...node.data,
-            label: node.data?.label || node.label || `AI 节点 ${idx + 1}`
+            label: node.data?.label || node.label || t('pipelineDesigner.aiNodeLabel', { index: idx + 1 })
           }
         }));
         
@@ -347,12 +347,12 @@ const DesignerCore = () => {
         setEdges(data.edges || []);
         setNodesState(safeNodes);
         setEdgesState(data.edges || []);
-        message.success(nodes.length > 0 ? '流水线已按指令优化' : '流水线已生成');
+        message.success(nodes.length > 0 ? t('pipelineDesigner.pipelineOptimized') : t('pipelineDesigner.pipelineGenerated'));
         setAiPrompt('');
       }
     },
     onError: (err: any) => {
-      message.error(err.response?.data?.error || 'AI 编排失败');
+      message.error(err.response?.data?.error || t('pipelineDesigner.aiOrchestrationFailed'));
     }
   });
 
@@ -380,14 +380,14 @@ const DesignerCore = () => {
         id: getId(),
         type,
         position,
-        data: { label: `${type} 节点` },
+        data: { label: t('pipelineDesigner.typedNodeLabel', { type }) },
       };
 
       const updatedNodes = [...nodesState, newNode];
       setNodesState(updatedNodes);
       setNodes(updatedNodes);
     },
-    [reactFlowInstance, nodesState, setNodes, setNodesState]
+    [reactFlowInstance, nodesState, setNodes, setNodesState, t]
   );
 
   const onNodeClick = (_: React.MouseEvent, node: Node) => {
@@ -551,10 +551,10 @@ const DesignerCore = () => {
                     content: (
                         <div className="mt-2">
                             <p className="font-bold text-ans-warning">{res.message || t('pipelineDesigner.systemSecurityProtection')}</p>
-                            <p className="text-xs text-ans-text-secondary mt-2 opacity-80">该流水线已被安全策略拦截，需管理员审批通过后方可继续执行。您可以前往审批中心查看详情。</p>
+                            <p className="text-xs text-ans-text-secondary mt-2 opacity-80">{t('pipelineDesigner.approvalInterceptDesc')}</p>
                         </div>
                     ),
-                    okText: '前往审批中心',
+                    okText: t('pipelineDesigner.goToApprovalCenter'),
                     cancelText: t('pipelineDesigner.ok'),
                     onOk: () => navigate('/v1/approval/tickets')
                 });
@@ -571,7 +571,7 @@ const DesignerCore = () => {
               const res = e.response.data;
               modal.info({
                   title: t('pipelineDesigner.operationRequiresApproval'),
-                  content: res.message || '操作已进入审批流',
+                  content: res.message || t('pipelineDesigner.approvalFlowEntered'),
                   onOk: () => navigate('/v1/approval/tickets')
               });
           } else {
@@ -651,7 +651,7 @@ const DesignerCore = () => {
             </div>
             
             <Select
-              placeholder="AI 模型"
+              placeholder={t('pipelineDesigner.aiModel')}
               style={{ width: 160 }}
               value={selectedLLMId}
               onChange={setSelectedLLMId}
@@ -661,11 +661,11 @@ const DesignerCore = () => {
             />
 
             <Input.Search
-              placeholder={nodes.length > 0 ? "描述修改需求 (如: 在最后加个通知节点)..." : "描述流水线需求 (如: 自动部署 K8s)..."}
+              placeholder={nodes.length > 0 ? t('pipelineDesigner.refineRequirementPlaceholder') : t('pipelineDesigner.generateRequirementPlaceholder')}
               enterButton={
                 <Space>
                   <ThunderboltOutlined />
-                  <span>AI {nodes.length > 0 ? '修正' : '编排'}</span>
+                  <span>{nodes.length > 0 ? t('pipelineDesigner.aiRefine') : t('pipelineDesigner.aiOrchestrate')}</span>
                 </Space>
               }
               size="middle"
@@ -891,11 +891,11 @@ const DesignerCore = () => {
           )}
 
           {selectedNode?.type === 'approval' && (
-            <Card size="small" title="审批配置" className="mb-5 border-none shadow-sm">
-              <Form.Item label="审批方式" name="approver_type" initialValue="role" rules={[{ required: true }]}>
+            <Card size="small" title={t('pipelineDesigner.approvalConfig')} className="mb-5 border-none shadow-sm">
+              <Form.Item label={t('pipelineDesigner.approvalMethod')} name="approver_type" initialValue="role" rules={[{ required: true }]}>
                 <Select>
-                  <Select.Option value="role">角色审批 (推荐)</Select.Option>
-                  <Select.Option value="user">指定用户</Select.Option>
+                  <Select.Option value="role">{t('pipelineDesigner.roleApprovalRecommended')}</Select.Option>
+                  <Select.Option value="user">{t('pipelineDesigner.specificUser')}</Select.Option>
                 </Select>
               </Form.Item>
               <Form.Item 
@@ -904,15 +904,15 @@ const DesignerCore = () => {
               >
                 {({ getFieldValue }) => (
                   getFieldValue('approver_type') === 'role' ? (
-                    <Form.Item label="审批角色" name="role_id" rules={[{ required: true }]}>
+                    <Form.Item label={t('pipelineDesigner.approvalRole')} name="role_id" rules={[{ required: true }]}>
                       <Select 
-                        placeholder="选择有权审批的角色"
-                        options={[{label: '超级管理员', value: 1}, {label: '运维主管', value: 2}]} 
+                        placeholder={t('pipelineDesigner.selectApprovalRole')}
+                        options={[{label: t('pipelineDesigner.superAdmin'), value: 1}, {label: t('pipelineDesigner.opsManager'), value: 2}]} 
                       />
                     </Form.Item>
                   ) : (
-                    <Form.Item label="审批人" name="user_id" rules={[{ required: true }]}>
-                      <Select placeholder="选择指定审批人" />
+                    <Form.Item label={t('pipelineDesigner.approver')} name="user_id" rules={[{ required: true }]}>
+                      <Select placeholder={t('pipelineDesigner.selectApprover')} />
                     </Form.Item>
                   )
                 )}
@@ -952,9 +952,9 @@ const DesignerCore = () => {
                </Card>
                <Card size="small" title={t('pipelineDesigner.helmConfig')} className="mb-5 border-none shadow-sm">
                   <div className="flex gap-4">
-                    <Form.Item label="Helm 仓库" name="k8s_repo_id" className="flex-1">
+                    <Form.Item label={t('pipelineDesigner.helmRepository')} name="k8s_repo_id" className="flex-1">
                         <Select
-                           placeholder="选择远程仓库"
+                           placeholder={t('pipelineDesigner.selectRemoteRepo')}
                            options={repositoriesData?.data || []}
                            fieldNames={{ label: 'name', value: 'id' }}
                            allowClear
@@ -970,7 +970,7 @@ const DesignerCore = () => {
                         />
                     </Form.Item>
                   </div>
-                  <Form.Item label="自定义 Values (YAML)" name="k8s_values" tooltip="将与系统自动生成的镜像变量合并。支持 {{ nodes.ID.KEY }} 语法。">
+                  <Form.Item label={t('pipelineDesigner.customValuesYaml')} name="k8s_values" tooltip={t('pipelineDesigner.customValuesTip')}>
                       <Input.TextArea rows={6} placeholder={`image:\n  pullPolicy: Always\nreplicaCount: 1`} className="font-mono text-[11px]" />
                   </Form.Item>
                   <Form.Item label={t('pipelineDesigner.forceExecute')} name="k8s_force" initialValue={false} tooltip={t('pipelineDesigner.forceExecuteTooltip')}>

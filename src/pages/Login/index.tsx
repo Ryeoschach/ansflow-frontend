@@ -231,8 +231,8 @@ const LoginPage: React.FC = () => {
                         }}
                         size="small"
                         options={[
-                            { value: 'zh-CN', label: '中文' },
-                            { value: 'en-US', label: 'English' },
+                            { value: 'zh-CN', label: t('common.languageZh') },
+                            { value: 'en-US', label: t('common.languageEn') },
                         ]}
                         style={{ width: 80 }}
                     />

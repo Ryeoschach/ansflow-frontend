@@ -82,7 +82,7 @@ const HostManagement: React.FC = () => {
             message.success(res.message);
             if (res.errors && res.errors.length > 0) {
                 Modal.warning({
-                    title: '导入部分成功',
+                    title: t('host.importPartialSuccess'),
                     content: (
                         <div className="max-h-60 overflow-auto">
                             {res.errors.map((err: string, i: number) => <div key={i} className="text-red-500 text-xs mb-1">{err}</div>)}
@@ -174,7 +174,7 @@ const HostManagement: React.FC = () => {
             key: 'action',
             render: (_: any, record: any) => (
                 <Space size="middle">
-                    <Tooltip title="跨项目授权">
+                    <Tooltip title={t('assetShare.crossProjectGrant')}>
                         <Button
                             type="text"
                             icon={<ShareAltOutlined style={{ color: '#1677ff' }} />}
@@ -206,7 +206,7 @@ const HostManagement: React.FC = () => {
                         icon={<CloudUploadOutlined />}
                         onClick={() => setIsImportModalOpen(true)}
                     >
-                        批量导入
+                        {t('host.bulkImport')}
                     </Button>
                 )}
                 {(hasPermission('*') || hasPermission('resource:hosts:add')) && (
@@ -323,7 +323,7 @@ const HostManagement: React.FC = () => {
             </Modal>
 
             <Modal
-                title="批量导入主机"
+                title={t('host.bulkImportHosts')}
                 open={isImportModalOpen}
                 onOk={() => importForm.submit()}
                 onCancel={() => setIsImportModalOpen(false)}
@@ -339,18 +339,18 @@ const HostManagement: React.FC = () => {
                             const data = JSON.parse(values.json_data);
                             importMutation.mutate(data);
                         } catch (e) {
-                            message.error("JSON 格式错误，请检查输入");
+                            message.error(t('host.jsonFormatError'));
                         }
                     }}
                 >
                     <Alert 
-                        message="导入说明" 
+                        message={t('host.importGuide')} 
                         description={
                             <ul className="text-xs list-disc ml-4">
-                                <li>请提供标准的 JSON 数组格式。</li>
-                                <li>必需字段：hostname, private_ip, env (环境ID)。</li>
-                                <li>可选字段：ip_address, platform (平台ID), cpu, memory, disk, os_type。</li>
-                                <li>示例：{'[{"hostname":"web-01", "private_ip":"10.0.0.1", "env":1}]'}</li>
+                                <li>{t('host.importGuideArray')}</li>
+                                <li>{t('host.importGuideRequired')}</li>
+                                <li>{t('host.importGuideOptional')}</li>
+                                <li>{t('host.importGuideExample', { example: '[{"hostname":"web-01", "private_ip":"10.0.0.1", "env":1}]' })}</li>
                             </ul>
                         }
                         type="info"
@@ -359,8 +359,8 @@ const HostManagement: React.FC = () => {
                     />
                     <Form.Item 
                         name="json_data" 
-                        label="JSON 数据" 
-                        rules={[{ required: true, message: '请粘贴 JSON 列表' }]}
+                        label={t('host.jsonData')} 
+                        rules={[{ required: true, message: t('host.jsonListRequired') }]}
                     >
                         <Input.TextArea 
                             rows={10} 

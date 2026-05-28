@@ -353,8 +353,8 @@ const HelmCenter: React.FC = () => {
     { title: t('helm.revision'), dataIndex: 'revision', key: 'revision', width: 70 },
     { title: t('helm.updateTime'), dataIndex: 'updated', key: 'updated', width: 180, render: (v: string) => formatDateTime(v) },
     { title: t('helm.status'), dataIndex: 'status', key: 'status', render: (v: string) => <Tag>{v}</Tag> },
-    { title: t('helm.description') || '描述', dataIndex: 'description', key: 'description', width: 250, ellipsis: true },
-    { title: t('helm.appVersion') || '应用版本', dataIndex: 'app_version', key: 'app_version', width: 120, render: (v: string) => <Tag color="blue">{v || '-'}</Tag> },
+    { title: t('helm.description'), dataIndex: 'description', key: 'description', width: 250, ellipsis: true },
+    { title: t('helm.appVersion'), dataIndex: 'app_version', key: 'app_version', width: 120, render: (v: string) => <Tag color="blue">{v || '-'}</Tag> },
     { title: t('helm.chartVersion'), dataIndex: 'chart', key: 'chart' },
     { title: t('helm.action'), key: 'actions', render: (_: any, row: any) =>
           hasPermission('helm:chart:helm_rollback') && (
@@ -398,7 +398,7 @@ const HelmCenter: React.FC = () => {
             </Button>
             {dataUpdatedAt && (
               <Text type="secondary" style={{ fontSize: '12px', marginLeft: '-8px' }}>
-                <span className="opacity-50">|</span> 上次更新: {new Date(dataUpdatedAt).toLocaleTimeString()}
+                <span className="opacity-50">|</span> {t('helm.lastUpdated')}: {new Date(dataUpdatedAt).toLocaleTimeString()}
               </Text>
             )}
             <div className="flex-1 text-right">

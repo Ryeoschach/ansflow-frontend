@@ -63,23 +63,3 @@ export const deleteAssetShare = (id: number) =>
 /** 批量撤销授权 */
 export const revokeAssetShares = (ids: number[]) =>
   request.post('/asset-shares/revoke/', { ids });
-
-// ============================================================
-// 资产类型标签映射（用于 UI 展示）
-// ============================================================
-export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
-  host:                 '主机',
-  ssh_credential:       'SSH 凭证',
-  credential:           '通用凭据',
-  pipeline:             '流水线',
-  ansible_task:         'Ansible 任务',
-  k8s_cluster:          'K8s 集群',
-  resource_pool:        '资源池',
-  self_healing_policy:  '自愈策略',
-};
-
-export const PERMISSION_LABELS: Record<SharePermission, string> = {
-  read: '只读',
-  use:  '可执行',
-  full: '完全控制',
-};

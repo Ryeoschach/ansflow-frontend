@@ -47,7 +47,7 @@ const SreReport: React.FC<SreReportProps> = ({
     const handleExport = async () => {
         try {
             const res = await exportAlertReport({ start_time: startTimeStr, end_time: endTimeStr });
-            message.success(res.message || '报表生成任务已提交，完成后将在通知中心收到下载提示');
+            message.success(res.message || t('report.exportSubmitted'));
         } catch (err) {
             console.error(err);
         }
@@ -186,9 +186,9 @@ const SreReport: React.FC<SreReportProps> = ({
                     data: severityDist.map((item: any) => {
                         const key = item.severity.toLowerCase();
                         let labelName = item.severity;
-                        if (key === 'critical') labelName = '致命 (Critical)';
-                        else if (key === 'warning') labelName = '警告 (Warning)';
-                        else if (key === 'info') labelName = '提示 (Info)';
+                        if (key === 'critical') labelName = t('report.severityCritical');
+                        else if (key === 'warning') labelName = t('report.severityWarning');
+                        else if (key === 'info') labelName = t('report.severityInfo');
 
                         return {
                             name: labelName,
@@ -238,14 +238,14 @@ const SreReport: React.FC<SreReportProps> = ({
                     data: statusDist.map((item: any) => {
                         const key = item.status;
                         let labelName = key;
-                        if (key === 'success') labelName = '自愈成功';
-                        else if (key === 'failed') labelName = '自愈失败';
-                        else if (key === 'executing') labelName = '自愈中';
-                        else if (key === 'ignored') labelName = '已忽略';
-                        else if (key === 'none') labelName = '未处理';
-                        else if (key === 'suggested') labelName = '已有建议';
-                        else if (key === 'awaiting_approval') labelName = '待审批';
-                        else if (key === 'analyzing') labelName = 'AI分析中';
+                        if (key === 'success') labelName = t('report.healingStatusSuccess');
+                        else if (key === 'failed') labelName = t('report.healingStatusFailed');
+                        else if (key === 'executing') labelName = t('report.healingStatusExecuting');
+                        else if (key === 'ignored') labelName = t('report.healingStatusIgnored');
+                        else if (key === 'none') labelName = t('report.healingStatusNone');
+                        else if (key === 'suggested') labelName = t('report.healingStatusSuggested');
+                        else if (key === 'awaiting_approval') labelName = t('report.healingStatusAwaitingApproval');
+                        else if (key === 'analyzing') labelName = t('report.healingStatusAnalyzing');
 
                         return {
                             name: labelName,
@@ -434,7 +434,7 @@ const SreReport: React.FC<SreReportProps> = ({
                                 <SyncOutlined />
                             </div>
                             <Space direction="vertical" size="small">
-                                <span className="text-xs uppercase tracking-widest font-bold opacity-50">告警自动恢复率</span>
+                                <span className="text-xs uppercase tracking-widest font-bold opacity-50">{t('report.autoRecoveryRate')}</span>
                                 <span className="text-3xl font-black text-blue-500">
                                     {summary.total_alerts > 0 ? round(summary.resolved_alerts * 100 / summary.total_alerts, 1) : 0}%
                                 </span>
@@ -452,7 +452,7 @@ const SreReport: React.FC<SreReportProps> = ({
                 <Col xs={24} xl={12}>
                     <Card title={<span className="text-sm font-bold opacity-80 uppercase tracking-wide">{t('report.trendTitle')}</span>} className="ans-card shadow-sm h-[380px] overflow-hidden">
                         {isLoading ? <Skeleton active paragraph={{ rows: 6 }} /> : (
-                            trend.length === 0 ? <div className="flex justify-center items-center h-[280px] opacity-40">暂无趋势数据</div> : (
+                            trend.length === 0 ? <div className="flex justify-center items-center h-[280px] opacity-40">{t('report.noTrendData')}</div> : (
                                 <ReactECharts option={getTrendOption()} style={{ height: '300px' }} />
                             )
                         )}
@@ -461,7 +461,7 @@ const SreReport: React.FC<SreReportProps> = ({
                 <Col xs={24} md={12} xl={6}>
                     <Card title={<span className="text-sm font-bold opacity-80 uppercase tracking-wide">{t('report.severityTitle')}</span>} className="ans-card shadow-sm h-[380px] overflow-hidden">
                         {isLoading ? <Skeleton active paragraph={{ rows: 6 }} /> : (
-                            severityDist.length === 0 ? <div className="flex justify-center items-center h-[280px] opacity-40">暂无级别分布数据</div> : (
+                            severityDist.length === 0 ? <div className="flex justify-center items-center h-[280px] opacity-40">{t('report.noSeverityData')}</div> : (
                                 <ReactECharts option={getSeverityOption()} style={{ height: '300px' }} />
                             )
                         )}
@@ -470,7 +470,7 @@ const SreReport: React.FC<SreReportProps> = ({
                 <Col xs={24} md={12} xl={6}>
                     <Card title={<span className="text-sm font-bold opacity-80 uppercase tracking-wide">{t('report.healingStatusTitle')}</span>} className="ans-card shadow-sm h-[380px] overflow-hidden">
                         {isLoading ? <Skeleton active paragraph={{ rows: 6 }} /> : (
-                            statusDist.length === 0 ? <div className="flex justify-center items-center h-[280px] opacity-40">暂无自愈分布数据</div> : (
+                            statusDist.length === 0 ? <div className="flex justify-center items-center h-[280px] opacity-40">{t('report.noHealingData')}</div> : (
                                 <ReactECharts option={getHealingStatusOption()} style={{ height: '300px' }} />
                             )
                         )}
@@ -482,7 +482,7 @@ const SreReport: React.FC<SreReportProps> = ({
             <Card 
                 title={
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 w-full">
-                        <span className="text-sm font-bold opacity-80 uppercase tracking-wide">告警明细统计</span>
+                        <span className="text-sm font-bold opacity-80 uppercase tracking-wide">{t('report.alertDetailStats')}</span>
                         <Input 
                             placeholder={t('report.searchAlertName')} 
                             prefix={<SearchOutlined className="opacity-40" />} 

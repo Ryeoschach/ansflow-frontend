@@ -320,7 +320,7 @@ const ViewerCore = () => {
           case 'running': return <Tag icon={<SyncOutlined spin />} color="processing" className="rounded-full px-3">{t('runViewer.executing')}</Tag>;
           case 'success': return <Tag color="success" className="rounded-full px-3">{t('runViewer.success')}</Tag>;
           case 'failed': return <Tag color="error" className="rounded-full px-3">{t('runViewer.failed')}</Tag>;
-          case 'waiting': return <Tag icon={<SyncOutlined spin />} color="purple" className="rounded-full px-3">等待审批</Tag>;
+          case 'waiting': return <Tag icon={<SyncOutlined spin />} color="purple" className="rounded-full px-3">{t('runViewer.waitingApproval')}</Tag>;
           case 'cancelled': return <Tag icon={<StopOutlined />} color="default" className="rounded-full px-3">{t('runViewer.cancelled')}</Tag>;
           case 'skipped': return <Tag icon={<MinusCircleOutlined />} color="default" className="rounded-full px-3">{t('runViewer.skipped')}</Tag>;
           default: return <Tag color="default" className="rounded-full px-3">{t('runViewer.queued')}</Tag>;
@@ -347,7 +347,7 @@ const ViewerCore = () => {
                 {getStatusTag(payload?.status)}
             </div>
             <Text type="secondary" className="text-[10px] uppercase tracking-tighter">
-                RUN ID: #{runId} | TRIGGER: {payload?.trigger_type || 'MANUAL'}
+                {t('runViewer.runMeta', { runId, trigger: payload?.trigger_type || 'MANUAL' })}
             </Text>
           </div>
         </Space>
@@ -470,14 +470,14 @@ const ViewerCore = () => {
             {selectedNodeData?.runStatus === 'waiting' && (
                 <Card 
                     size="small" 
-                    title={<Space><MonitorOutlined className="text-purple-500" /><span>审批干预</span></Space>}
+                    title={<Space><MonitorOutlined className="text-purple-500" /><span>{t('runViewer.approvalIntervention')}</span></Space>}
                     className="mb-4 border-2 border-purple-100 bg-purple-50/30 rounded-2xl overflow-hidden shadow-sm"
                 >
                     <div className="space-y-3">
-                        <Text type="secondary" className="text-[11px]">该步骤需要人工确认后才能继续执行，请填写审核意见：</Text>
+                        <Text type="secondary" className="text-[11px]">{t('runViewer.approvalInstruction')}</Text>
                         <Input.TextArea 
                             id="approval-comment"
-                            placeholder="请输入审核意见 (可选)" 
+                            placeholder={t('runViewer.approvalCommentPlaceholder')}
                             rows={3} 
                             className="rounded-xl border-purple-200"
                         />
@@ -489,7 +489,7 @@ const ViewerCore = () => {
                                 onClick={() => approveMutation.mutate('reject')}
                                 loading={approveMutation.isPending}
                             >
-                                驳回
+                                {t('runViewer.reject')}
                             </Button>
                             <Button 
                                 type="primary" 
@@ -497,7 +497,7 @@ const ViewerCore = () => {
                                 onClick={() => approveMutation.mutate('pass')}
                                 loading={approveMutation.isPending}
                             >
-                                通过并继续
+                                {t('runViewer.approveAndContinue')}
                             </Button>
                         </Space>
                     </div>
@@ -546,9 +546,9 @@ const ViewerCore = () => {
                             });
                           }}
                         >
-                          查看 AI 诊断结论
+                          {t('runViewer.viewAiDiagnosis')}
                         </Button>
-                        <Tooltip title="重新分析">
+                        <Tooltip title={t('runViewer.reanalyze')}>
                           <Button
                             icon={<SyncOutlined />}
                             className="h-10 w-10 flex items-center justify-center rounded-xl"
@@ -578,7 +578,7 @@ const ViewerCore = () => {
                           });
                         }}
                       >
-                        AI 智能诊断
+                        {t('runViewer.aiDiagnosis')}
                       </Button>
                     )}
                   </div>
@@ -643,7 +643,7 @@ const ViewerCore = () => {
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full opacity-20 gap-2">
                         <SyncOutlined className="text-3xl animate-spin" />
-                        <span className="text-[10px]">WAITING FOR STDIO BUFFER...</span>
+                        <span className="text-[10px]">{t('runViewer.waitingForStdioBuffer')}</span>
                     </div>
                 )}
                 {/* 日志底部渐变阴影 */}

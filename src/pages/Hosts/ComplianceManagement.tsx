@@ -462,10 +462,10 @@ const ComplianceManagement: React.FC = () => {
                               size="small"
                               danger
                               icon={<DisconnectOutlined />}
-                              onClick={() => {
+                                onClick={() => {
                                 antModal.confirm({
-                                  title: '确认解除绑定?',
-                                  content: '解除绑定后，该基线的巡检状态将不再映射至此等保条款。',
+                                  title: t('compliance.confirmUnbindTitle'),
+                                  content: t('compliance.confirmUnbindContent'),
                                   onOk: () => deleteMappingMutation.mutate(record.mapping_id),
                                 });
                               }}
@@ -490,7 +490,7 @@ const ComplianceManagement: React.FC = () => {
             </div>
           ) : (
             <div className="flex justify-center items-center h-full">
-              <Empty description="请从左侧选择一个合规条款项" />
+              <Empty description={t('compliance.selectClausePrompt')} />
             </div>
           )}
         </Card>
@@ -531,7 +531,7 @@ const ComplianceManagement: React.FC = () => {
             </Checkbox.Group>
             {(allBaselinesData?.data || []).length === 0 && (
               <div className="py-8 text-center">
-                <Text type="secondary">暂无可用主机基线，请先前往「主机基线」页面创建</Text>
+                <Text type="secondary">{t('compliance.noAvailableBaselines')}</Text>
               </div>
             )}
           </div>

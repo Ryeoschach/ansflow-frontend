@@ -361,7 +361,7 @@ const ExecutionHistory: React.FC = () => {
                 <div className="mb-3 flex justify-between items-center flex-wrap gap-2">
                     <Space>
                         <Select
-                            placeholder="按主机筛选"
+                            placeholder={t('executionHistory.hostFilterPlaceholder')}
                             style={{ width: 150 }}
                             allowClear
                             onChange={setHostFilter}
@@ -372,14 +372,14 @@ const ExecutionHistory: React.FC = () => {
                         </Select>
                         {activeExecution?.extra_vars_snapshot && (
                             <Popover 
-                                title="变量快照 (Runtime Vars)" 
+                                title={t('executionHistory.runtimeVars')}
                                 content={
                                     <pre className="text-[10px] p-2 bg-gray-50 rounded max-w-md max-h-60 overflow-auto">
                                         {JSON.stringify(activeExecution.extra_vars_snapshot, null, 2)}
                                     </pre>
                                 }
                             >
-                                <Button size="small" icon={<HistoryOutlined />}>变量快照</Button>
+                                <Button size="small" icon={<HistoryOutlined />}>{t('executionHistory.variableSnapshot')}</Button>
                             </Popover>
                         )}
                     </Space>
@@ -399,7 +399,7 @@ const ExecutionHistory: React.FC = () => {
                                 });
                             }}
                         >
-                            AI 诊断
+                            {t('executionHistory.aiDiagnosis')}
                         </Button>
                     )}
                 </div>

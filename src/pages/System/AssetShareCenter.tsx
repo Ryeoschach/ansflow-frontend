@@ -16,9 +16,10 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getSharedOut, getSharedIn, deleteAssetShare, revokeAssetShares,
-  AssetShare, SharePermission, PERMISSION_LABELS, ASSET_TYPE_LABELS, AssetType,
+  AssetShare, SharePermission, AssetType,
 } from '../../api/assetShare';
 import useAppStore from '../../store/useAppStore';
+import { useTranslation } from 'react-i18next';
 
 const { Text, Title } = Typography;
 
@@ -41,6 +42,7 @@ const ASSET_TYPE_COLOR: Record<AssetType, string> = {
 
 const AssetShareCenter: React.FC = () => {
   const { message } = App.useApp();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const currentProject = useAppStore((s) => s.currentProject);
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
@@ -64,7 +66,7 @@ const AssetShareCenter: React.FC = () => {
   const deleteMutation = useMutation({
     mutationFn: deleteAssetShare,
     onSuccess: () => {
-      message.success('已撤销授权');
+      message.success(t('assetShare.revoked'));
       queryClient.invalidateQueries({ queryKey: ['shared-out'] });
     },
   });
@@ -73,7 +75,7 @@ const AssetShareCenter: React.FC = () => {
   const bulkRevokeMutation = useMutation({
     mutationFn: revokeAssetShares,
     onSuccess: () => {
-      message.success(`已批量撤销 ${selectedRowKeys.length} 条授权`);
+      message.success(t('assetShare.bulkRevoked', { count: selectedRowKeys.length }));
       setSelectedRowKeys([]);
       queryClient.invalidateQueries({ queryKey: ['shared-out'] });
     },
@@ -91,37 +93,37 @@ const AssetShareCenter: React.FC = () => {
   // ── 共享列（通用）───────────────────────────────────────────
   const baseColumns = [
     {
-      title: '资产类型',
+      title: t('assetShare.assetType'),
       dataIndex: 'asset_type',
       key: 'asset_type',
       render: (type: AssetType) => (
         <Tag color={ASSET_TYPE_COLOR[type] ?? 'default'}>
-          {ASSET_TYPE_LABELS[type] ?? type}
+          {t(`assetShare.assetTypes.${type}`, type)}
         </Tag>
       ),
     },
     {
-      title: '资产 ID',
+      title: t('assetShare.assetId'),
       dataIndex: 'asset_id',
       key: 'asset_id',
       render: (id: number) => <Text code>{id}</Text>,
     },
     {
-      title: '权限',
+      title: t('assetShare.permission'),
       dataIndex: 'permission',
       key: 'permission',
       render: (p: SharePermission) => (
-        <Tag color={PERMISSION_COLOR[p]}>{PERMISSION_LABELS[p]}</Tag>
+        <Tag color={PERMISSION_COLOR[p]}>{t(`assetShare.${p}`)}</Tag>
       ),
     },
     {
-      title: '授权人',
+      title: t('assetShare.sharedBy'),
       dataIndex: 'shared_by_name',
       key: 'shared_by_name',
       render: (n: string) => <Text type="secondary">{n ?? '-'}</Text>,
     },
     {
-      title: '授权时间',
+      title: t('assetShare.sharedAt'),
       dataIndex: 'create_time',
       key: 'create_time',
       render: (t: string) => new Date(t).toLocaleString(),
@@ -132,25 +134,25 @@ const AssetShareCenter: React.FC = () => {
   const outColumns = [
     ...baseColumns.slice(0, 2),
     {
-      title: '目标项目',
+      title: t('assetShare.targetProject'),
       dataIndex: 'to_project_name',
       key: 'to_project_name',
       render: (name: string) => <Text strong>{name}</Text>,
     },
     ...baseColumns.slice(2),
     {
-      title: '操作',
+      title: t('common.actions'),
       key: 'action',
       render: (_: any, record: AssetShare) => (
         <Popconfirm
-          title="确认撤销该授权？撤销后目标项目将无法访问此资产"
+          title={t('assetShare.revokeAccessConfirm')}
           onConfirm={() => deleteMutation.mutate(record.id)}
-          okText="撤销"
+          okText={t('assetShare.revoke')}
           okButtonProps={{ danger: true }}
-          cancelText="取消"
+          cancelText={t('common.cancel')}
         >
           <Button type="text" danger icon={<DeleteOutlined />} size="small">
-            撤销
+            {t('assetShare.revoke')}
           </Button>
         </Popconfirm>
       ),
@@ -161,7 +163,7 @@ const AssetShareCenter: React.FC = () => {
   const inColumns = [
     ...baseColumns.slice(0, 2),
     {
-      title: '来源项目',
+      title: t('assetShare.sourceProject'),
       dataIndex: 'from_project_name',
       key: 'from_project_name',
       render: (name: string) => (
@@ -172,14 +174,16 @@ const AssetShareCenter: React.FC = () => {
   ];
 
   // ── 过滤器 ──────────────────────────────────────────────────
-  const typeFilterOptions = Object.entries(ASSET_TYPE_LABELS).map(([k, v]) => ({
-    label: v, value: k,
+  const assetTypes: AssetType[] = ['host', 'ssh_credential', 'credential', 'pipeline', 'ansible_task', 'k8s_cluster', 'resource_pool', 'self_healing_policy'];
+  const typeFilterOptions = assetTypes.map((type) => ({
+    label: t(`assetShare.assetTypes.${type}`),
+    value: type,
   }));
 
   const FilterBar = () => (
     <Select
       allowClear
-      placeholder="按资产类型筛选"
+      placeholder={t('assetShare.filterByType')}
       style={{ width: 160 }}
       options={typeFilterOptions}
       value={filterType || undefined}
@@ -190,7 +194,7 @@ const AssetShareCenter: React.FC = () => {
   if (!currentProject) {
     return (
       <Card className="m-4">
-        <Empty description="请先在顶部选择一个项目" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Empty description={t('assetShare.selectProjectFirst')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
       </Card>
     );
   }
@@ -201,7 +205,7 @@ const AssetShareCenter: React.FC = () => {
       title={
         <Space>
           <ShareAltOutlined style={{ color: '#1677ff' }} />
-          <span>跨项目资产授权中心</span>
+          <span>{t('assetShare.centerTitle')}</span>
           <Tag color="blue">{currentProject.name}</Tag>
         </Space>
       }
@@ -214,7 +218,7 @@ const AssetShareCenter: React.FC = () => {
             label: (
               <Space>
                 <SendOutlined />
-                我共享的
+                {t('assetShare.sharedOut')}
                 <Badge count={sharedOut.length} size="small" color="#1677ff" />
               </Space>
             ),
@@ -224,13 +228,13 @@ const AssetShareCenter: React.FC = () => {
                   <FilterBar />
                   {selectedRowKeys.length > 0 && (
                     <Popconfirm
-                      title={`确认批量撤销 ${selectedRowKeys.length} 条授权？`}
+                      title={t('assetShare.bulkRevokeConfirm', { count: selectedRowKeys.length })}
                       onConfirm={() => bulkRevokeMutation.mutate(selectedRowKeys)}
-                      okText="批量撤销"
+                      okText={t('assetShare.bulkRevoke')}
                       okButtonProps={{ danger: true }}
                     >
                       <Button danger icon={<DeleteOutlined />} loading={bulkRevokeMutation.isPending}>
-                        批量撤销 ({selectedRowKeys.length})
+                        {t('assetShare.bulkRevoke')} ({selectedRowKeys.length})
                       </Button>
                     </Popconfirm>
                   )}
@@ -250,7 +254,7 @@ const AssetShareCenter: React.FC = () => {
                     emptyText: (
                       <Empty
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description="当前项目尚未向其他项目共享任何资产"
+                        description={t('assetShare.emptySharedOut')}
                       />
                     ),
                   }}
@@ -264,7 +268,7 @@ const AssetShareCenter: React.FC = () => {
             label: (
               <Space>
                 <InboxOutlined />
-                共享给我的
+                {t('assetShare.sharedIn')}
                 <Badge count={sharedIn.length} size="small" color="green" />
               </Space>
             ),
@@ -282,7 +286,7 @@ const AssetShareCenter: React.FC = () => {
                     emptyText: (
                       <Empty
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description="暂无其他项目向当前项目共享资产"
+                        description={t('assetShare.emptySharedIn')}
                       />
                     ),
                   }}

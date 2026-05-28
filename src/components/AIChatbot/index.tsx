@@ -110,9 +110,9 @@ const AIChatbot: React.FC = () => {
     }, [appToken]);
 
     const personalityItems: MenuProps['items'] = [
-        { key: 'professional', label: '技术专家', icon: <RobotOutlined /> },
-        { key: 'concise', label: '简洁助手', icon: <ThunderboltOutlined /> },
-        { key: 'humorous', label: '幽默特工', icon: <CoffeeOutlined /> },
+        { key: 'professional', label: t('ai.personality.professional'), icon: <RobotOutlined /> },
+        { key: 'concise', label: t('ai.personality.concise'), icon: <ThunderboltOutlined /> },
+        { key: 'humorous', label: t('ai.personality.humorous'), icon: <CoffeeOutlined /> },
     ];
 
     // 点击外部自动收起
@@ -246,7 +246,7 @@ const AIChatbot: React.FC = () => {
             setMessages(loadedMessages);
             setHistoryVisible(false);
         } catch (err) {
-            message.error('加载历史对话失败');
+            message.error(t('ai.loadHistoryFailed'));
         } finally {
             setLoading(false);
         }
@@ -258,7 +258,7 @@ const AIChatbot: React.FC = () => {
         const msg = messages.find(m => m.id === msgId);
         if (!msg) return;
 
-        let finalTitle = `AI 经验沉淀 - ${new Date().toLocaleDateString()}`;
+        let finalTitle = t('ai.experienceTitle', { date: new Date().toLocaleDateString() });
         let finalContent = msg.content;
 
         modal.confirm({
@@ -284,7 +284,7 @@ const AIChatbot: React.FC = () => {
                         />
                     </div>
                     <Alert 
-                        message={t('common.info') || 'Tips'} 
+                        message={t('common.info')} 
                         description={t('ai.exportTip')} 
                         type="info" 
                         showIcon 
@@ -297,10 +297,10 @@ const AIChatbot: React.FC = () => {
             onOk: async () => {
                 try {
                     await saveDiagnosisToKnowledge(historyId, msgId, finalTitle, finalContent);
-                    message.success('已存入知识库');
+                    message.success(t('ai.saveKnowledgeSuccess'));
                     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, is_exported: true } : m));
                 } catch (err) {
-                    message.error('保存失败');
+                    message.error(t('ai.saveKnowledgeFailed'));
                 }
             }
         });
@@ -350,7 +350,7 @@ const AIChatbot: React.FC = () => {
             const historyRes = await createChatHistory({
                 user_id: currentUser || 'guest',
                 session_id: sid,
-                title: `故障诊断: ${displayTitle}`,
+                title: t('ai.diagnosisHistoryTitle', { title: displayTitle }),
                 personality: personality,
                 history_type: 'diagnose'
             });
@@ -635,7 +635,7 @@ const AIChatbot: React.FC = () => {
                         });
                         ws.close();
                     } else if (data.type === 'error') {
-                        message.error(`AI 错误: ${data.message}`);
+                        message.error(t('ai.aiError', { message: data.message }));
                         reject(new Error(data.message));
                         ws.close();
                     }
@@ -648,10 +648,10 @@ const AIChatbot: React.FC = () => {
                 socketRef.current = null;
                 setLoading(false);
                 if (event.code === 4001) {
-                    message.error('WebSocket 连接被拒：未认证的用户');
+                    message.error(t('ai.wsUnauthenticated'));
                     reject(new Error('Unauthenticated'));
                 } else if (event.code === 4003) {
-                    message.error('WebSocket 连接被拒：无项目访问权限');
+                    message.error(t('ai.wsForbidden'));
                     reject(new Error('Forbidden'));
                 } else {
                     resolve();
@@ -677,7 +677,7 @@ const AIChatbot: React.FC = () => {
                 content: ansibleDraft.content
             });
             const newTaskId = res.id || res.data?.id;
-            message.success(`Ansible 任务注册成功 (ID: ${newTaskId})`);
+            message.success(t('ai.ansibleRegisterSuccess', { id: newTaskId }));
             
             // If there's a pipeline draft waiting for this task, inject the ID
             if (pipelineDraft) {
@@ -692,7 +692,7 @@ const AIChatbot: React.FC = () => {
             // 移除已处理的 Ansible draft
             setAnsibleDraft(null);
         } catch (e: any) {
-            message.error(`注册任务失败: ${e.response?.data?.error || e.message}`);
+            message.error(t('ai.ansibleRegisterFailed', { message: e.response?.data?.error || e.message }));
         } finally {
             setIsRegisteringTask(false);
         }
@@ -772,10 +772,10 @@ const AIChatbot: React.FC = () => {
                 badge={{ 
                     dot: aiStatus === 'idle',
                     count: aiStatus !== 'idle' ? {
-                        'analyzing': '分析中...',
-                        'success': '完成',
-                        'error': '错误',
-                        'timeout': '超时'
+                        'analyzing': t('ai.statusAnalyzing'),
+                        'success': t('ai.statusSuccess'),
+                        'error': t('ai.statusError'),
+                        'timeout': t('ai.statusTimeout')
                     }[aiStatus] : undefined,
                     color: {
                         'idle': token.colorSuccess,
@@ -866,7 +866,7 @@ const AIChatbot: React.FC = () => {
                                                 textOverflow: 'ellipsis', 
                                                 whiteSpace: 'nowrap' 
                                             }}>
-                                                {llmModels.find(m => m.id === selectedLLMId)?.display_name || '选择模型'}
+                                                {llmModels.find(m => m.id === selectedLLMId)?.display_name || t('ai.selectModel')}
                                             </span>
                                         </Tag>
                                     </Dropdown>
@@ -875,7 +875,7 @@ const AIChatbot: React.FC = () => {
                         }
                         extra={
                             <Space>
-                                <Tooltip title="开启新对话">
+                                <Tooltip title={t('ai.newChat')}>
                                     <Button type="text" size="small" icon={<PlusOutlined />} onClick={(e) => { e.stopPropagation(); startNewChat(); }} />
                                 </Tooltip>
                                 <Button type="text" size="small" icon={<MinusOutlined />} onClick={(e) => { e.stopPropagation(); setVisible(false); }} />
@@ -890,11 +890,11 @@ const AIChatbot: React.FC = () => {
                             <div className="absolute inset-0 z-50 animate-in slide-in-from-left duration-300 flex flex-col" style={{ backgroundColor: token.colorBgContainer }}>
                                 <div className="px-4 pt-4 pb-2 border-b" style={{ borderColor: token.colorBorderSecondary }}>
                                     <Flex justify="space-between" align="center" className="mb-3">
-                                        <Text strong style={{ color: token.colorText }}><HistoryOutlined /> 历史记录</Text>
-                                        <Button type="primary" ghost size="small" icon={<PlusOutlined />} onClick={startNewChat}>新对话</Button>
+                                        <Text strong style={{ color: token.colorText }}><HistoryOutlined /> {t('ai.historyRecords')}</Text>
+                                        <Button type="primary" ghost size="small" icon={<PlusOutlined />} onClick={startNewChat}>{t('ai.historyNewChat')}</Button>
                                     </Flex>
                                     <Input 
-                                        placeholder="搜索历史标题..." 
+                                        placeholder={t('ai.searchHistory')} 
                                         prefix={<SearchOutlined style={{ color: token.colorTextQuaternary }} />}
                                         value={historySearch}
                                         onChange={e => {
@@ -914,8 +914,8 @@ const AIChatbot: React.FC = () => {
                                             loadHistoryList(tab);
                                         }}
                                         items={[
-                                            { key: 'chat', label: '智能对话' },
-                                            { key: 'diagnose', label: '故障诊断' },
+                                            { key: 'chat', label: t('ai.chatTab') },
+                                            { key: 'diagnose', label: t('ai.diagnoseTab') },
                                         ]}
                                     />
                                 </div>
@@ -923,7 +923,7 @@ const AIChatbot: React.FC = () => {
                                     {historyLoading ? (
                                         <div className="p-5"><Skeleton active /></div>
                                     ) : historyList.length === 0 ? (
-                                        <Empty className="mt-20" description={historySearch ? "未找到相关历史" : "暂无历史记录"} />
+                                        <Empty className="mt-20" description={historySearch ? t('ai.noHistoryFound') : t('ai.noHistory')} />
                                     ) : (
                                         <div className="flex flex-col">
                                             {historyList.map((item: any) => (
@@ -939,7 +939,7 @@ const AIChatbot: React.FC = () => {
                                                     {item.history_type === 'diagnose' ? <ThunderboltOutlined className="mt-1" style={{ color: token.colorWarning }} /> : <MessageOutlined className="mt-1" style={{ color: token.colorPrimary }} />}
                                                     <div className="flex-1 min-w-0">
                                                         <div className="text-xs font-medium truncate" style={{ color: token.colorText }}>
-                                                            {item.title || '无标题对话'}
+                                                            {item.title || t('ai.untitledChat')}
                                                         </div>
                                                         <div className="text-[10px] mt-0.5" style={{ color: token.colorTextDescription }}>
                                                             {new Date(item.create_time).toLocaleString()}
@@ -951,7 +951,7 @@ const AIChatbot: React.FC = () => {
                                     )}
                                 </div>
                                 <div className="p-4 border-t" style={{ borderColor: token.colorBorderSecondary }}>
-                                    <Button block onClick={() => setHistoryVisible(false)}>返回当前对话</Button>
+                                    <Button block onClick={() => setHistoryVisible(false)}>{t('ai.backToCurrentChat')}</Button>
                                 </div>
                             </div>
                         )}
@@ -986,9 +986,9 @@ const AIChatbot: React.FC = () => {
                                         </div>
                                         {msg.role === 'assistant' && msg.referenced_docs && msg.referenced_docs.length > 0 && (
                                             <div className="mt-1 flex flex-wrap gap-1 mb-1">
-                                                <span className="text-[10px] opacity-40 mr-1 flex items-center"><BookOutlined className="mr-0.5" /> 参考:</span>
+                                                <span className="text-[10px] opacity-40 mr-1 flex items-center"><BookOutlined className="mr-0.5" /> {t('ai.reference')}</span>
                                                 {msg.referenced_docs.map((doc: any, i: number) => (
-                                                    <Tooltip key={i} title="点击查看参考文档详情">
+                                                    <Tooltip key={i} title={t('ai.referenceTooltip')}>
                                                         <Tag 
                                                             className="text-[9px] m-0 px-1 border-none bg-gray-100 hover:bg-gray-200 cursor-pointer transition-colors"
                                                             onClick={() => window.open(`/v1/ai-rag/config?doc_id=${doc.id}`)}
@@ -1001,7 +1001,7 @@ const AIChatbot: React.FC = () => {
                                         )}
                                         {msg.role === 'assistant' && (msg.id || (loading && index === messages.length - 1)) && (
                                             <div className="flex justify-start opacity-0 animate-in fade-in duration-500 fill-mode-forwards" style={{ animationDelay: '300ms' }}>
-                                                <Tooltip title={!msg.id ? "生成凭证中..." : (msg.is_exported ? "已在知识库中" : "存入知识库")}>
+                                                <Tooltip title={!msg.id ? t('ai.generatingCredential') : (msg.is_exported ? t('ai.alreadyInKnowledgeBase') : t('ai.saveToKnowledgeBase'))}>
                                                     <Button 
                                                         type="text" 
                                                         size="small" 
@@ -1010,7 +1010,7 @@ const AIChatbot: React.FC = () => {
                                                         onClick={() => msg.id && !msg.is_exported && handleSaveKnowledge(msg.id)}
                                                         disabled={!msg.id || msg.is_exported}
                                                     >
-                                                        {msg.is_exported ? '已存入知识库' : '存入知识库'}
+                                                        {msg.is_exported ? t('ai.savedToKnowledgeBase') : t('ai.saveToKnowledgeBase')}
                                                     </Button>
                                                 </Tooltip>
                                             </div>
@@ -1027,22 +1027,22 @@ const AIChatbot: React.FC = () => {
                                     >
                                         <Flex justify="space-between" align="center">
                                             <Space direction="vertical" size={0}>
-                                                <Text type="secondary" className="text-[10px] font-bold uppercase tracking-wider" style={{ color: token.colorPrimary }}>AI 自愈建议</Text>
-                                                <Text strong className="text-xs" style={{ color: token.colorText }}>执行修复流水线 (ID: {suggestedPipelineId})</Text>
+                                                <Text type="secondary" className="text-[10px] font-bold uppercase tracking-wider" style={{ color: token.colorPrimary }}>{t('ai.selfHealing.title')}</Text>
+                                                <Text strong className="text-xs" style={{ color: token.colorText }}>{t('ai.selfHealing.pipelineText', { id: suggestedPipelineId })}</Text>
                                             </Space>
                                             <Button type="primary" size="small" icon={<PlayCircleOutlined />} className="rounded-lg h-8 px-4" onClick={() => {
                                                 modal.confirm({
-                                                    title: '确认执行 AI 建议的修复方案？',
-                                                    content: '该动作将由 AI 发起并记录在审计日志中。',
+                                                    title: t('ai.selfHealing.confirmTitle'),
+                                                    content: t('ai.selfHealing.confirmContent'),
                                                     onOk: async () => {
                                                         try {
                                                             await executePipeline(suggestedPipelineId);
-                                                            message.success('自愈任务已下发');
+                                                            message.success(t('ai.selfHealing.success'));
                                                             setSuggestedPipelineId(null);
-                                                        } catch (e) { message.error('下发失败'); }
+                                                        } catch (e) { message.error(t('ai.selfHealing.error')); }
                                                     }
                                                 });
-                                            }}>立即执行</Button>
+                                            }}>{t('ai.selfHealing.execute')}</Button>
                                         </Flex>
                                     </Card>
                                 </div>
@@ -1057,8 +1057,8 @@ const AIChatbot: React.FC = () => {
                                     >
                                         <Flex justify="space-between" align="center">
                                             <Space direction="vertical" size={0}>
-                                                <Text type="secondary" className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#531dab' }}>AI 资产编排</Text>
-                                                <Text strong className="text-xs" style={{ color: token.colorText }}>已为您生成 Ansible Playbook ({ansibleDraft.name || 'AI Task'})</Text>
+                                                <Text type="secondary" className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#531dab' }}>{t('ai.aiAssetOrchestration')}</Text>
+                                                <Text strong className="text-xs" style={{ color: token.colorText }}>{t('ai.generatedAnsibleTask', { name: ansibleDraft.name || 'AI Task' })}</Text>
                                             </Space>
                                             <Button 
                                                 type="primary" 
@@ -1068,7 +1068,7 @@ const AIChatbot: React.FC = () => {
                                                 className="rounded-lg h-8 px-4" 
                                                 loading={isRegisteringTask}
                                                 onClick={handleRegisterAnsibleTask}
-                                            >保存并注册</Button>
+                                            >{t('ai.saveAndRegister')}</Button>
                                         </Flex>
                                         <div className="mt-2 text-[10px] overflow-auto max-h-32 bg-slate-900 text-slate-300 p-2 rounded-lg font-mono whitespace-pre-wrap">
                                             {ansibleDraft.content}
@@ -1086,8 +1086,8 @@ const AIChatbot: React.FC = () => {
                                     >
                                         <Flex justify="space-between" align="center">
                                             <Space direction="vertical" size={0}>
-                                                <Text type="secondary" className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#722ed1' }}>AI 深度联动</Text>
-                                                <Text strong className="text-xs" style={{ color: token.colorText }}>已为您生成修复流水线草案</Text>
+                                                <Text type="secondary" className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#722ed1' }}>{t('ai.aiDeepLink')}</Text>
+                                                <Text strong className="text-xs" style={{ color: token.colorText }}>{t('ai.generatedPipelineDraft')}</Text>
                                             </Space>
                                             <Button 
                                                 type="primary" 
@@ -1113,7 +1113,7 @@ const AIChatbot: React.FC = () => {
                                                             // 确保 data 对象存在且包含 label
                                                             data: { 
                                                                 ...node.data, 
-                                                                label: node.data?.label || node.label || `节点 ${idx + 1}` 
+                                                                label: node.data?.label || node.label || t('ai.nodeDefaultLabel', { index: idx + 1 }) 
                                                             }
                                                         };
                                                     });
@@ -1131,9 +1131,9 @@ const AIChatbot: React.FC = () => {
 
                                                     navigate('/v1/pipeline/designer');
                                                     setVisible(false);
-                                                    message.success('已载入流水线设计器');
+                                                    message.success(t('ai.loadedDesigner'));
                                                 }}
-                                            >去设计</Button>
+                                            >{t('ai.loadDesigner')}</Button>
                                         </Flex>
                                     </Card>
                                 </div>
@@ -1165,7 +1165,7 @@ const AIChatbot: React.FC = () => {
                                 className="border-none hover:bg-slate-200 focus:bg-white transition-all rounded-xl py-2 px-3" 
                             />
                             {loading ? (
-                                <Tooltip title="停止生成">
+                                <Tooltip title={t('ai.stopGenerating')}>
                                     <Button 
                                         type="default" 
                                         shape="circle" 

@@ -222,7 +222,7 @@ const ResourcePoolManagement: React.FC = () => {
             render: (_: any, record: any) => (
                 <Space size="middle">
                     {(hasPermission('*') || hasPermission('resource:resources:edit')) && (
-                        <Tooltip title="跨项目授权">
+                        <Tooltip title={t('assetShare.crossProjectGrant')}>
                             <Button
                                 type="text"
                                 icon={<ShareAltOutlined style={{ color: '#1677ff' }} />}
@@ -353,7 +353,7 @@ const ResourcePoolManagement: React.FC = () => {
                             name="code" 
                             rules={[
                                 { required: true, message: t('resourcePool.codeRequired') },
-                                { pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/, message: '标识必须以字母开头，且仅能包含字母、数字和下划线' }
+                                { pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/, message: t('resourcePool.codePattern') }
                             ]}
                         >
                             <Input placeholder={t('resourcePool.codePlaceholder')} />

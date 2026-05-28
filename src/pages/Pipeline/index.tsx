@@ -222,7 +222,7 @@ const TemplateList = () => {
               className="rounded-lg"
             />
           </Tooltip>
-          <Tooltip title="跨项目授权">
+          <Tooltip title={t('assetShare.crossProjectGrant')}>
             <Button
               size="small"
               icon={<ShareAltOutlined style={{ color: '#1677ff' }} />}
@@ -360,11 +360,11 @@ const TemplateList = () => {
           {promotingRecord && promotingRecord.graph_data && Array.isArray(promotingRecord.graph_data.nodes) && promotingRecord.graph_data.nodes.length > 0 && (
             <div style={{ marginTop: '16px', borderTop: '1px solid #303030', paddingTop: '16px' }}>
               <div style={{ fontWeight: 500, marginBottom: '10px', color: 'rgba(255, 255, 255, 0.85)', fontSize: '13px' }}>
-                {t('pipeline.promoteNodesSummary', '包含的自愈动作节点 (级联转正)')}
+                {t('pipeline.promoteNodesSummary')}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
                 {promotingRecord.graph_data.nodes.map((node: any, idx: number) => {
-                  const label = node.data?.label || node.data?.name || node.id || `节点 ${idx + 1}`;
+                  const label = node.data?.label || node.data?.name || node.id || t('pipeline.nodeDefaultLabel', { index: idx + 1 });
                   const isAnsible = node.type === 'ansible';
                   return (
                     <div 
@@ -392,7 +392,7 @@ const TemplateList = () => {
                           fontWeight: 'bold'
                         }}
                       >
-                        {isAnsible ? t('pipeline.nodeTypeAnsible', 'Ansible 剧本') : (node.type || '通用')}
+                        {isAnsible ? t('pipeline.nodeTypeAnsible') : (node.type || t('pipeline.nodeTypeGeneric'))}
                       </span>
                     </div>
                   );

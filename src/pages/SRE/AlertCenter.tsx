@@ -116,7 +116,7 @@ const AlertCenter: React.FC = () => {
     const reDiagnoseMutation = useMutation({
         mutationFn: (id: number) => reDiagnoseAlert(id),
         onSuccess: () => {
-            message.success('已重新诊断，建议已更新');
+            message.success(t('alertCenter.messages.reDiagnoseSuccess'));
             queryClient.invalidateQueries({ queryKey: ['sre-alerts'] });
             // Close detail or refresh it
             if (selectedAlert) {
@@ -128,14 +128,14 @@ const AlertCenter: React.FC = () => {
             }
         },
         onError: (err: any) => {
-            message.error(err.response?.data?.error || '重新诊断失败');
+            message.error(err.response?.data?.error || t('alertCenter.messages.reDiagnoseFailed'));
         }
     });
 
     const exportAlertMutation = useMutation({
         mutationFn: (id: number) => exportAlertToKnowledge(id),
         onSuccess: () => {
-            message.success('已存入知识库');
+            message.success(t('alertCenter.messages.exportedToKnowledge'));
             if (selectedAlert) {
                 setSelectedAlert({ ...selectedAlert, is_exported: true });
             }
@@ -263,7 +263,7 @@ const AlertCenter: React.FC = () => {
                                     {isAuto && <Tag color="gold" style={{ fontSize: '10px', padding: '0 4px', lineHeight: '16px' }}>AUTO</Tag>}
                                 </Space>
                                 <Text style={{ fontSize: '10px' }} className="text-blue-500 cursor-pointer">
-                                    查看工单 #{record.latest_ticket_id}
+                                    {t('alertCenter.ticketLink', { id: record.latest_ticket_id })}
                                 </Text>
                             </Space>
                         </Link>
@@ -272,7 +272,7 @@ const AlertCenter: React.FC = () => {
                 
                 if (val === 'executing' && record.latest_run_id) {
                     return wrapBreathing(
-                        <Tooltip title={`策略: ${policyName || '未知'} | 运行 ID: #${record.latest_run_id} ${isAuto ? '(自动触发)' : ''}`}>
+                        <Tooltip title={t('alertCenter.runTooltip', { policy: policyName || t('alertCenter.unknownPolicy'), runId: record.latest_run_id, auto: isAuto ? t('alertCenter.autoTriggered') : '' })}>
                             <Space direction="vertical" size={2} className="w-24">
                                 <Badge status="warning" text={t('alertCenter.healingInProgress')} />
                                 <Progress percent={30} size={[80, 4]} showInfo={false} status="active" />
@@ -362,7 +362,7 @@ const AlertCenter: React.FC = () => {
                     onChange={(checked) => {
                         updateHealingPolicy(record.id, { is_auto_execute: checked })
                             .then(() => {
-                                message.success('自动执行设置已更新');
+                                message.success(t('alertCenter.messages.autoExecuteUpdated'));
                                 queryClient.invalidateQueries({ queryKey: ['sre-policies'] });
                             });
                     }}
@@ -380,7 +380,7 @@ const AlertCenter: React.FC = () => {
                     onChange={(checked) => {
                         updateHealingPolicy(record.id, { is_active: checked })
                             .then(() => {
-                                message.success(checked ? '策略已启用' : '策略已禁用');
+                                message.success(checked ? t('alertCenter.messages.policyEnabled') : t('alertCenter.messages.policyDisabled'));
                                 queryClient.invalidateQueries({ queryKey: ['sre-policies'] });
                             });
                     }}
@@ -392,7 +392,7 @@ const AlertCenter: React.FC = () => {
             key: 'action',
             render: (_: any, record: any) => (
                 <Space>
-                    <Tooltip title="跨项目授权">
+                    <Tooltip title={t('assetShare.crossProjectGrant')}>
                         <Button
                             type="link"
                             size="small"
@@ -480,7 +480,7 @@ const AlertCenter: React.FC = () => {
                                                 className="w-60"
                                             />
                                             <Select
-                                                placeholder={t('alertCenter.level') || '级别'}
+                                                placeholder={t('alertCenter.level')}
                                                 allowClear
                                                 style={{ width: 120 }}
                                                 onChange={(val) => {
@@ -488,13 +488,13 @@ const AlertCenter: React.FC = () => {
                                                     setAlertParams({ ...rest, ...(val ? { severity: val } : {}), page: 1 });
                                                 }}
                                                 options={[
-                                                    { label: t('alertCenter.severity.critical', 'Critical'), value: 'critical' },
-                                                    { label: t('alertCenter.severity.warning', 'Warning'), value: 'warning' },
-                                                    { label: t('alertCenter.severity.info', 'Info'), value: 'info' },
+                                                    { label: t('alertCenter.severity.critical'), value: 'critical' },
+                                                    { label: t('alertCenter.severity.warning'), value: 'warning' },
+                                                    { label: t('alertCenter.severity.info'), value: 'info' },
                                                 ]}
                                             />
                                             <Select
-                                                placeholder={t('alertCenter.status') || '状态'}
+                                                placeholder={t('alertCenter.status')}
                                                 allowClear
                                                 style={{ width: 120 }}
                                                 onChange={(val) => {
@@ -502,12 +502,12 @@ const AlertCenter: React.FC = () => {
                                                     setAlertParams({ ...rest, ...(val ? { status: val } : {}), page: 1 });
                                                 }}
                                                 options={[
-                                                    { label: t('alertCenter.statusText.firing', 'Firing'), value: 'firing' },
-                                                    { label: t('alertCenter.statusText.resolved', 'Resolved'), value: 'resolved' },
+                                                    { label: t('alertCenter.statusText.firing'), value: 'firing' },
+                                                    { label: t('alertCenter.statusText.resolved'), value: 'resolved' },
                                                 ]}
                                             />
                                             <RangePicker
-                                                placeholder={[t('alertCenter.startTime') || '开始时间', t('alertCenter.endTime') || '结束时间']}
+                                                placeholder={[t('alertCenter.startTime'), t('alertCenter.endTime')]}
                                                 allowClear
                                                 style={{ width: 260 }}
                                                 onChange={(dates) => {
@@ -531,7 +531,7 @@ const AlertCenter: React.FC = () => {
                                                     onClick={() => {
                                                         modal.confirm({
                                                             title: t('common.deleteConfirm'),
-                                                            content: `确认删除选中的 ${selectedAlertKeys.length} 条告警？`,
+                                                            content: t('alertCenter.confirmBulkDeleteAlerts', { count: selectedAlertKeys.length }),
                                                             onOk: () => bulkDeleteAlertMutation.mutate(selectedAlertKeys as number[])
                                                         });
                                                     }}
@@ -595,7 +595,7 @@ const AlertCenter: React.FC = () => {
                                                     onClick={() => {
                                                         modal.confirm({
                                                             title: t('common.deleteConfirm'),
-                                                            content: `确认删除选中的 ${selectedPolicyKeys.length} 条自愈策略？`,
+                                                            content: t('alertCenter.confirmBulkDeletePolicies', { count: selectedPolicyKeys.length }),
                                                             onOk: () => bulkDeletePolicyMutation.mutate(selectedPolicyKeys as number[])
                                                         });
                                                     }}
@@ -726,15 +726,15 @@ const AlertCenter: React.FC = () => {
                                                 <div className="text-[10px] uppercase font-bold opacity-80 tracking-widest">{t('alertCenter.detail.recommendedRemediation')}</div>
                                                 {selectedAlert.trigger_type === 'auto' ? (
                                                     <Tag color="gold" className="border-none text-[9px] px-2 py-0 leading-normal flex items-center gap-1">
-                                                        <SafetyCertificateOutlined /> 自动执行已触发
+                                                        <SafetyCertificateOutlined /> {t('alertCenter.autoTriggeredTag')}
                                                     </Tag>
                                                 ) : selectedAlert.latest_run_id ? (
                                                      <Tag color="blue" className="border-none text-[9px] px-2 py-0 leading-normal flex items-center gap-1 opacity-90" style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-                                                        <UserOutlined /> 手动干预中
+                                                        <UserOutlined /> {t('alertCenter.manualIntervention')}
                                                      </Tag>
                                                 ) : selectedAlert.suggested_pipeline ? (
                                                      <Tag color="white" className="border-none text-[9px] px-2 py-0 leading-normal flex items-center gap-1 opacity-80" style={{ color: token.colorPrimary }}>
-                                                        <InfoCircleOutlined /> 匹配自愈策略
+                                                        <InfoCircleOutlined /> {t('alertCenter.matchedHealingPolicy')}
                                                      </Tag>
                                                 ) : null}
                                             </div>
@@ -776,7 +776,7 @@ const AlertCenter: React.FC = () => {
                                                         loading={reDiagnoseMutation.isPending}
                                                         onClick={() => reDiagnoseMutation.mutate(selectedAlert.id)}
                                                     >
-                                                        一键重诊
+                                                        {t('alertCenter.reDiagnose')}
                                                     </Button>
                                                 )}
                                             </Space>
@@ -788,7 +788,7 @@ const AlertCenter: React.FC = () => {
                                                     style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff' }}
                                                     icon={<ArrowRightOutlined />}
                                                 >
-                                                    查看执行详情
+                                                    {t('alertCenter.viewRunDetail')}
                                                 </Button>
                                             </Link>
                                         )}
@@ -797,7 +797,7 @@ const AlertCenter: React.FC = () => {
                                     {selectedAlert.latest_run_id && (
                                         <div className="bg-black/10 p-3 rounded-xl">
                                             <div className="flex justify-between items-center text-[10px] mb-2 opacity-90 text-white">
-                                                <span>自愈执行进度</span>
+                                                <span>{t('alertCenter.healingProgressLabel')}</span>
                                                 <span>{runDetail?.data?.progress || (selectedAlert.healing_status === 'success' ? 100 : 0)}%</span>
                                             </div>
                                             <Progress 

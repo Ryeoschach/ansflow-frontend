@@ -112,7 +112,7 @@ const SystemReports: React.FC = () => {
                     resource_pool_id: exportFilters.poolId
                 }
             });
-            message.success(t('report.exportSubmitted') || '报表生成任务已提交，多维报表包生成完成后将在通知中心收到下载提示');
+            message.success(t('report.exportSubmitted'));
             setExportModalVisible(false);
         } catch (err) {
             console.error('Failed to trigger export:', err);
@@ -133,7 +133,7 @@ const SystemReports: React.FC = () => {
                 extraCssText: 'box-shadow: 0 4px 20px rgba(0,0,0,0.1); border-radius: 8px;'
             },
             legend: {
-                data: ['总运行次数', '执行成功', '执行失败'],
+                data: [t('report.pipelineLegendTotal'), t('report.pipelineLegendSuccess'), t('report.pipelineLegendFailed')],
                 bottom: 0,
                 icon: 'circle',
                 textStyle: { color: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)' }
@@ -153,21 +153,21 @@ const SystemReports: React.FC = () => {
             },
             series: [
                 {
-                    name: '总运行次数',
+                    name: t('report.pipelineLegendTotal'),
                     type: 'line',
                     smooth: true,
                     data: trend.map((item: any) => item.total),
                     itemStyle: { color: '#1890ff' }
                 },
                 {
-                    name: '执行成功',
+                    name: t('report.pipelineLegendSuccess'),
                     type: 'line',
                     smooth: true,
                     data: trend.map((item: any) => item.success),
                     itemStyle: { color: '#52c41a' }
                 },
                 {
-                    name: '执行失败',
+                    name: t('report.pipelineLegendFailed'),
                     type: 'line',
                     smooth: true,
                     data: trend.map((item: any) => item.failed),
@@ -184,7 +184,7 @@ const SystemReports: React.FC = () => {
             legend: { orient: 'vertical', left: 'left', textStyle: { color: isDark ? '#fff' : '#000' } },
             series: [
                 {
-                    name: '触发源分布',
+                    name: t('report.triggerSourceSeries'),
                     type: 'pie',
                     radius: ['40%', '70%'],
                     avoidLabelOverlap: false,
@@ -200,14 +200,14 @@ const SystemReports: React.FC = () => {
         const trend = ansibleData?.trend || [];
         return {
             tooltip: { trigger: 'axis' },
-            legend: { data: ['任务运行数', '成功数', '失败数'], bottom: 0, textStyle: { color: isDark ? '#fff' : '#000' } },
+            legend: { data: [t('report.taskRunSeries'), t('report.taskSuccessSeries'), t('report.taskFailedSeries')], bottom: 0, textStyle: { color: isDark ? '#fff' : '#000' } },
             grid: { left: '3%', right: '3%', bottom: '10%', top: '30', containLabel: true },
             xAxis: { type: 'category', data: trend.map((item: any) => item.day), axisLabel: { color: isDark ? '#aaa' : '#555' } },
             yAxis: { type: 'value', splitLine: { lineStyle: { color: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' } } },
             series: [
-                { name: '任务运行数', type: 'bar', data: trend.map((item: any) => item.total), itemStyle: { color: '#13c2c2' } },
-                { name: '成功数', type: 'line', data: trend.map((item: any) => item.success), itemStyle: { color: '#52c41a' } },
-                { name: '失败数', type: 'line', data: trend.map((item: any) => item.failed), itemStyle: { color: '#f5222d' } }
+                { name: t('report.taskRunSeries'), type: 'bar', data: trend.map((item: any) => item.total), itemStyle: { color: '#13c2c2' } },
+                { name: t('report.taskSuccessSeries'), type: 'line', data: trend.map((item: any) => item.success), itemStyle: { color: '#52c41a' } },
+                { name: t('report.taskFailedSeries'), type: 'line', data: trend.map((item: any) => item.failed), itemStyle: { color: '#f5222d' } }
             ]
         };
     };
@@ -218,7 +218,7 @@ const SystemReports: React.FC = () => {
             tooltip: { trigger: 'item' },
             series: [
                 {
-                    name: '执行次数占比',
+                    name: t('report.executionShareSeries'),
                     type: 'pie',
                     radius: '60%',
                     data: list.map((item: any) => ({ value: item.count, name: `${item.name} (${item.success_rate}%)` })),
@@ -237,14 +237,14 @@ const SystemReports: React.FC = () => {
             legend: { orient: 'vertical', left: 'left', textStyle: { color: isDark ? '#fff' : '#000' } },
             series: [
                 {
-                    name: '条款巡检状态',
+                    name: t('report.clauseScanStatus'),
                     type: 'pie',
                     radius: '70%',
                     data: [
-                        { value: dist.success, name: '合规 (Compliant)', itemStyle: { color: '#52c41a' } },
-                        { value: dist.failed, name: '不合规 (Non-compliant)', itemStyle: { color: '#ff4d4f' } },
-                        { value: dist.running, name: '巡检中 (Scanning)', itemStyle: { color: '#1890ff' } },
-                        { value: dist.pending, name: '待巡检 (Pending)', itemStyle: { color: '#faad14' } }
+                        { value: dist.success, name: t('report.compliantLabel'), itemStyle: { color: '#52c41a' } },
+                        { value: dist.failed, name: t('report.nonCompliantLabel'), itemStyle: { color: '#ff4d4f' } },
+                        { value: dist.running, name: t('report.scanningLabel'), itemStyle: { color: '#1890ff' } },
+                        { value: dist.pending, name: t('report.pendingScanLabel'), itemStyle: { color: '#faad14' } }
                     ]
                 }
             ]
@@ -255,26 +255,26 @@ const SystemReports: React.FC = () => {
     // Column Definitions for tables
     // -------------------------------------------------------------
     const slowNodeColumns = [
-        { title: '节点名称', dataIndex: 'node_label', key: 'node_label' },
-        { title: '节点类型', dataIndex: 'node_type', key: 'node_type', render: (text: string) => <Tag color="blue">{text}</Tag> },
-        { title: '所属流水线', dataIndex: 'pipeline_name', key: 'pipeline_name' },
-        { title: '耗时 (秒)', dataIndex: 'duration', key: 'duration', render: (text: number) => <Text strong type="danger">{text}s</Text> },
+        { title: t('report.nodeName'), dataIndex: 'node_label', key: 'node_label' },
+        { title: t('report.nodeType'), dataIndex: 'node_type', key: 'node_type', render: (text: string) => <Tag color="blue">{text}</Tag> },
+        { title: t('report.pipelineName'), dataIndex: 'pipeline_name', key: 'pipeline_name' },
+        { title: t('report.durationSeconds'), dataIndex: 'duration', key: 'duration', render: (text: number) => <Text strong type="danger">{text}s</Text> },
         {
-            title: '节点状态', dataIndex: 'status', key: 'status', render: (text: string) => (
+            title: t('report.nodeStatus'), dataIndex: 'status', key: 'status', render: (text: string) => (
                 <Tag color={text === 'success' ? 'success' : 'error'}>{text}</Tag>
             )
         }
     ];
 
     const complianceColumns = [
-        { title: '条款编号', dataIndex: 'code', key: 'code', width: 100 },
-        { title: '条款名称', dataIndex: 'name', key: 'name', width: 150 },
-        { title: '合规框架', dataIndex: 'framework', key: 'framework', width: 120 },
-        { title: '关联主机基线', dataIndex: 'baselines', key: 'baselines', render: (text: string[]) => text.join(', ') },
-        { title: '所属资源池', dataIndex: 'resource_pools', key: 'resource_pools', render: (text: string[]) => text.join(', ') },
+        { title: t('report.clauseCode'), dataIndex: 'code', key: 'code', width: 100 },
+        { title: t('report.clauseName'), dataIndex: 'name', key: 'name', width: 150 },
+        { title: t('report.complianceFramework'), dataIndex: 'framework', key: 'framework', width: 120 },
+        { title: t('report.relatedHostBaselines'), dataIndex: 'baselines', key: 'baselines', render: (text: string[]) => text.join(', ') },
+        { title: t('report.resourcePools'), dataIndex: 'resource_pools', key: 'resource_pools', render: (text: string[]) => text.join(', ') },
         {
-            title: '合规状态', key: 'status', width: 100, render: () => (
-                <Tag color="error">不合规</Tag>
+            title: t('report.complianceStatus'), key: 'status', width: 100, render: () => (
+                <Tag color="error">{t('report.nonCompliant')}</Tag>
             )
         }
     ];
@@ -287,10 +287,10 @@ const SystemReports: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h2 className="text-3xl font-extrabold mb-1 tracking-tight text-ans-text-primary italic">
-                        报表分析中心
+                        {t('report.analysisTitle')}
                     </h2>
                     <Paragraph className="text-ans-text-secondary text-sm font-medium opacity-80 mb-0">
-                        流水线运行效率、Ansible 自动化执行质量及等保合规安全扫描多维分析。
+                        {t('report.analysisSubtitle')}
                     </Paragraph>
                 </div>
                 <div className="flex items-center gap-3">
@@ -312,7 +312,7 @@ const SystemReports: React.FC = () => {
                         }}
                         className="ans-btn shadow-sm"
                     >
-                        多维导出报表
+                        {t('report.exportMultiDimensional')}
                     </Button>
                 </div>
             </div>
@@ -326,7 +326,7 @@ const SystemReports: React.FC = () => {
                 items={[
                     {
                         key: 'pipeline',
-                        label: <span><LineChartOutlined />流水线执行分析</span>,
+                        label: <span><LineChartOutlined />{t('report.pipelineExecutionAnalysis')}</span>,
                         children: (
                             <div className="flex flex-col gap-6">
                                 {isPipelineLoading ? <Skeleton active paragraph={{ rows: 8 }} /> : (
@@ -336,7 +336,7 @@ const SystemReports: React.FC = () => {
                                             <Col xs={24} sm={12} lg={6}>
                                                 <Card className="ans-card shadow-sm">
                                                     <div className="flex flex-col">
-                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">总运行次数</Text>
+                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">{t('report.totalRuns')}</Text>
                                                         <Title level={2} className="my-1 font-bold">{pipelineData?.summary?.total_runs || 0}</Title>
                                                     </div>
                                                 </Card>
@@ -344,7 +344,7 @@ const SystemReports: React.FC = () => {
                                             <Col xs={24} sm={12} lg={6}>
                                                 <Card className="ans-card shadow-sm">
                                                     <div className="flex flex-col">
-                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">成功运行</Text>
+                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">{t('report.successfulRuns')}</Text>
                                                         <Title level={2} className="my-1 font-bold text-success">{pipelineData?.summary?.success_runs || 0}</Title>
                                                     </div>
                                                 </Card>
@@ -352,7 +352,7 @@ const SystemReports: React.FC = () => {
                                             <Col xs={24} sm={12} lg={6}>
                                                 <Card className="ans-card shadow-sm">
                                                     <div className="flex flex-col">
-                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">失败运行</Text>
+                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">{t('report.failedRuns')}</Text>
                                                         <Title level={2} className="my-1 font-bold text-error">{pipelineData?.summary?.failed_runs || 0}</Title>
                                                     </div>
                                                 </Card>
@@ -360,7 +360,7 @@ const SystemReports: React.FC = () => {
                                             <Col xs={24} sm={12} lg={6}>
                                                 <Card className="ans-card shadow-sm">
                                                     <div className="flex flex-col">
-                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">平均执行成功率</Text>
+                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">{t('report.avgSuccessRate')}</Text>
                                                         <Title level={2} className="my-1 font-bold text-primary">{pipelineData?.summary?.success_rate || 0}%</Title>
                                                     </div>
                                                 </Card>
@@ -370,19 +370,19 @@ const SystemReports: React.FC = () => {
                                         {/* Charts */}
                                         <Row gutter={[24, 24]}>
                                             <Col xs={24} lg={16}>
-                                                <Card title="流水线每日执行趋势" className="ans-card shadow-sm h-[380px]">
+                                                <Card title={t('report.pipelineDailyTrend')} className="ans-card shadow-sm h-[380px]">
                                                     <ReactECharts option={getPipelineTrendOption()} style={{ height: 280 }} />
                                                 </Card>
                                             </Col>
                                             <Col xs={24} lg={8}>
-                                                <Card title="触发源分布占比" className="ans-card shadow-sm h-[380px]">
+                                                <Card title={t('report.triggerSourceDistribution')} className="ans-card shadow-sm h-[380px]">
                                                     <ReactECharts option={getPipelineTriggerOption()} style={{ height: 280 }} />
                                                 </Card>
                                             </Col>
                                         </Row>
 
                                         {/* Top Slowest nodes */}
-                                        <Card title="执行时间最长的单节点排行" className="ans-card shadow-sm">
+                                        <Card title={t('report.slowestNodeRanking')} className="ans-card shadow-sm">
                                             <Table
                                                 dataSource={pipelineData?.slowest_nodes || []}
                                                 columns={slowNodeColumns}
@@ -398,15 +398,15 @@ const SystemReports: React.FC = () => {
                     },
                     {
                         key: 'ansible',
-                        label: <span><BarChartOutlined />Ansible 执行分析</span>,
+                        label: <span><BarChartOutlined />{t('report.ansibleExecutionAnalysis')}</span>,
                         children: (
                             <div className="flex flex-col gap-6">
                                 {/* Local filters */}
                                 <Card className="ans-card shadow-sm" size="small">
                                     <Space size="large" wrap>
-                                        <span><FilterOutlined /> 维度筛选:</span>
+                                        <span><FilterOutlined /> {t('report.dimensionFilter')}</span>
                                         <Select
-                                            placeholder="所属环境"
+                                            placeholder={t('report.environmentPlaceholder')}
                                             style={{ width: 140 }}
                                             allowClear
                                             value={ansibleFilters.envId}
@@ -415,7 +415,7 @@ const SystemReports: React.FC = () => {
                                             {envsList.map((e: any) => <Select.Option key={e.id} value={e.id}>{e.name}</Select.Option>)}
                                         </Select>
                                         <Select
-                                            placeholder="平台/云厂商"
+                                            placeholder={t('report.platformPlaceholder')}
                                             style={{ width: 160 }}
                                             allowClear
                                             value={ansibleFilters.platformId}
@@ -424,7 +424,7 @@ const SystemReports: React.FC = () => {
                                             {platformsList.map((p: any) => <Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>)}
                                         </Select>
                                         <Select
-                                            placeholder="目标资源池"
+                                            placeholder={t('report.resourcePoolPlaceholder')}
                                             style={{ width: 180 }}
                                             allowClear
                                             value={ansibleFilters.poolId}
@@ -442,7 +442,7 @@ const SystemReports: React.FC = () => {
                                             <Col xs={24} sm={12} lg={6}>
                                                 <Card className="ans-card shadow-sm">
                                                     <div className="flex flex-col">
-                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">任务总运行数</Text>
+                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">{t('report.taskTotalRuns')}</Text>
                                                         <Title level={2} className="my-1 font-bold">{ansibleData?.summary?.total_executions || 0}</Title>
                                                     </div>
                                                 </Card>
@@ -450,7 +450,7 @@ const SystemReports: React.FC = () => {
                                             <Col xs={24} sm={12} lg={6}>
                                                 <Card className="ans-card shadow-sm">
                                                     <div className="flex flex-col">
-                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">执行成功数</Text>
+                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">{t('report.taskSuccessCount')}</Text>
                                                         <Title level={2} className="my-1 font-bold text-success">{ansibleData?.summary?.success_executions || 0}</Title>
                                                     </div>
                                                 </Card>
@@ -458,7 +458,7 @@ const SystemReports: React.FC = () => {
                                             <Col xs={24} sm={12} lg={6}>
                                                 <Card className="ans-card shadow-sm">
                                                     <div className="flex flex-col">
-                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">成功率</Text>
+                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">{t('dashboard.successRate')}</Text>
                                                         <Title level={2} className="my-1 font-bold text-primary">{ansibleData?.summary?.success_rate || 0}%</Title>
                                                     </div>
                                                 </Card>
@@ -466,7 +466,7 @@ const SystemReports: React.FC = () => {
                                             <Col xs={24} sm={12} lg={6}>
                                                 <Card className="ans-card shadow-sm">
                                                     <div className="flex flex-col">
-                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">累计主机执行人次</Text>
+                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">{t('report.totalHostRuns')}</Text>
                                                         <Title level={2} className="my-1 font-bold">{ansibleData?.summary?.total_host_runs || 0}</Title>
                                                     </div>
                                                 </Card>
@@ -476,12 +476,12 @@ const SystemReports: React.FC = () => {
                                         {/* Charts */}
                                         <Row gutter={[24, 24]}>
                                             <Col xs={24} lg={16}>
-                                                <Card title="Ansible 任务执行趋势" className="ans-card shadow-sm h-[380px]">
+                                                <Card title={t('report.ansibleTaskTrend')} className="ans-card shadow-sm h-[380px]">
                                                     <ReactECharts option={getAnsibleTrendOption()} style={{ height: 280 }} />
                                                 </Card>
                                             </Col>
                                             <Col xs={24} lg={8}>
-                                                <Card title="执行分布（环境维度）" className="ans-card shadow-sm h-[380px]">
+                                                <Card title={t('report.executionDistEnvironment')} className="ans-card shadow-sm h-[380px]">
                                                     <ReactECharts option={getAnsibleBreakdownOption('environment')} style={{ height: 280 }} />
                                                 </Card>
                                             </Col>
@@ -489,12 +489,12 @@ const SystemReports: React.FC = () => {
                                         
                                         <Row gutter={[24, 24]}>
                                             <Col xs={24} md={12}>
-                                                <Card title="执行分布（云平台维度）" className="ans-card shadow-sm h-[380px]">
+                                                <Card title={t('report.executionDistPlatform')} className="ans-card shadow-sm h-[380px]">
                                                     <ReactECharts option={getAnsibleBreakdownOption('platform')} style={{ height: 280 }} />
                                                 </Card>
                                             </Col>
                                             <Col xs={24} md={12}>
-                                                <Card title="执行分布（资源池维度）" className="ans-card shadow-sm h-[380px]">
+                                                <Card title={t('report.executionDistResourcePool')} className="ans-card shadow-sm h-[380px]">
                                                     <ReactECharts option={getAnsibleBreakdownOption('resource_pool')} style={{ height: 280 }} />
                                                 </Card>
                                             </Col>
@@ -506,7 +506,7 @@ const SystemReports: React.FC = () => {
                     },
                     {
                         key: 'compliance',
-                        label: <span><SecurityScanOutlined />等保合规扫描</span>,
+                        label: <span><SecurityScanOutlined />{t('report.complianceScan')}</span>,
                         children: (
                             <div className="flex flex-col gap-6">
                                 {isComplianceLoading ? <Skeleton active paragraph={{ rows: 8 }} /> : (
@@ -516,7 +516,7 @@ const SystemReports: React.FC = () => {
                                             <Col xs={24} sm={12} lg={6}>
                                                 <Card className="ans-card shadow-sm">
                                                     <div className="flex flex-col">
-                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">等保合规总体评分</Text>
+                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">{t('report.complianceOverallScore')}</Text>
                                                         <Title level={2} className="my-1 font-bold text-success">{complianceData?.summary?.overall_score || 100}%</Title>
                                                     </div>
                                                 </Card>
@@ -524,7 +524,7 @@ const SystemReports: React.FC = () => {
                                             <Col xs={24} sm={12} lg={6}>
                                                 <Card className="ans-card shadow-sm">
                                                     <div className="flex flex-col">
-                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">合规框架数</Text>
+                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">{t('report.frameworkCount')}</Text>
                                                         <Title level={2} className="my-1 font-bold">{complianceData?.summary?.total_frameworks || 0}</Title>
                                                     </div>
                                                 </Card>
@@ -532,7 +532,7 @@ const SystemReports: React.FC = () => {
                                             <Col xs={24} sm={12} lg={6}>
                                                 <Card className="ans-card shadow-sm">
                                                     <div className="flex flex-col">
-                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">评估指标条款总数</Text>
+                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">{t('report.complianceItemCount')}</Text>
                                                         <Title level={2} className="my-1 font-bold">{complianceData?.summary?.total_compliance_items || 0}</Title>
                                                     </div>
                                                 </Card>
@@ -540,7 +540,7 @@ const SystemReports: React.FC = () => {
                                             <Col xs={24} sm={12} lg={6}>
                                                 <Card className="ans-card shadow-sm">
                                                     <div className="flex flex-col">
-                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">不合规条款数</Text>
+                                                        <Text className="text-xs uppercase tracking-widest font-bold opacity-50">{t('report.failedComplianceItems')}</Text>
                                                         <Title level={2} className="my-1 font-bold text-error">{complianceData?.summary?.failed_compliance_items || 0}</Title>
                                                     </div>
                                                 </Card>
@@ -550,12 +550,12 @@ const SystemReports: React.FC = () => {
                                         {/* Distribution & Failed items */}
                                         <Row gutter={[24, 24]}>
                                             <Col xs={24} lg={8}>
-                                                <Card title="等保指标项状态分布" className="ans-card shadow-sm h-[380px]">
+                                                <Card title={t('report.complianceStatusDistribution')} className="ans-card shadow-sm h-[380px]">
                                                     <ReactECharts option={getComplianceDistributionOption()} style={{ height: 280 }} />
                                                 </Card>
                                             </Col>
                                             <Col xs={24} lg={16}>
-                                                <Card title="异常不合规条款明细列表（亟需修复）" className="ans-card shadow-sm h-[380px] overflow-auto">
+                                                <Card title={t('report.nonCompliantList')} className="ans-card shadow-sm h-[380px] overflow-auto">
                                                     <Table
                                                         dataSource={complianceData?.non_compliant_clauses || []}
                                                         columns={complianceColumns}
@@ -573,7 +573,7 @@ const SystemReports: React.FC = () => {
                     },
                     {
                         key: 'sre',
-                        label: <span><AlertOutlined />告警自愈报表</span>,
+                        label: <span><AlertOutlined />{t('report.sreSelfHealingReport')}</span>,
                         children: <SreReport hideHeader timeRange={timeRange} onTimeRangeChange={setTimeRange} />
                     }
                 ]}
@@ -581,26 +581,26 @@ const SystemReports: React.FC = () => {
 
             {/* Export Modal */}
             <Modal
-                title="多维系统报表导出"
+                title={t('report.systemReportExport')}
                 open={exportModalVisible}
                 onCancel={() => setExportModalVisible(false)}
                 footer={[
-                    <Button key="cancel" onClick={() => setExportModalVisible(false)}>取消</Button>,
+                    <Button key="cancel" onClick={() => setExportModalVisible(false)}>{t('common.cancel')}</Button>,
                     <Button key="export" type="primary" onClick={handleExport} disabled={exportTypes.length === 0}>
-                        确认发起导出
+                        {t('report.confirmExport')}
                     </Button>
                 ]}
             >
                 <div className="flex flex-col gap-6 py-4">
                     {/* Checkboxes */}
                     <div>
-                        <Text strong className="block mb-2">选择需要导出的子报表项 (多选将打包为 ZIP 压缩包):</Text>
+                        <Text strong className="block mb-2">{t('report.selectExportItems')}</Text>
                         <Checkbox.Group
                             options={[
-                                { label: '流水线执行报表', value: 'pipeline' },
-                                { label: 'Ansible 执行报表 (汇总与明细)', value: 'ansible' },
-                                { label: '等保 2.0 安全扫描结果', value: 'compliance' },
-                                { label: '告警事件与故障自愈记录', value: 'sre_alert' }
+                                { label: t('report.pipelineReport'), value: 'pipeline' },
+                                { label: t('report.ansibleReport'), value: 'ansible' },
+                                { label: t('report.complianceReport'), value: 'compliance' },
+                                { label: t('report.sreAlertReport'), value: 'sre_alert' }
                             ]}
                             value={exportTypes}
                             onChange={(val) => setExportTypes(val as string[])}
@@ -610,7 +610,7 @@ const SystemReports: React.FC = () => {
 
                     {/* Date Range */}
                     <div>
-                        <Text strong className="block mb-2">选择导出时间段:</Text>
+                        <Text strong className="block mb-2">{t('report.selectExportRange')}</Text>
                         <RangePicker
                             value={exportTimeRange}
                             onChange={(val) => {
@@ -624,12 +624,12 @@ const SystemReports: React.FC = () => {
 
                     {/* Filters */}
                     <div>
-                        <Text strong className="block mb-2">切片过滤维度 (可选):</Text>
+                        <Text strong className="block mb-2">{t('report.sliceFilters')}</Text>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Text className="text-xs opacity-75">所属项目</Text>
+                                <Text className="text-xs opacity-75">{t('report.project')}</Text>
                                 <Select
-                                    placeholder="全部项目"
+                                    placeholder={t('report.allProjects')}
                                     className="w-full mt-1"
                                     allowClear
                                     value={exportFilters.projectId}
@@ -639,9 +639,9 @@ const SystemReports: React.FC = () => {
                                 </Select>
                             </div>
                             <div>
-                                <Text className="text-xs opacity-75">所属环境</Text>
+                                <Text className="text-xs opacity-75">{t('report.environmentPlaceholder')}</Text>
                                 <Select
-                                    placeholder="全部环境"
+                                    placeholder={t('report.allEnvironments')}
                                     className="w-full mt-1"
                                     allowClear
                                     value={exportFilters.envId}
@@ -651,9 +651,9 @@ const SystemReports: React.FC = () => {
                                 </Select>
                             </div>
                             <div>
-                                <Text className="text-xs opacity-75">云厂商/平台</Text>
+                                <Text className="text-xs opacity-75">{t('report.cloudPlatform')}</Text>
                                 <Select
-                                    placeholder="全部厂商"
+                                    placeholder={t('report.allVendors')}
                                     className="w-full mt-1"
                                     allowClear
                                     value={exportFilters.platformId}
@@ -663,9 +663,9 @@ const SystemReports: React.FC = () => {
                                 </Select>
                             </div>
                             <div>
-                                <Text className="text-xs opacity-75">目标资源池</Text>
+                                <Text className="text-xs opacity-75">{t('report.resourcePoolPlaceholder')}</Text>
                                 <Select
-                                    placeholder="全部资源池"
+                                    placeholder={t('report.allResourcePools')}
                                     className="w-full mt-1"
                                     allowClear
                                     value={exportFilters.poolId}

@@ -316,14 +316,14 @@ const BackupManagement: React.FC = () => {
       </Card>
 
       <Modal
-        title="选择备份范围"
+        title={t('backup.selectBackupScope')}
         open={createModalOpen}
         onOk={() => createMutation.mutate({ mods: selectedModules, pass: passphrase })}
         onCancel={() => setCreateModalOpen(false)}
         confirmLoading={createMutation.isPending}
       >
         <div className="py-4">
-          <Text type="secondary" className="mb-4 block">请选择您需要导出的功能模块数据：</Text>
+          <Text type="secondary" className="mb-4 block">{t('backup.selectExportModules')}</Text>
           <Checkbox.Group 
             style={{ width: '100%' }} 
             value={selectedModules}
@@ -338,9 +338,9 @@ const BackupManagement: React.FC = () => {
             </Row>
           </Checkbox.Group>
           <div className="mt-4">
-            <Text className="mb-2 block">备份加密密码（可选，输入则使用 AES-256-GCM 加密导出所有敏感凭据）：</Text>
+            <Text className="mb-2 block">{t('backup.backupPasswordLabel')}</Text>
             <Input.Password
-              placeholder="请输入备份包加密密码"
+              placeholder={t('backup.backupPasswordPlaceholder')}
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
             />
@@ -349,7 +349,7 @@ const BackupManagement: React.FC = () => {
       </Modal>
 
       <Modal
-        title="确认恢复数据"
+        title={t('backup.confirmRestoreData')}
         open={restoreModalOpen}
         onOk={() => {
           setRestoreLoading(true);
@@ -360,13 +360,13 @@ const BackupManagement: React.FC = () => {
       >
         <div className="py-4">
           <Alert
-            message="高风险操作"
-            description="恢复操作将覆盖系统中现有的同名数据。建议您选择仅恢复必要的模块。"
+            message={t('backup.highRiskOperation')}
+            description={t('backup.restoreOverwriteWarning')}
             type="warning"
             showIcon
             className="mb-4"
           />
-          <Text strong>选择要恢复的模块：</Text>
+          <Text strong>{t('backup.selectRestoreModules')}</Text>
           <div className="mt-4 p-4 bg-ans-bg-container border border-ans-border rounded-lg">
             <Checkbox.Group 
               style={{ width: '100%' }} 
@@ -383,9 +383,9 @@ const BackupManagement: React.FC = () => {
             </Checkbox.Group>
           </div>
           <div className="mt-4">
-            <Text className="mb-2 block">解密密码（可选，若备份包已加密，请输入密码以恢复敏感凭据）：</Text>
+            <Text className="mb-2 block">{t('backup.decryptPasswordLabel')}</Text>
             <Input.Password
-              placeholder="请输入解密密码"
+              placeholder={t('backup.decryptPasswordPlaceholder')}
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
             />
@@ -402,15 +402,15 @@ const BackupManagement: React.FC = () => {
       >
         <div className="py-4">
           <Alert
-            message="上传恢复说明"
-            description="上传文件后将立即执行恢复操作。请在下方勾选需要恢复的模块，默认将尝试恢复全部数据。"
+            message={t('backup.uploadRestoreNote')}
+            description={t('backup.uploadRestoreDesc')}
             type="info"
             showIcon
             className="mb-4"
           />
           
           <div className="mb-6 p-4 bg-ans-bg-container border border-ans-border rounded-lg border-dashed">
-            <Text strong className="mb-3 block">选择恢复模块：</Text>
+            <Text strong className="mb-3 block">{t('backup.selectRestoreModulesShort')}</Text>
             <Checkbox.Group 
               style={{ width: '100%' }} 
               value={selectedModules}
@@ -427,9 +427,9 @@ const BackupManagement: React.FC = () => {
           </div>
 
           <div className="mb-4">
-            <Text className="mb-2 block">解密密码（可选，若备份包已加密，请先输入解密密码再上传）：</Text>
+            <Text className="mb-2 block">{t('backup.decryptPasswordBeforeUploadLabel')}</Text>
             <Input.Password
-              placeholder="请输入解密密码"
+              placeholder={t('backup.decryptPasswordPlaceholder')}
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
               disabled={restoreLoading}

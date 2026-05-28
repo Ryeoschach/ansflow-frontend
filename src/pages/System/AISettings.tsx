@@ -255,7 +255,7 @@ const AISettings: React.FC = () => {
         fileList.forEach(file => {
           uploadMutation.mutate({ kbId: selectedKB.id, file, parserType, parsingPrompt });
         });
-        message.loading(`正在上传 ${fileList.length} 个文件...`, 1);
+        message.loading(t('ai.settings.uploadingFiles', { count: fileList.length }), 1);
         setUploadVisible(false);
       }
       return false;
@@ -305,7 +305,7 @@ const AISettings: React.FC = () => {
       { title: t('ai.settings.displayName'), dataIndex: 'display_name', key: 'display_name' },
       { title: t('ai.settings.modelId'), dataIndex: 'name', key: 'name' },
       { title: t('ai.settings.belongProvider'), dataIndex: 'provider_name', key: 'provider_name' },
-      { title: "模型能力", dataIndex: 'capabilities', key: 'capabilities', render: (caps: string[], record: AIModel) => {
+      { title: t('ai.settings.modelCapabilities'), dataIndex: 'capabilities', key: 'capabilities', render: (caps: string[], record: AIModel) => {
         const allCaps = caps || [record.model_type];
         return (
           <Space size={[0, 4]} wrap>
@@ -321,7 +321,7 @@ const AISettings: React.FC = () => {
           </Space>
         );
       } },
-      { title: "上下文", dataIndex: 'num_ctx', key: 'num_ctx', render: (val: number) => <Text type="secondary" style={{ fontSize: '12px' }}>{val || 4096}</Text> },
+      { title: t('ai.settings.contextWindow'), dataIndex: 'num_ctx', key: 'num_ctx', render: (val: number) => <Text type="secondary" style={{ fontSize: '12px' }}>{val || 4096}</Text> },
       {
         title: t('common.action'), key: 'action', width: 120,
         render: (_: any, record: AIModel) => (
@@ -342,7 +342,7 @@ const AISettings: React.FC = () => {
                 pageSize: modelPageSize,
                 total: total,
                 showSizeChanger: true,
-                showTotal: (totalCount) => `共 ${totalCount} 个模型`,
+                showTotal: (totalCount) => t('ai.settings.modelsTotal', { count: totalCount }),
                 onChange: (p, s) => {
                     setModelPage(p);
                     setModelPageSize(s);
@@ -365,27 +365,27 @@ const AISettings: React.FC = () => {
         key: "retrieval", 
         width: 150, 
         render: () => (
-          <Tooltip title={`BM25 (${configData?.rag_bm25_weight ?? 0.3}) + Vector (${configData?.rag_vector_weight ?? 0.7}) 混合加权`}>
+          <Tooltip title={t('ai.settings.hybridWeightedTip', { bm25: configData?.rag_bm25_weight ?? 0.3, vector: configData?.rag_vector_weight ?? 0.7 })}>
             <Tag color="geekblue" icon={<SyncOutlined spin />}>{t('ai.settings.hybridSearch')}</Tag>
           </Tooltip>
         ) 
       },
       { title: t('ai.settings.kbCollection'), dataIndex: 'collection_name', key: 'collection_name', width: 150 },
       { 
-        title: '重建状态', 
+        title: t('ai.settings.reindexStatus'), 
         dataIndex: 'reindex_status', 
         key: 'reindex_status', 
         width: 150,
         render: (status: string, record: KnowledgeBase) => {
           const map: Record<string, { color: string, text: string, icon?: React.ReactNode }> = {
-            idle: { color: 'default', text: '空闲' },
-            processing: { color: 'processing', text: '重建中', icon: <SyncOutlined spin /> },
-            success: { color: 'success', text: '重建成功' },
-            error: { color: 'error', text: '重建异常' },
+            idle: { color: 'default', text: t('ai.settings.reindexIdle') },
+            processing: { color: 'processing', text: t('ai.settings.reindexProcessing'), icon: <SyncOutlined spin /> },
+            success: { color: 'success', text: t('ai.settings.reindexDone') },
+            error: { color: 'error', text: t('ai.settings.reindexError') },
           };
           const config = map[status] || map.idle;
           return (
-            <Tooltip title={status === 'error' ? record.reindex_error : (record.last_reindex_at ? `最近重建: ${new Date(record.last_reindex_at).toLocaleString()}` : '')}>
+            <Tooltip title={status === 'error' ? record.reindex_error : (record.last_reindex_at ? t('ai.settings.recentReindex', { time: new Date(record.last_reindex_at).toLocaleString() }) : '')}>
               <Tag color={config.color} icon={config.icon}>{config.text}</Tag>
             </Tooltip>
           );
@@ -421,7 +421,7 @@ const AISettings: React.FC = () => {
           title={
             <Space>
               <BugOutlined style={{ color: '#fa8c16' }} />
-              <span>检索调试工作台 (Search Playground) - {selectedKB?.name}</span>
+              <span>{t('ai.settings.searchPlaygroundTitle', { name: selectedKB?.name })}</span>
             </Space>
           }
           width={800}
@@ -429,11 +429,11 @@ const AISettings: React.FC = () => {
           open={isPlaygroundOpen}
         >
           <div className="space-y-6">
-            <Alert message="提示" description="在此处输入您想要测试的问题，系统将展示基于混合检索（BM25 + Vector）命中的 TOP-K 分块内容。" type="info" showIcon />
+            <Alert message={t('common.info')} description={t('ai.settings.searchPlaygroundDesc')} type="info" showIcon />
             <div className="flex gap-2">
               <Input.Search 
-                placeholder="输入测试问题，如：如何处理 CPU 负载过高？" 
-                enterButton={<Button type="primary" icon={<SearchOutlined />}>开始检索</Button>}
+                placeholder={t('ai.settings.searchQuestionPlaceholder')} 
+                enterButton={<Button type="primary" icon={<SearchOutlined />}>{t('ai.settings.startSearch')}</Button>}
                 size="large"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
@@ -443,10 +443,10 @@ const AISettings: React.FC = () => {
             </div>
 
             <List
-              header={<div className="font-semibold text-gray-500">检索命中结果 ({searchResults.length})</div>}
+              header={<div className="font-semibold text-gray-500">{t('ai.settings.searchResults', { count: searchResults.length })}</div>}
               loading={searchMutation.isPending}
               dataSource={searchResults}
-              locale={{ emptyText: <Empty description="暂无检索结果，请先输入 Query" /> }}
+              locale={{ emptyText: <Empty description={t('ai.settings.emptySearchResults')} /> }}
               renderItem={(item) => (
                 <List.Item>
                   <Card size="small" className="w-full border-l-4 border-l-blue-500 shadow-sm" 
@@ -484,9 +484,9 @@ const AISettings: React.FC = () => {
           extra={
             <Space>
               <Text type="secondary" style={{ marginRight: 8 }}>
-                共 {docsData?.total ?? (Array.isArray((docsData as any)?.data) ? (docsData as any).data.length : 0)} 份文档
+                {t('ai.settings.docsCount', { count: docsData?.total ?? (Array.isArray((docsData as any)?.data) ? (docsData as any).data.length : 0) })}
               </Text>
-              <Button icon={<ReloadOutlined />} onClick={() => refetchDocs()}>{t('common.refresh') || '刷新'}</Button>
+              <Button icon={<ReloadOutlined />} onClick={() => refetchDocs()}>{t('common.refresh')}</Button>
               <Button type="primary" icon={<UploadOutlined />} onClick={() => setUploadVisible(true)}>{t('common.upload')}</Button>
             </Space>
           }
@@ -502,13 +502,13 @@ const AISettings: React.FC = () => {
               title: t('common.status'), dataIndex: 'status', key: 'status', width: 100,
               render: (status: string) => {
                 const map: any = { 
-                  pending: { color: 'default', text: '待处理' }, 
-                  parsing: { color: 'processing', text: '正在解析' },
-                  cleaning: { color: 'processing', text: '清洗中' },
-                  chunking: { color: 'processing', text: '正在切片' },
-                  indexing: { color: 'processing', text: '正在索引' },
-                  ready: { color: 'success', text: '就绪' }, 
-                  error: { color: 'error', text: '错误' } 
+                  pending: { color: 'default', text: t('ai.settings.docStatusPending') }, 
+                  parsing: { color: 'processing', text: t('ai.settings.docStatusParsing') },
+                  cleaning: { color: 'processing', text: t('ai.settings.docStatusCleaning') },
+                  chunking: { color: 'processing', text: t('ai.settings.docStatusChunking') },
+                  indexing: { color: 'processing', text: t('ai.settings.docStatusIndexing') },
+                  ready: { color: 'success', text: t('ai.settings.docStatusReady') }, 
+                  error: { color: 'error', text: t('ai.settings.docStatusError') } 
                 };
                 const config = map[status] || map.ready;
                 return <Badge status={config.color} text={config.text} />;
@@ -522,24 +522,24 @@ const AISettings: React.FC = () => {
           <Modal title={t('common.upload')} open={uploadVisible} onCancel={() => setUploadVisible(false)} footer={null} width={600}>
            <div className="mb-6 space-y-4">
              <div>
-               <Text strong className="block mb-2">解析模式</Text>
+               <Text strong className="block mb-2">{t('ai.settings.parserMode')}</Text>
                <Select 
                  value={parserType} 
                  onChange={setParserType} 
                  className="w-full"
                  options={[
-                   { label: '自动识别 (由后缀决定)', value: 'auto' },
-                   { label: '原生提取 (纯文本/规范PDF)', value: 'native' },
-                   { label: '视觉 OCR (图片/扫描件)', value: 'ocr' },
-                   { label: '混合增强 (Word/复杂文档)', value: 'hybrid' },
+                   { label: t('ai.settings.parserAuto'), value: 'auto' },
+                   { label: t('ai.settings.parserNative'), value: 'native' },
+                   { label: t('ai.settings.parserOcr'), value: 'ocr' },
+                   { label: t('ai.settings.parserHybrid'), value: 'hybrid' },
                  ]}
                />
              </div>
              {(parserType === 'ocr' || parserType === 'hybrid') && (
                <div>
-                 <Text strong className="block mb-2">解析提示词 (可选)</Text>
+                 <Text strong className="block mb-2">{t('ai.settings.parsingPrompt')}</Text>
                  <Input.TextArea 
-                   placeholder="例如：请以 Markdown 表格形式提取图片中的所有配置项，并忽略页眉页脚。"
+                   placeholder={t('ai.settings.parsingPromptPlaceholder')}
                    value={parsingPrompt}
                    onChange={e => setParsingPrompt(e.target.value)}
                    rows={3}
@@ -549,7 +549,7 @@ const AISettings: React.FC = () => {
            </div>
            <Dragger {...uploadProps}>
              <p className="ant-upload-drag-icon"><InboxOutlined /></p>
-             <p className="ant-upload-text">点击或拖拽文件到此区域进行上传</p>
+             <p className="ant-upload-text">{t('ai.settings.uploadDragText')}</p>
              <p className="ant-upload-hint">
                {t('ai.settings.uploadHint')}
                <br />
@@ -560,8 +560,8 @@ const AISettings: React.FC = () => {
           </Modal>        </Drawer>
 
         {/* Chunk Cleaning & Preview Drawer */}
-        <Drawer title={<Space><SafetyCertificateOutlined /><span>知识清洗工作台: {previewDoc?.title}</span></Space>} width={750} onClose={() => { setIsPreviewDrawerOpen(false); setEditingChunkId(null); }} open={isPreviewDrawerOpen}><Alert message="知识分块管理 (Hybrid Search)" description="此处支持对文档切片进行细粒度管理。禁用或修改分块内容将实时同步至向量库和 BM25 语料库。" type="warning" showIcon style={{ marginBottom: 16 }} /><List loading={chunksLoading} dataSource={chunksData} renderItem={(item: DocumentChunk) => (
-          <List.Item><Card size="small" className={`w-full ${!item.is_active ? 'opacity-50 grayscale' : 'bg-gray-50 border-gray-200'}`} title={<div className="flex justify-between items-center text-xs"><Space><Tag color={item.is_active ? "blue" : "default"}>Chunk #{item.index + 1}</Tag>{!item.is_active && <Tag icon={<StopOutlined />}>已禁用</Tag>}</Space><Space>{editingChunkId === item.id ? (<><Button size="small" type="primary" icon={<SaveOutlined />} onClick={() => chunkUpdateMutation.mutate({ id: item.id, content: chunkEditContent })} loading={chunkUpdateMutation.isPending}>保存</Button><Button size="small" onClick={() => setEditingChunkId(null)}>取消</Button></>) : (<><Button size="small" icon={<EditOutlined />} onClick={() => { setEditingChunkId(item.id); setChunkEditContent(item.content); }}>编辑</Button><Switch size="small" checked={item.is_active} onChange={(checked) => chunkUpdateMutation.mutate({ id: item.id, is_active: checked })} loading={chunkUpdateMutation.isPending && chunkUpdateMutation.variables?.id === item.id} /><Popconfirm title="确定彻底删除此知识块？(不可恢复)" onConfirm={() => chunkDeleteMutation.mutate(item.id)}><Button size="small" danger icon={<DeleteOutlined />} /></Popconfirm></>)}</Space></div>}>{editingChunkId === item.id ? (<Input.TextArea rows={6} value={chunkEditContent} onChange={e => setChunkEditContent(e.target.value)} className="text-xs font-sans" />) : (<pre className="text-xs whitespace-pre-wrap font-sans text-gray-700 m-0">{item.content}</pre>)}<div className="mt-2 text-[10px] text-gray-400">Length: {item.content?.length || 0} chars</div></Card></List.Item>
+        <Drawer title={<Space><SafetyCertificateOutlined /><span>{t('ai.settings.cleaningWorkbench', { title: previewDoc?.title })}</span></Space>} width={750} onClose={() => { setIsPreviewDrawerOpen(false); setEditingChunkId(null); }} open={isPreviewDrawerOpen}><Alert message={t('ai.settings.chunkManagement')} description={t('ai.settings.chunkManagementDesc')} type="warning" showIcon style={{ marginBottom: 16 }} /><List loading={chunksLoading} dataSource={chunksData} renderItem={(item: DocumentChunk) => (
+          <List.Item><Card size="small" className={`w-full ${!item.is_active ? 'opacity-50 grayscale' : 'bg-gray-50 border-gray-200'}`} title={<div className="flex justify-between items-center text-xs"><Space><Tag color={item.is_active ? "blue" : "default"}>Chunk #{item.index + 1}</Tag>{!item.is_active && <Tag icon={<StopOutlined />}>{t('ai.settings.disabled')}</Tag>}</Space><Space>{editingChunkId === item.id ? (<><Button size="small" type="primary" icon={<SaveOutlined />} onClick={() => chunkUpdateMutation.mutate({ id: item.id, content: chunkEditContent })} loading={chunkUpdateMutation.isPending}>{t('common.save')}</Button><Button size="small" onClick={() => setEditingChunkId(null)}>{t('common.cancel')}</Button></>) : (<><Button size="small" icon={<EditOutlined />} onClick={() => { setEditingChunkId(item.id); setChunkEditContent(item.content); }}>{t('common.edit')}</Button><Switch size="small" checked={item.is_active} onChange={(checked) => chunkUpdateMutation.mutate({ id: item.id, is_active: checked })} loading={chunkUpdateMutation.isPending && chunkUpdateMutation.variables?.id === item.id} /><Popconfirm title={t('ai.settings.deleteChunkConfirm')} onConfirm={() => chunkDeleteMutation.mutate(item.id)}><Button size="small" danger icon={<DeleteOutlined />} /></Popconfirm></>)}</Space></div>}>{editingChunkId === item.id ? (<Input.TextArea rows={6} value={chunkEditContent} onChange={e => setChunkEditContent(e.target.value)} className="text-xs font-sans" />) : (<pre className="text-xs whitespace-pre-wrap font-sans text-gray-700 m-0">{item.content}</pre>)}<div className="mt-2 text-[10px] text-gray-400">{t('ai.settings.lengthChars', { length: item.content?.length || 0 })}</div></Card></List.Item>
         )} /></Drawer>
 
         {/* View Document Content Modal */}
@@ -645,19 +645,19 @@ const AISettings: React.FC = () => {
         )
       },
       {
-        title: t('common.updateTime') || '更新时间',
+        title: t('common.updateTime'),
         dataIndex: 'update_time',
         key: 'update_time',
         width: '12%',
         render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm') : '-'
       },
       {
-        title: t('common.actions') || '操作',
+        title: t('common.actions'),
         key: 'actions',
         width: '8%',
         render: (_: any, record: AIPromptTemplate) => (
           <Space>
-            <Tooltip title={t('common.edit') || '编辑'}>
+            <Tooltip title={t('common.edit')}>
               <Button 
                 type="text" 
                 icon={<EditOutlined />} 
@@ -671,8 +671,8 @@ const AISettings: React.FC = () => {
             <Popconfirm
               title={t('ai.settings.restoreConfirm')}
               onConfirm={() => restorePromptMutation.mutate(record.id)}
-              okText={t('common.ok') || '确认'}
-              cancelText={t('common.cancel') || '取消'}
+              okText={t('common.ok')}
+              cancelText={t('common.cancel')}
             >
               <Tooltip title={t('ai.settings.restoreDefault')}>
                 <Button 
@@ -691,7 +691,7 @@ const AISettings: React.FC = () => {
     return (
       <div className="space-y-4">
         <Alert
-          message={t('common.info') || '提示'}
+          message={t('common.info')}
           description={t('ai.settings.customPromptDesc')}
           type="info"
           showIcon
@@ -727,29 +727,29 @@ const AISettings: React.FC = () => {
             <Col span={12}>
               <Card size="small" title={t('ai.settings.globalConfig')} className="h-full">
                 <Form.Item label={t('ai.settings.defaultLlm')} name="default_llm" tooltip={t('ai.settings.defaultLlmTip')}>
-                  <Select placeholder="选择默认 LLM">
+                  <Select placeholder={t('ai.settings.defaultLlmPlaceholder')}>
                     {llmModels.map(m => (<Select.Option key={m.id} value={m.id}>{m.display_name} ({m.provider_name})</Select.Option>))}
                   </Select>
                 </Form.Item>
                 <Form.Item label={t('ai.settings.defaultEmbedding')} name="default_embedding" tooltip={t('ai.settings.defaultEmbeddingTip')}>
-                  <Select placeholder="选择默认 Embedding">
+                  <Select placeholder={t('ai.settings.defaultEmbeddingPlaceholder')}>
                     {embModels.map(m => (<Select.Option key={m.id} value={m.id}>{m.display_name} ({m.provider_name})</Select.Option>))}
                   </Select>
                 </Form.Item>
-                <Form.Item label="默认视觉/OCR模型" name="default_vision" tooltip="用于解析文档中的图片和扫描件">
-                  <Select placeholder="选择视觉模型" allowClear>
+                <Form.Item label={t('ai.settings.defaultVision')} name="default_vision" tooltip={t('ai.settings.defaultVisionTip')}>
+                  <Select placeholder={t('ai.settings.defaultVisionPlaceholder')} allowClear>
                     {visionModels.map(m => (
                       <Select.Option key={m.id} value={m.id}>{m.display_name} ({m.provider_name})</Select.Option>
                     ))}
                   </Select>
                 </Form.Item>
-                <Form.Item label="默认重排序模型 (Rerank)" name="default_rerank" tooltip="可选。提供更精准的搜索打分，但消耗更多算力。">
-                  <Select placeholder="选择默认 Rerank 模型" allowClear>
+                <Form.Item label={t('ai.settings.defaultRerank')} name="default_rerank" tooltip={t('ai.settings.defaultRerankTip')}>
+                  <Select placeholder={t('ai.settings.defaultRerankPlaceholder')} allowClear>
                     {rerankModels.map(m => (<Select.Option key={m.id} value={m.id}>{m.display_name} ({m.provider_name})</Select.Option>))}
                   </Select>
                 </Form.Item>
-                <Form.Item label="默认知识库" name="default_kb" tooltip="AI 自动生成摘要时的默认存放位置">
-                  <Select placeholder="选择存储知识库" allowClear>
+                <Form.Item label={t('ai.settings.defaultKb')} name="default_kb" tooltip={t('ai.settings.defaultKbTip')}>
+                  <Select placeholder={t('ai.settings.defaultKbPlaceholder')} allowClear>
                     {(Array.isArray(kbData) ? kbData : (kbData?.data || [])).map((kb: any) => (
                       <Select.Option key={kb.id} value={kb.id}>{kb.name}</Select.Option>
                     ))}
@@ -759,7 +759,7 @@ const AISettings: React.FC = () => {
             </Col>
             
             <Col span={12}>
-              <Card size="small" title="RAG 参数调优 (Advanced Tuning)" className="h-full">
+              <Card size="small" title={t('ai.settings.ragAdvancedTuning')} className="h-full">
                 <Form.Item label={t('ai.settings.ragTopK')} name="rag_top_k" tooltip={t('ai.settings.ragTopKTip')}>
                   <Slider min={1} max={20} marks={{ 1: '1', 5: '5', 10: '10', 20: '20' }} />
                 </Form.Item>
@@ -812,11 +812,11 @@ const AISettings: React.FC = () => {
           </Tabs.TabPane>
         </Tabs>
       </Card>
-      <Modal title={editingProvider ? t('ai.settings.editProvider') : t('ai.settings.addProvider')} open={isProviderModalOpen} onCancel={() => setIsProviderModalOpen(false)} onOk={() => providerForm.submit()} confirmLoading={providerMutation.isPending}><Form form={providerForm} layout="vertical" onFinish={providerMutation.mutate}><Form.Item name="name" label={t('ai.settings.providerName')} rules={[{ required: true }]}><Input placeholder="如 DeepSeek 官方" /></Form.Item><Form.Item name="provider_type" label={t('ai.settings.providerType')} rules={[{ required: true }]}><Select onChange={(val) => { if (val === 'local') providerForm.setFieldValue('base_url', 'http://localhost'); if (val === 'lmstudio') providerForm.setFieldValue('base_url', 'http://localhost:1234/v1'); }}><Select.Option value="openai">OpenAI</Select.Option><Select.Option value="deepseek">DeepSeek</Select.Option><Select.Option value="anthropic">Anthropic</Select.Option><Select.Option value="ollama">Ollama (Local)</Select.Option><Select.Option value="lmstudio">LM Studio (Local)</Select.Option><Select.Option value="local">FastEmbed (Local)</Select.Option><Select.Option value="other">Other (OpenAI Compatible)</Select.Option></Select></Form.Item><Form.Item noStyle shouldUpdate={(prev, curr) => prev.provider_type !== curr.provider_type}>{({ getFieldValue }) => (<Form.Item name="base_url" label={t('ai.settings.apiUrl')} rules={[{ required: getFieldValue('provider_type') !== 'local' }]}><Input placeholder={getFieldValue('provider_type') === 'local' ? "本地模式无需配置" : "https://api.deepseek.com"} disabled={getFieldValue('provider_type') === 'local'} /></Form.Item>)}</Form.Item><Form.Item name="api_key" label={t('ai.settings.apiKey')}><Input.Password placeholder="输入 API Key" /></Form.Item><Form.Item name="is_active" label={t('ai.settings.isActive')} valuePropName="checked"><Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} /></Form.Item></Form></Modal>
-      <Modal title={editingModel ? t('ai.settings.editModel') : t('ai.settings.addModel')} open={isModelModalOpen} onCancel={() => setIsModelModalOpen(false)} onOk={() => modelForm.submit()}><Form form={modelForm} layout="vertical" onFinish={(values) => { const m = editingModel ? updateAIModel(editingModel.id, values) : createAIModel(values); m.then(() => { message.success(t('ai.settings.saveSuccess')); setIsModelModalOpen(false); queryClient.invalidateQueries({ queryKey: ['aiModels'] }); }); }}><Form.Item name="provider" label={t('ai.settings.belongProvider')} rules={[{ required: true }]}><Select placeholder="选择供应商">{(Array.isArray(providersData) ? providersData : (providersData as any)?.data || (providersData as any)?.results || []).map((p: any) => (<Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>))}</Select></Form.Item><Form.Item name="display_name" label={t('ai.settings.displayName')} rules={[{ required: true }]}><Input placeholder="如 DeepSeek Chat V3" /></Form.Item>
-<Form.Item name="name" label={t('ai.settings.modelId')} rules={[{ required: true }]}><Input placeholder="如 deepseek-chat" /></Form.Item>
-<Form.Item name="capabilities" label="模型能力 (可多选)" rules={[{ required: true }]}><Checkbox.Group><Row><Col span={12}><Checkbox value="llm">{t('ai.settings.llm')}</Checkbox></Col><Col span={12}><Checkbox value="embedding">{t('ai.settings.embedding')}</Checkbox></Col><Col span={12}><Checkbox value="rerank">Rerank</Checkbox></Col><Col span={12}><Checkbox value="vision">Vision/OCR</Checkbox></Col></Row></Checkbox.Group></Form.Item>
-<Form.Item name="num_ctx" label="上下文窗口 (Tokens)" tooltip="模型支持的最大上下文长度"><Input type="number" placeholder="4096" /></Form.Item>
+      <Modal title={editingProvider ? t('ai.settings.editProvider') : t('ai.settings.addProvider')} open={isProviderModalOpen} onCancel={() => setIsProviderModalOpen(false)} onOk={() => providerForm.submit()} confirmLoading={providerMutation.isPending}><Form form={providerForm} layout="vertical" onFinish={providerMutation.mutate}><Form.Item name="name" label={t('ai.settings.providerName')} rules={[{ required: true }]}><Input placeholder={t('ai.settings.providerNamePlaceholder')} /></Form.Item><Form.Item name="provider_type" label={t('ai.settings.providerType')} rules={[{ required: true }]}><Select onChange={(val) => { if (val === 'local') providerForm.setFieldValue('base_url', 'http://localhost'); if (val === 'lmstudio') providerForm.setFieldValue('base_url', 'http://localhost:1234/v1'); }}><Select.Option value="openai">OpenAI</Select.Option><Select.Option value="deepseek">DeepSeek</Select.Option><Select.Option value="anthropic">Anthropic</Select.Option><Select.Option value="ollama">Ollama (Local)</Select.Option><Select.Option value="lmstudio">LM Studio (Local)</Select.Option><Select.Option value="local">FastEmbed (Local)</Select.Option><Select.Option value="other">Other (OpenAI Compatible)</Select.Option></Select></Form.Item><Form.Item noStyle shouldUpdate={(prev, curr) => prev.provider_type !== curr.provider_type}>{({ getFieldValue }) => (<Form.Item name="base_url" label={t('ai.settings.apiUrl')} rules={[{ required: getFieldValue('provider_type') !== 'local' }]}><Input placeholder={getFieldValue('provider_type') === 'local' ? t('ai.settings.localModeNoConfig') : "https://api.deepseek.com"} disabled={getFieldValue('provider_type') === 'local'} /></Form.Item>)}</Form.Item><Form.Item name="api_key" label={t('ai.settings.apiKey')}><Input.Password placeholder={t('ai.settings.apiKeyPlaceholder')} /></Form.Item><Form.Item name="is_active" label={t('ai.settings.isActive')} valuePropName="checked"><Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} /></Form.Item></Form></Modal>
+      <Modal title={editingModel ? t('ai.settings.editModel') : t('ai.settings.addModel')} open={isModelModalOpen} onCancel={() => setIsModelModalOpen(false)} onOk={() => modelForm.submit()}><Form form={modelForm} layout="vertical" onFinish={(values) => { const m = editingModel ? updateAIModel(editingModel.id, values) : createAIModel(values); m.then(() => { message.success(t('ai.settings.saveSuccess')); setIsModelModalOpen(false); queryClient.invalidateQueries({ queryKey: ['aiModels'] }); }); }}><Form.Item name="provider" label={t('ai.settings.belongProvider')} rules={[{ required: true }]}><Select placeholder={t('ai.settings.selectProvider')}>{(Array.isArray(providersData) ? providersData : (providersData as any)?.data || (providersData as any)?.results || []).map((p: any) => (<Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>))}</Select></Form.Item><Form.Item name="display_name" label={t('ai.settings.displayName')} rules={[{ required: true }]}><Input placeholder={t('ai.settings.modelDisplayNamePlaceholder')} /></Form.Item>
+<Form.Item name="name" label={t('ai.settings.modelId')} rules={[{ required: true }]}><Input placeholder={t('ai.settings.modelIdPlaceholder')} /></Form.Item>
+<Form.Item name="capabilities" label={t('ai.settings.modelCapabilitiesMulti')} rules={[{ required: true }]}><Checkbox.Group><Row><Col span={12}><Checkbox value="llm">{t('ai.settings.llm')}</Checkbox></Col><Col span={12}><Checkbox value="embedding">{t('ai.settings.embedding')}</Checkbox></Col><Col span={12}><Checkbox value="rerank">Rerank</Checkbox></Col><Col span={12}><Checkbox value="vision">Vision/OCR</Checkbox></Col></Row></Checkbox.Group></Form.Item>
+<Form.Item name="num_ctx" label={t('ai.settings.contextWindowTokens')} tooltip={t('ai.settings.contextWindowTip')}><Input type="number" placeholder="4096" /></Form.Item>
 <Form.Item name="is_active" label={t('ai.settings.isActive')} valuePropName="checked"><Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} /></Form.Item></Form></Modal>
 
       <Drawer
@@ -826,14 +826,14 @@ const AISettings: React.FC = () => {
         open={isPromptDrawerOpen}
         extra={
           <Space>
-            <Button onClick={() => setIsPromptDrawerOpen(false)}>{t('common.cancel') || '取消'}</Button>
+            <Button onClick={() => setIsPromptDrawerOpen(false)}>{t('common.cancel')}</Button>
             <Button 
               type="primary" 
               onClick={handleSavePrompt} 
               loading={updatePromptMutation.isPending}
               icon={<SaveOutlined />}
             >
-              {t('common.save') || '保存'}
+              {t('common.save')}
             </Button>
           </Space>
         }
@@ -847,7 +847,7 @@ const AISettings: React.FC = () => {
             
             <div>
               <Text type="secondary">{t('ai.settings.promptDesc')}: </Text>
-              <Paragraph className="mt-1 bg-gray-50 p-2 rounded">{editingPrompt.description || '暂无描述'}</Paragraph>
+              <Paragraph className="mt-1 bg-gray-50 p-2 rounded">{editingPrompt.description || t('ai.settings.noDescription')}</Paragraph>
             </div>
 
             {REQUIRED_PLACEHOLDERS[editingPrompt.code] && REQUIRED_PLACEHOLDERS[editingPrompt.code].length > 0 && (
@@ -858,7 +858,7 @@ const AISettings: React.FC = () => {
                     <Tag 
                       key={v} 
                       color={promptTemplateText.includes(`{${v}}`) ? "success" : "error"}
-                      title={promptTemplateText.includes(`{${v}}`) ? "已使用" : "未使用 (必需)"}
+                      title={promptTemplateText.includes(`{${v}}`) ? t('ai.settings.placeholderUsed') : t('ai.settings.placeholderMissing')}
                     >
                       {`{${v}}`}
                     </Tag>
@@ -895,7 +895,7 @@ const AISettings: React.FC = () => {
                 onChange={(e) => setPromptTemplateText(e.target.value)}
                 autoSize={{ minRows: 15, maxRows: 25 }}
                 style={{ fontFamily: 'monospace', fontSize: '13px' }}
-                placeholder="请输入提示词模板..."
+                placeholder={t('ai.settings.promptTemplatePlaceholder')}
               />
             </div>
           </Space>

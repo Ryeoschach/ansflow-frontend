@@ -137,7 +137,7 @@ const CredentialManagement: React.FC = () => {
             render: (val: string) => new Date(val).toLocaleString(),
         },
         {
-            title: t('credential.remark') || '备注',
+            title: t('credential.remark'),
             dataIndex: 'remark',
             key: 'remark',
             ellipsis: true,
@@ -148,7 +148,7 @@ const CredentialManagement: React.FC = () => {
             key: 'action',
             render: (_: any, record: any) => (
                 <Space size="middle">
-                    <Tooltip title="跨项目授权">
+                    <Tooltip title={t('assetShare.crossProjectGrant')}>
                         <Button
                             type="text"
                             icon={<ShareAltOutlined style={{ color: '#1677ff' }} />}

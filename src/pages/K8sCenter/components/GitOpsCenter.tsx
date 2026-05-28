@@ -70,41 +70,41 @@ const GitOpsCenter: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: (data: any) => createK8sApplication(data),
     onSuccess: () => {
-      message.success('GitOps 应用已创建');
+      message.success(t('gitops.createSuccess'));
       setIsModalVisible(false);
       queryClient.invalidateQueries({ queryKey: ['k8s', 'applications'] });
     },
-    onError: (err: any) => message.error(`创建失败: ${err.message}`),
+    onError: (err: any) => message.error(t('gitops.createFailed', { message: err.message })),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => updateK8sApplication(id, data),
     onSuccess: () => {
-      message.success('GitOps 应用已更新');
+      message.success(t('gitops.updateSuccess'));
       setIsModalVisible(false);
       setEditingApp(null);
       queryClient.invalidateQueries({ queryKey: ['k8s', 'applications'] });
     },
-    onError: (err: any) => message.error(`更新失败: ${err.message}`),
+    onError: (err: any) => message.error(t('gitops.updateFailed', { message: err.message })),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteK8sApplication(id),
     onSuccess: () => {
-      message.success('GitOps 应用已删除');
+      message.success(t('gitops.deleteSuccess'));
       queryClient.invalidateQueries({ queryKey: ['k8s', 'applications'] });
     },
-    onError: (err: any) => message.error(`删除失败: ${err.message}`),
+    onError: (err: any) => message.error(t('gitops.deleteFailed', { message: err.message })),
   });
 
   const syncMutation = useMutation({
     mutationFn: (id: number) => syncK8sApplication(id),
     onSuccess: () => {
-      message.success('同步任务已触发');
-      // 轮询或等待 WebSocket 更新
+      message.success(t('gitops.syncTriggered'));
+      // Poll until the WebSocket update arrives.
       setTimeout(() => queryClient.invalidateQueries({ queryKey: ['k8s', 'applications'] }), 3000);
     },
-    onError: (err: any) => message.error(`同步触发失败: ${err.message}`),
+    onError: (err: any) => message.error(t('gitops.syncFailed', { message: err.message })),
   });
 
   const showModal = (app?: any) => {
@@ -119,7 +119,7 @@ const GitOpsCenter: React.FC = () => {
 
   const columns = [
     {
-      title: '应用名称',
+      title: t('gitops.appName'),
       dataIndex: 'name',
       key: 'name',
       render: (name: string, record: any) => (
@@ -132,7 +132,7 @@ const GitOpsCenter: React.FC = () => {
       ),
     },
     {
-      title: '源代码 (Git)',
+      title: t('gitops.sourceCode'),
       key: 'source',
       render: (_: any, record: any) => (
         <Space direction="vertical" size={0}>
@@ -140,13 +140,13 @@ const GitOpsCenter: React.FC = () => {
             <GithubOutlined /> {record.git_repo}
           </Text>
           <Tag color="blue">
-            Branch: {record.git_branch}
+            {t('gitops.branch', { branch: record.git_branch })}
           </Tag>
         </Space>
       ),
     },
     {
-      title: '同步状态',
+      title: t('gitops.syncStatus'),
       dataIndex: 'sync_status',
       key: 'sync_status',
       render: (status: string, record: any) => {
@@ -163,7 +163,7 @@ const GitOpsCenter: React.FC = () => {
           icon = <ExclamationCircleOutlined />;
         }
         return (
-          <Tooltip title={record.error_message || (status === 'OutOfSync' ? '检测到配置漂移' : '')}>
+          <Tooltip title={record.error_message || (status === 'OutOfSync' ? t('gitops.driftDetected') : '')}>
             <Tag color={color} icon={icon}>
               {status}
             </Tag>
@@ -172,12 +172,12 @@ const GitOpsCenter: React.FC = () => {
       },
     },
     {
-        title: '最近同步',
+        title: t('gitops.lastSync'),
         key: 'last_sync',
         render: (_: any, record: any) => (
           <Space direction="vertical" size={0}>
             <Text style={{ fontSize: '11px' }} type="secondary">
-              {record.last_sync_time ? new Date(record.last_sync_time).toLocaleString() : '从未同步'}
+              {record.last_sync_time ? new Date(record.last_sync_time).toLocaleString() : t('gitops.neverSynced')}
             </Text>
             {record.last_sync_revision && (
               <Text code style={{ fontSize: '10px' }}>
@@ -186,13 +186,13 @@ const GitOpsCenter: React.FC = () => {
             )}
           </Space>
         ),
-      },
+    },
     {
-      title: '操作',
+      title: t('common.actions'),
       key: 'action',
       render: (_: any, record: any) => (
         <Space>
-          <Tooltip title="立即同步">
+          <Tooltip title={t('gitops.syncNow')}>
             <Button
               type="link"
               size="small"
@@ -214,8 +214,8 @@ const GitOpsCenter: React.FC = () => {
             icon={<DeleteOutlined />}
             onClick={() => {
               antModal.confirm({
-                title: '确认删除应用?',
-                content: `删除应用 "${record.name}" 不会删除集群中的资源，但将停止 GitOps 追踪。`,
+                title: t('gitops.confirmDeleteTitle'),
+                content: t('gitops.confirmDeleteContent', { name: record.name }),
                 onOk: () => deleteMutation.mutate(record.id),
               });
             }}
@@ -231,7 +231,7 @@ const GitOpsCenter: React.FC = () => {
         title={
           <Space>
             <SyncOutlined style={{ color: token.colorPrimary }} />
-            <Title level={5} className="m-0">GitOps 应用列表</Title>
+            <Title level={5} className="m-0">{t('gitops.appList')}</Title>
           </Space>
         }
         extra={
@@ -240,14 +240,14 @@ const GitOpsCenter: React.FC = () => {
               icon={<ReloadOutlined />}
               onClick={() => queryClient.invalidateQueries({ queryKey: ['k8s', 'applications'] })}
             >
-              刷新
+              {t('gitops.refresh')}
             </Button>
             <Button
               type="primary"
               icon={<PlusOutlined />}
               onClick={() => showModal()}
             >
-              新建应用
+              {t('gitops.createApp')}
             </Button>
           </Space>
         }
@@ -262,7 +262,7 @@ const GitOpsCenter: React.FC = () => {
       </Card>
 
       <Modal
-        title={editingApp ? '编辑 GitOps 应用' : '新建 GitOps 应用'}
+        title={editingApp ? t('gitops.editApp') : t('gitops.createAppTitle')}
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         onOk={() => form.submit()}
@@ -284,43 +284,43 @@ const GitOpsCenter: React.FC = () => {
           <div className="grid grid-cols-2 gap-x-4">
             <Form.Item
               name="name"
-              label="应用名称"
-              rules={[{ required: true, message: '请输入应用名称' }]}
+              label={t('gitops.appName')}
+              rules={[{ required: true, message: t('gitops.appNameRequired') }]}
             >
-              <Input placeholder="例如: my-java-app" />
+              <Input placeholder={t('gitops.appNamePlaceholder')} />
             </Form.Item>
             <Form.Item
               name="cluster"
-              label="目标集群"
-              rules={[{ required: true, message: '请选择目标集群' }]}
+              label={t('gitops.targetCluster')}
+              rules={[{ required: true, message: t('gitops.targetClusterRequired') }]}
             >
               <Select
                 options={(clustersData?.data || []).map((c: any) => ({ label: c.name, value: c.id }))}
-                placeholder="请选择集群"
+                placeholder={t('gitops.selectCluster')}
               />
             </Form.Item>
             <Form.Item
               name="namespace"
-              label="目标命名空间"
+              label={t('gitops.targetNamespace')}
               rules={[{ required: true }]}
             >
               <Input placeholder="default" />
             </Form.Item>
             <Form.Item
               name="auto_sync"
-              label="自动同步"
+              label={t('gitops.autoSync')}
               valuePropName="checked"
             >
               <Switch />
             </Form.Item>
           </div>
 
-          <Title level={5} className="mt-2 mb-4 border-b pb-2">Git 源代码配置</Title>
+          <Title level={5} className="mt-2 mb-4 border-b pb-2">{t('gitops.gitSourceConfig')}</Title>
           
           <Form.Item
             name="git_repo"
-            label="Git 仓库地址"
-            rules={[{ required: true, message: '请输入 Git 仓库地址' }]}
+            label={t('gitops.gitRepo')}
+            rules={[{ required: true, message: t('gitops.gitRepoRequired') }]}
           >
             <Input placeholder="https://github.com/org/repo.git" prefix={<GithubOutlined />} />
           </Form.Item>
@@ -328,16 +328,16 @@ const GitOpsCenter: React.FC = () => {
           <div className="grid grid-cols-2 gap-x-4">
             <Form.Item
               name="git_branch"
-              label="分支"
+              label={t('gitops.branchName')}
               rules={[{ required: true }]}
             >
               <Input placeholder="main" />
             </Form.Item>
             <Form.Item
               name="path"
-              label="Helm Chart 路径"
+              label={t('gitops.chartPath')}
               rules={[{ required: true }]}
-              help="相对于仓库根目录的路径"
+              help={t('gitops.chartPathHelp')}
             >
               <Input placeholder="." />
             </Form.Item>

@@ -2,6 +2,7 @@ import React from 'react';
 import GitOpsCenterComponent from './components/GitOpsCenter';
 import { Card, Typography, Space, theme } from 'antd';
 import { RocketOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 
 const { Title } = Typography;
 
@@ -10,6 +11,7 @@ const { Title } = Typography;
  */
 const GitOpsCenterPage: React.FC = () => {
     const { token } = theme.useToken();
+    const { t } = useTranslation();
     
     return (
         <div className="p-0">
@@ -17,10 +19,10 @@ const GitOpsCenterPage: React.FC = () => {
                 <Space direction="vertical" size={0}>
                     <Title level={3} style={{ margin: 0 }}>
                         <RocketOutlined style={{ color: token.colorPrimary, marginRight: 8 }} />
-                        GitOps 应用中心
+                        {t('gitops.pageTitle')}
                     </Title>
                     <Typography.Text type="secondary">
-                        基于 Git 仓库同步 K8s 集群状态，实现声明式部署与自动巡检
+                        {t('gitops.pageSubtitle')}
                     </Typography.Text>
                 </Space>
             </div>

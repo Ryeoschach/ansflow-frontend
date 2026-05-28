@@ -378,11 +378,11 @@ const K8sCenter: React.FC = () => {
   const syncStatusMutation = useMutation({
     mutationFn: (id: number) => syncK8sClusterStatus(id),
     onSuccess: () => {
-      message.success(t('k8s.healthRefreshed') || '集群健康状态已刷新');
+      message.success(t('k8s.healthRefreshed'));
       queryClient.invalidateQueries({ queryKey: ['k8s', 'clusters'] });
     },
     onError: (err: any) => {
-      message.error(`${t('k8s.refreshFailed') || '刷新失败'}: ${err.response?.data?.error || err.message}`);
+      message.error(`${t('k8s.refreshFailed')}: ${err.response?.data?.error || err.message}`);
     },
   });
 
@@ -467,7 +467,7 @@ const K8sCenter: React.FC = () => {
       },
     },
     {
-      title: '资源指标',
+      title: t('k8s.resourceMetrics'),
       key: 'metrics',
       render: (_: any, record: any) => (
         <div className="flex flex-col gap-1">
@@ -498,7 +498,7 @@ const K8sCenter: React.FC = () => {
       render: (status: string) => <Tag color={status === 'Ready' ? 'success' : 'error'}>{status}</Tag>,
     },
     {
-      title: 'CPU 利用率',
+      title: t('k8s.cpuUsage'),
       key: 'cpu',
       render: (_: any, record: any) => {
         const metricsList = Array.isArray(nodesMetrics) ? nodesMetrics : (nodesMetrics as any)?.data || [];
@@ -511,7 +511,7 @@ const K8sCenter: React.FC = () => {
       }
     },
     {
-      title: '内存利用率',
+      title: t('k8s.memoryUsage'),
       key: 'mem',
       render: (_: any, record: any) => {
         const metricsList = Array.isArray(nodesMetrics) ? nodesMetrics : (nodesMetrics as any)?.data || [];
@@ -545,7 +545,7 @@ const K8sCenter: React.FC = () => {
     { title: t('k8s.podName'), dataIndex: 'name', key: 'name' },
     { title: t('k8s.namespace'), dataIndex: 'namespace', key: 'namespace' },
     {
-      title: '实时负载',
+      title: t('k8s.realtimeLoad'),
       key: 'metrics',
       render: (_: any, record: any) => {
         const metricsList = Array.isArray(podsMetrics) ? podsMetrics : [];
@@ -557,7 +557,7 @@ const K8sCenter: React.FC = () => {
         const mem = metric.containers.reduce((acc: number, c: any) => acc + parseK8sResource(c.usage.memory, 'mem'), 0);
         return (
           <Space direction="vertical" size={0} className="w-full">
-            <Text style={{ fontSize: '10px' }} strong>CPU: {cpu < 0.001 ? '<0.001' : cpu.toFixed(3)} 核</Text>
+            <Text style={{ fontSize: '10px' }} strong>CPU: {t('k8s.cpuCores', { value: cpu < 0.001 ? '<0.001' : cpu.toFixed(3) })}</Text>
             <Text style={{ fontSize: '10px' }} strong>Mem: {mem.toFixed(1)} MiB</Text>
           </Space>
         );
@@ -722,11 +722,11 @@ const K8sCenter: React.FC = () => {
   ];
 
   const eventColumns = [
-    { title: '最后发生', dataIndex: 'last_timestamp', key: 'last_timestamp', width: 150, render: (t: string) => t ? new Date(t).toLocaleString() : '-' },
-    { title: '类型', dataIndex: 'type', key: 'type', width: 100, render: (t: string) => <Tag color={t === 'Warning' ? 'orange' : 'processing'}>{t}</Tag> },
-    { title: '原因', dataIndex: 'reason', key: 'reason', width: 120 },
-    { title: '对象', dataIndex: 'object', key: 'object', width: 180, ellipsis: true },
-    { title: '消息', dataIndex: 'message', key: 'message', ellipsis: true },
+    { title: t('k8s.lastOccurred'), dataIndex: 'last_timestamp', key: 'last_timestamp', width: 150, render: (t: string) => t ? new Date(t).toLocaleString() : '-' },
+    { title: t('k8s.eventType'), dataIndex: 'type', key: 'type', width: 100, render: (t: string) => <Tag color={t === 'Warning' ? 'orange' : 'processing'}>{t}</Tag> },
+    { title: t('k8s.reason'), dataIndex: 'reason', key: 'reason', width: 120 },
+    { title: t('k8s.object'), dataIndex: 'object', key: 'object', width: 180, ellipsis: true },
+    { title: t('k8s.message'), dataIndex: 'message', key: 'message', ellipsis: true },
   ];
 
   return (
@@ -757,12 +757,12 @@ const K8sCenter: React.FC = () => {
           columns={[
             ...columns,
             {
-              title: '操作中心',
+              title: t('k8s.actionCenter'),
               key: 'action',
               className: "text-center",
               render: (_: any, record: K8sResource) => (
                 <Space>
-                  <Tooltip title="刷新健康状态">
+                  <Tooltip title={t('k8s.refreshHealth')}>
                     <Button
                       type="link"
                       size="small"
@@ -795,7 +795,7 @@ const K8sCenter: React.FC = () => {
                       )}
 
                   {(hasPermission('*') || hasPermission('k8s:cluster:edit')) && (
-                  <Tooltip title="跨项目授权">
+                  <Tooltip title={t('assetShare.crossProjectGrant')}>
                     <Button
                       type="link"
                       size="small"
@@ -996,7 +996,7 @@ const K8sCenter: React.FC = () => {
                 label: (
                   <Space>
                     <RocketOutlined />
-                    <span>GitOps 应用</span>
+                    <span>{t('k8s.gitOpsApps')}</span>
                   </Space>
                 ),
                 children: <GitOpsCenter />,
@@ -1046,7 +1046,7 @@ const K8sCenter: React.FC = () => {
                 label: (
                   <Space>
                     <FileTextOutlined />
-                    <span>事件中心</span>
+                    <span>{t('k8s.events')}</span>
                   </Space>
                 ),
                 children: <Table columns={eventColumns} dataSource={eventsData} rowKey="name" loading={eventsLoading} pagination={{ pageSize: 10 }} />,

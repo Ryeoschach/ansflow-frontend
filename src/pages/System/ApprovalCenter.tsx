@@ -119,7 +119,7 @@ const ApprovalCenter: React.FC = () => {
                 try {
                     processedValues.match_rules = JSON.parse(processedValues.match_rules);
                 } catch(e) {
-                    message.error(t('approval.matchRulesError') || '匹配规则 JSON 格式有误');
+                    message.error(t('approval.matchRulesError'));
                     throw new Error("Invalid JSON");
                 }
             } else {
@@ -283,7 +283,7 @@ const ApprovalCenter: React.FC = () => {
                 );
             }
         },
-        { title: t('approval.environment'), dataIndex: 'environment', key: 'environment', render: (v: string) => v ? <Tag color="warning">{v}</Tag> : <Tag color="default">{t('common.all') || '全部'}</Tag> },
+        { title: t('approval.environment'), dataIndex: 'environment', key: 'environment', render: (v: string) => v ? <Tag color="warning">{v}</Tag> : <Tag color="default">{t('common.all')}</Tag> },
         { 
             title: t('approval.approverRoles'), 
             dataIndex: 'approver_roles_detail', 
@@ -390,7 +390,7 @@ const ApprovalCenter: React.FC = () => {
                                 <div className="p-4">
                                     <Alert 
                                         message={t('approval.interceptTipTitle')} 
-                                        description={t('approval.interceptTipDesc') || '系统自动发现的拦截点。您可以修改名称或临时禁用它们。'} 
+                                        description={t('approval.interceptTipDesc')} 
                                         type="info" 
                                         showIcon 
                                         style={{ marginBottom: 24 }} 
@@ -402,7 +402,7 @@ const ApprovalCenter: React.FC = () => {
                                         scroll={{ x: 'max-content' }}
                                         columns={[
                                             { 
-                                                title: t('approval.resourceName') || '资源名称', 
+                                                title: t('approval.resourceName'), 
                                                 dataIndex: 'name', 
                                                 render: (v, record: any) => (
                                                     <Space>
@@ -415,19 +415,19 @@ const ApprovalCenter: React.FC = () => {
                                                 )
                                             },
                                             { 
-                                                title: t('approval.resourceIdentifier') || '标识符', 
+                                                title: t('approval.resourceIdentifier'), 
                                                 dataIndex: 'code', 
                                                 render: (v) => <Typography.Text code style={{ fontSize: '12px' }}>{v}</Typography.Text> 
                                             },
                                             { 
-                                                title: t('approval.description') || '描述', 
+                                                title: t('approval.description'), 
                                                 dataIndex: 'description',
                                                 render: (v, record: any) => (
                                                     i18n.language === 'en-US' && record.description_en ? record.description_en : v
                                                 )
                                             },
                                             { 
-                                                title: t('common.status') || '状态', 
+                                                title: t('common.status'), 
                                                 dataIndex: 'is_active',
                                                 width: 80,
                                                 render: (active, record: any) => (
@@ -501,8 +501,8 @@ const ApprovalCenter: React.FC = () => {
                     <Form.Item name="name" label={t('approval.policyName')} rules={[{ required: true }]}>
                         <Input placeholder={t('approval.placeholderPolicyName')} />
                     </Form.Item>
-                    <Form.Item name="name_en" label={t('approval.policyNameEn') || '策略名称 (EN)'}>
-                        <Input placeholder={t('approval.placeholderPolicyNameEn') || 'Enter policy name in English'} />
+                    <Form.Item name="name_en" label={t('approval.policyNameEn')}>
+                        <Input placeholder={t('approval.placeholderPolicyNameEn')} />
                     </Form.Item>
                     <Form.Item name="resource_type" label={t('approval.resourceType')} rules={[{ required: true }]}>
                         <Select 
@@ -519,17 +519,17 @@ const ApprovalCenter: React.FC = () => {
                     
                     <Form.Item 
                         name="match_rules" 
-                        label={t('approval.matchRules') || '载荷匹配规则 (JSON)'} 
-                        extra={t('approval.matchRulesTip') || '例如 {"action": "delete"}，空字典表示无条件拦截'}
+                        label={t('approval.matchRules')} 
+                        extra={t('approval.matchRulesTip')}
                     >
                         <Input.TextArea rows={3} placeholder="{}" />
                     </Form.Item>
 
                     <Form.Item 
                         name="auto_pass_if_ai_verified" 
-                        label={t('approval.autoPassAi') || 'AI确信免审'} 
+                        label={t('approval.autoPassAi')} 
                         valuePropName="checked"
-                        extra={t('approval.autoPassAiTip') || '当自愈系统确认告警属于已知安全场景时，自动放行（仅拦截人工触发）'}
+                        extra={t('approval.autoPassAiTip')}
                     >
                         <Switch />
                     </Form.Item>
@@ -537,7 +537,7 @@ const ApprovalCenter: React.FC = () => {
                     <Form.Item name="approver_roles" label={t('approval.approverRoles')} extra={t('approval.anyAdminTip')}>
                         <Select 
                             mode="multiple"
-                            placeholder={t('common.selectRoles') || '请选择角色'}
+                            placeholder={t('common.selectRoles')}
                             options={(rolesData as any)?.data?.map((r: any) => ({ label: r.name, value: r.id }))}
                         />
                     </Form.Item>
@@ -565,7 +565,7 @@ const ApprovalCenter: React.FC = () => {
                                 loading={approveMutation.isPending} 
                                 onClick={() => handleApprove(currentTicket!.id)}
                             >
-                                {currentTicket?.status === 'failed' ? (t('approval.retry') || '重新执行') : t('approval.confirmOkText')}
+                                {currentTicket?.status === 'failed' ? (t('approval.retry')) : t('approval.confirmOkText')}
                             </Button>
                         </Space>
                     )
@@ -593,7 +593,7 @@ const ApprovalCenter: React.FC = () => {
                                     children: (
                                         <div>
                                             <Text strong>{t('approval.ticketCreated')}</Text>
-                                            <div className="text-xs text-gray-400">{t('common.operator') || '操作人'}: {currentTicket.submitter_name}</div>
+                                            <div className="text-xs text-gray-400">{t('common.operator')}: {currentTicket.submitter_name}</div>
                                         </div>
                                     ),
                                     color: 'blue'
@@ -619,21 +619,21 @@ const ApprovalCenter: React.FC = () => {
                                     message={
                                         <Space>
                                             <ThunderboltOutlined style={{ color: '#faad14' }} />
-                                            <Text strong>{t('approval.sreAlertTitle') || '告警自愈触发'}: {(currentTicket.payload as any).alert_name}</Text>
+                                            <Text strong>{t('approval.sreAlertTitle')}: {(currentTicket.payload as any).alert_name}</Text>
                                         </Space>
                                     }
                                     description={
                                         <div className="mt-2">
                                             <Descriptions column={1} size="small">
-                                                <Descriptions.Item label={t('approval.sreReason') || '触发原因'}>
-                                                    <Tag color="volcano">{(currentTicket.payload as any).reason || '自动执行规则命中'}</Tag>
+                                                <Descriptions.Item label={t('approval.sreReason')}>
+                                                    <Tag color="volcano">{(currentTicket.payload as any).reason || t('approval.sreDefaultReason')}</Tag>
                                                 </Descriptions.Item>
-                                                <Descriptions.Item label={t('approval.sreAlertLink') || '查看告警详情'}>
+                                                <Descriptions.Item label={t('approval.sreAlertLink')}>
                                                     <Link to={`/v1/sre/alerts?id=${(currentTicket.payload as any).alert_id}`}>
-                                                        {t('common.clickToView') || '点击跳转'} <ArrowRightOutlined />
+                                                        {t('common.clickToView')} <ArrowRightOutlined />
                                                     </Link>
                                                 </Descriptions.Item>
-                                                <Descriptions.Item label={t('approval.sreDevRef') || '系统标识'}>
+                                                <Descriptions.Item label={t('approval.sreDevRef')}>
                                                     <Text type="secondary" style={{ fontSize: '12px' }}>
                                                         Gemini SRE Integration (Managed by Creed)
                                                     </Text>

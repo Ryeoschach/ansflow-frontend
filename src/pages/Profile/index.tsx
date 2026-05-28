@@ -26,7 +26,7 @@ const Profile: React.FC = () => {
     { key: 'nordic', name: t('profile.themeName.nordic'), colors: ['#D65454', '#263651', '#F9FBFC'] },
     { key: 'pastel', name: t('profile.themeName.pastel'), colors: ['#9E868D', '#5C4F51', '#F8F9F9'] },
     { key: 'cyberpunk', name: t('profile.themeName.cyberpunk'), colors: ['#D4AF37', '#050505', '#141414'] },
-    { key: 'custom', name: '自定义', colors: [designTokens.colors.primary, designTokens.colors.textPrimary, designTokens.colors.bgLayout] },
+    { key: 'custom', name: t('profile.themeName.custom'), colors: [designTokens.colors.primary, designTokens.colors.textPrimary, designTokens.colors.bgLayout] },
   ];
 
   const { data: userInfo, isLoading, refetch } = useQuery({
@@ -169,11 +169,11 @@ const Profile: React.FC = () => {
               <Switch checked={isDark} checkedChildren="🌙" unCheckedChildren="☀️" onChange={(checked) => setIsDark(checked)} />
             </Descriptions.Item>
             <Descriptions.Item label={t('profile.language')}>
-              <Select value={language} onChange={(l) => { i18n.changeLanguage(l); setLanguage(l); }} style={{ width: 140 }} options={[{ value: 'zh-CN', label: '中文' }, { value: 'en-US', label: 'English' }]} />
+              <Select value={language} onChange={(l) => { i18n.changeLanguage(l); setLanguage(l); }} style={{ width: 140 }} options={[{ value: 'zh-CN', label: t('profile.languageZh') }, { value: 'en-US', label: t('profile.languageEn') }]} />
             </Descriptions.Item>
           </Descriptions>
 
-          <Divider titlePlacement="start">{t('profile.themeColor') || '配色方案'}</Divider>
+          <Divider titlePlacement="start">{t('profile.themeColor')}</Divider>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {themeOptions.map((opt) => (
               <div
@@ -204,7 +204,7 @@ const Profile: React.FC = () => {
             <div className="mt-6 p-6 rounded-2xl bg-ans-bg-layout/50 border border-ans-border animate-in fade-in slide-in-from-top-4">
               <div className="flex items-center gap-2 mb-6">
                 <BgColorsOutlined className="text-primary text-xl" />
-                <Text strong className="text-lg">全量 Token 深度编辑器</Text>
+                <Text strong className="text-lg">{t('profile.tokenEditor')}</Text>
               </div>
               
               <Tabs 
@@ -213,37 +213,37 @@ const Profile: React.FC = () => {
                 items={[
                   {
                     key: 'light',
-                    label: '浅色模式',
+                    label: t('profile.lightMode'),
                     children: (
                       <div className="grid grid-cols-1 gap-1 pt-2">
-                        <ColorPickerRow label="品牌主色" tokenKey="primary" value={designTokens.colors.primary} />
-                        <ColorPickerRow label="布局背景" tokenKey="bgLayout" value={designTokens.colors.bgLayout} />
-                        <ColorPickerRow label="容器背景" tokenKey="bgContainer" value={designTokens.colors.bgContainer} />
-                        <ColorPickerRow label="正文文字" tokenKey="textPrimary" value={designTokens.colors.textPrimary} />
-                        <ColorPickerRow label="次级文字" tokenKey="textSecondary" value={designTokens.colors.textSecondary} />
-                        <ColorPickerRow label="全局边框" tokenKey="border" value={designTokens.colors.border} />
+                        <ColorPickerRow label={t('profile.colorToken.primary')} tokenKey="primary" value={designTokens.colors.primary} />
+                        <ColorPickerRow label={t('profile.colorToken.bgLayout')} tokenKey="bgLayout" value={designTokens.colors.bgLayout} />
+                        <ColorPickerRow label={t('profile.colorToken.bgContainer')} tokenKey="bgContainer" value={designTokens.colors.bgContainer} />
+                        <ColorPickerRow label={t('profile.colorToken.textPrimary')} tokenKey="textPrimary" value={designTokens.colors.textPrimary} />
+                        <ColorPickerRow label={t('profile.colorToken.textSecondary')} tokenKey="textSecondary" value={designTokens.colors.textSecondary} />
+                        <ColorPickerRow label={t('profile.colorToken.border')} tokenKey="border" value={designTokens.colors.border} />
                         <Divider className="my-2" />
-                        <ColorPickerRow label="成功状态" tokenKey="statusSuccess" value={designTokens.colors.statusSuccess} />
-                        <ColorPickerRow label="警告状态" tokenKey="statusWarning" value={designTokens.colors.statusWarning} />
-                        <ColorPickerRow label="错误状态" tokenKey="statusError" value={designTokens.colors.statusError} />
+                        <ColorPickerRow label={t('profile.colorToken.statusSuccess')} tokenKey="statusSuccess" value={designTokens.colors.statusSuccess} />
+                        <ColorPickerRow label={t('profile.colorToken.statusWarning')} tokenKey="statusWarning" value={designTokens.colors.statusWarning} />
+                        <ColorPickerRow label={t('profile.colorToken.statusError')} tokenKey="statusError" value={designTokens.colors.statusError} />
                       </div>
                     )
                   },
                   {
                     key: 'dark',
-                    label: '深色模式',
+                    label: t('profile.darkModeTab'),
                     children: (
                       <div className="grid grid-cols-1 gap-1 pt-2">
-                        <ColorPickerRow label="深色主色" tokenKey="darkPrimary" value={designTokens.colors.darkPrimary} />
-                        <ColorPickerRow label="深色布局背景" tokenKey="darkBgLayout" value={designTokens.colors.darkBgLayout} />
-                        <ColorPickerRow label="深色容器背景" tokenKey="darkBgContainer" value={designTokens.colors.darkBgContainer} />
-                        <ColorPickerRow label="深色标题文字" tokenKey="darkTextPrimary" value={designTokens.colors.darkTextPrimary} />
-                        <ColorPickerRow label="深色次级文字" tokenKey="darkTextSecondary" value={designTokens.colors.darkTextSecondary} />
-                        <ColorPickerRow label="深色边框" tokenKey="darkBorder" value={designTokens.colors.darkBorder} />
+                        <ColorPickerRow label={t('profile.colorToken.darkPrimary')} tokenKey="darkPrimary" value={designTokens.colors.darkPrimary} />
+                        <ColorPickerRow label={t('profile.colorToken.darkBgLayout')} tokenKey="darkBgLayout" value={designTokens.colors.darkBgLayout} />
+                        <ColorPickerRow label={t('profile.colorToken.darkBgContainer')} tokenKey="darkBgContainer" value={designTokens.colors.darkBgContainer} />
+                        <ColorPickerRow label={t('profile.colorToken.darkTextPrimary')} tokenKey="darkTextPrimary" value={designTokens.colors.darkTextPrimary} />
+                        <ColorPickerRow label={t('profile.colorToken.darkTextSecondary')} tokenKey="darkTextSecondary" value={designTokens.colors.darkTextSecondary} />
+                        <ColorPickerRow label={t('profile.colorToken.darkBorder')} tokenKey="darkBorder" value={designTokens.colors.darkBorder} />
                         <Divider className="my-2" />
-                        <ColorPickerRow label="深色成功色" tokenKey="darkStatusSuccess" value={designTokens.colors.darkStatusSuccess} />
-                        <ColorPickerRow label="深色警告色" tokenKey="darkStatusWarning" value={designTokens.colors.darkStatusWarning} />
-                        <ColorPickerRow label="深色错误色" tokenKey="darkStatusError" value={designTokens.colors.darkStatusError} />
+                        <ColorPickerRow label={t('profile.colorToken.darkStatusSuccess')} tokenKey="darkStatusSuccess" value={designTokens.colors.darkStatusSuccess} />
+                        <ColorPickerRow label={t('profile.colorToken.darkStatusWarning')} tokenKey="darkStatusWarning" value={designTokens.colors.darkStatusWarning} />
+                        <ColorPickerRow label={t('profile.colorToken.darkStatusError')} tokenKey="darkStatusError" value={designTokens.colors.darkStatusError} />
                       </div>
                     )
                   }
@@ -259,7 +259,7 @@ const Profile: React.FC = () => {
                      }
                    })}
                  >
-                   恢复默认
+                   {t('profile.resetDefault')}
                  </Button>
               </div>
             </div>

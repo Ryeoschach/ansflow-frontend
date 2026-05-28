@@ -172,7 +172,7 @@ const Environment: React.FC = () => {
                             }))} />
                         </Form.Item>
 
-                        <Form.Item label="展示颜色" name="color" valuePropName="value">
+                        <Form.Item label={t('environment.displayColor')} name="color" valuePropName="value">
                             <ColorPicker showText />
                         </Form.Item>
                     </div>

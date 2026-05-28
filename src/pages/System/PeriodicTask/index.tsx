@@ -5,12 +5,14 @@ import { getPeriodicTasks, partialUpdatePeriodicTask, updatePeriodicTaskSchedule
 import { SyncOutlined, EditOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import useAppStore from '@/store/useAppStore';
+import { useTranslation } from 'react-i18next';
 
 const { Option } = Select;
 
 const PeriodicTask: React.FC = () => {
     const queryClient = useQueryClient();
     const { hasPermission } = useAppStore();
+    const { t } = useTranslation();
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -26,23 +28,23 @@ const PeriodicTask: React.FC = () => {
     const toggleStatusMutation = useMutation({
         mutationFn: ({ id, enabled }: { id: number, enabled: boolean }) => partialUpdatePeriodicTask(id, { enabled }),
         onSuccess: () => {
-            message.success('状态已更新');
+            message.success(t('periodicTask.updateStatusSuccess'));
             queryClient.invalidateQueries({ queryKey: ['periodicTasks'] });
         },
         onError: () => {
-            message.error('状态更新失败');
+            message.error(t('periodicTask.updateStatusFailed'));
         }
     });
 
     const updateScheduleMutation = useMutation({
         mutationFn: (data: any) => updatePeriodicTaskSchedule(editingTask.id, data),
         onSuccess: () => {
-            message.success('调度配置已更新');
+            message.success(t('periodicTask.updateScheduleSuccess'));
             setIsModalVisible(false);
             queryClient.invalidateQueries({ queryKey: ['periodicTasks'] });
         },
         onError: () => {
-            message.error('配置更新失败');
+            message.error(t('periodicTask.updateScheduleFailed'));
         }
     });
 
@@ -113,22 +115,22 @@ const PeriodicTask: React.FC = () => {
 
     const columns = [
         {
-            title: '任务名称',
+            title: t('periodicTask.taskName'),
             dataIndex: 'name',
             key: 'name',
         },
         {
-            title: '执行方法 (Task)',
+            title: t('periodicTask.taskMethod'),
             dataIndex: 'task',
             key: 'task',
             render: (text: string) => <Tag color="blue">{text}</Tag>
         },
         {
-            title: '调度规则',
+            title: t('periodicTask.scheduleRule'),
             key: 'schedule',
             render: (_: any, record: any) => {
                 if (record.interval_detail) {
-                    return `每 ${record.interval_detail.every} ${record.interval_detail.period}`;
+                    return t('periodicTask.every', { every: record.interval_detail.every, period: record.interval_detail.period });
                 }
                 if (record.crontab_detail) {
                     return `${record.crontab_detail.minute} ${record.crontab_detail.hour} ${record.crontab_detail.day_of_week} ${record.crontab_detail.day_of_month} ${record.crontab_detail.month_of_year}`;
@@ -137,7 +139,7 @@ const PeriodicTask: React.FC = () => {
             }
         },
         {
-            title: '启用状态',
+            title: t('periodicTask.enabledStatus'),
             dataIndex: 'enabled',
             key: 'enabled',
             render: (enabled: boolean, record: any) => (
@@ -149,13 +151,13 @@ const PeriodicTask: React.FC = () => {
             )
         },
         {
-            title: '最后运行时间',
+            title: t('periodicTask.lastRunTime'),
             dataIndex: 'last_run_at',
             key: 'last_run_at',
             render: (text: string) => text ? dayjs(text).format('YYYY-MM-DD HH:mm:ss') : '-'
         },
         {
-            title: '操作',
+            title: t('common.actions'),
             key: 'action',
             render: (_: any, record: any) => (
                 <Space>
@@ -166,7 +168,7 @@ const PeriodicTask: React.FC = () => {
                             icon={<EditOutlined />}
                             onClick={() => handleEdit(record)}
                         >
-                            配置
+                            {t('periodicTask.configure')}
                         </Button>
                     )}
                 </Space>
@@ -197,10 +199,10 @@ const PeriodicTask: React.FC = () => {
     return (
         <div className="p-6">
             <Card 
-                title="系统定时任务管理" 
+                title={t('periodicTask.title')}
                 extra={
                     <Button icon={<SyncOutlined />} onClick={() => queryClient.invalidateQueries({ queryKey: ['periodicTasks'] })}>
-                        刷新
+                        {t('common.refresh')}
                     </Button>
                 }
             >
@@ -223,7 +225,7 @@ const PeriodicTask: React.FC = () => {
             </Card>
 
             <Modal
-                title={`配置任务: ${editingTask?.name}`}
+                title={t('periodicTask.configTask', { name: editingTask?.name })}
                 open={isModalVisible}
                 onOk={handleModalOk}
                 onCancel={() => setIsModalVisible(false)}
@@ -232,31 +234,31 @@ const PeriodicTask: React.FC = () => {
                 destroyOnClose
             >
                 <Form form={form} layout="vertical" className="mt-4">
-                    <Form.Item label="调用参数 (Args)" name="args" rules={[{ required: true }]}>
-                        <Input.TextArea rows={2} placeholder="必须是合法的 JSON 数组，如 []" />
+                    <Form.Item label={t('periodicTask.args')} name="args" rules={[{ required: true }]}>
+                        <Input.TextArea rows={2} placeholder={t('periodicTask.argsPlaceholder')} />
                     </Form.Item>
-                    <Form.Item label="调用关键字参数 (Kwargs)" name="kwargs" rules={[{ required: true }]}>
-                        <Input.TextArea rows={2} placeholder="必须是合法的 JSON 对象，如 {}" />
+                    <Form.Item label={t('periodicTask.kwargs')} name="kwargs" rules={[{ required: true }]}>
+                        <Input.TextArea rows={2} placeholder={t('periodicTask.kwargsPlaceholder')} />
                     </Form.Item>
                     
-                    <Form.Item label="调度类型" name="schedule_type">
+                    <Form.Item label={t('periodicTask.scheduleType')} name="schedule_type">
                         <Select onChange={(val) => setScheduleType(val)}>
-                            <Option value="interval">固定间隔 (Interval)</Option>
-                            <Option value="crontab">定时表达式 (Crontab)</Option>
+                            <Option value="interval">{t('periodicTask.interval')}</Option>
+                            <Option value="crontab">{t('periodicTask.crontab')}</Option>
                         </Select>
                     </Form.Item>
 
                     {scheduleType === 'interval' && (
                         <div className="flex gap-4">
-                            <Form.Item label="间隔数值" name="interval_every" className="flex-1" rules={[{ required: true }]}>
+                            <Form.Item label={t('periodicTask.intervalValue')} name="interval_every" className="flex-1" rules={[{ required: true }]}>
                                 <InputNumber min={1} className="w-full" />
                             </Form.Item>
-                            <Form.Item label="时间单位" name="interval_period" className="flex-1" rules={[{ required: true }]}>
+                            <Form.Item label={t('periodicTask.timeUnit')} name="interval_period" className="flex-1" rules={[{ required: true }]}>
                                 <Select>
-                                    <Option value="seconds">秒 (Seconds)</Option>
-                                    <Option value="minutes">分钟 (Minutes)</Option>
-                                    <Option value="hours">小时 (Hours)</Option>
-                                    <Option value="days">天 (Days)</Option>
+                                    <Option value="seconds">{t('periodicTask.seconds')}</Option>
+                                    <Option value="minutes">{t('periodicTask.minutes')}</Option>
+                                    <Option value="hours">{t('periodicTask.hours')}</Option>
+                                    <Option value="days">{t('periodicTask.days')}</Option>
                                 </Select>
                             </Form.Item>
                         </div>
@@ -264,25 +266,25 @@ const PeriodicTask: React.FC = () => {
 
                     {scheduleType === 'crontab' && (
                         <div className="grid grid-cols-5 gap-2">
-                            <Form.Item label="分 (Minute)" name="crontab_minute" rules={[{ required: true }]}>
+                            <Form.Item label={t('periodicTask.minute')} name="crontab_minute" rules={[{ required: true }]}>
                                 <Input placeholder="*" />
                             </Form.Item>
-                            <Form.Item label="时 (Hour)" name="crontab_hour" rules={[{ required: true }]}>
+                            <Form.Item label={t('periodicTask.hour')} name="crontab_hour" rules={[{ required: true }]}>
                                 <Input placeholder="*" />
                             </Form.Item>
-                            <Form.Item label="日 (Day)" name="crontab_day_of_month" rules={[{ required: true }]}>
+                            <Form.Item label={t('periodicTask.day')} name="crontab_day_of_month" rules={[{ required: true }]}>
                                 <Input placeholder="*" />
                             </Form.Item>
-                            <Form.Item label="月 (Month)" name="crontab_month_of_year" rules={[{ required: true }]}>
+                            <Form.Item label={t('periodicTask.month')} name="crontab_month_of_year" rules={[{ required: true }]}>
                                 <Input placeholder="*" />
                             </Form.Item>
-                            <Form.Item label="周 (Week)" name="crontab_day_of_week" rules={[{ required: true }]}>
+                            <Form.Item label={t('periodicTask.week')} name="crontab_day_of_week" rules={[{ required: true }]}>
                                 <Input placeholder="*" />
                             </Form.Item>
                         </div>
                     )}
                     <div className="text-xs text-gray-500 mt-2">
-                        注意: Crontab 支持标准的 cron 表达式格式。如每小时执行一次: 0 * * * *
+                        {t('periodicTask.cronTip')}
                     </div>
                 </Form>
             </Modal>

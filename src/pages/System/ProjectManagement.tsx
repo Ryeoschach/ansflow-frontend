@@ -51,7 +51,7 @@ const ProjectManagement: React.FC = () => {
     const mutation = useMutation({
         mutationFn: (values: any) => editingProject ? updateProject(editingProject.id, values) : createProject(values),
         onSuccess: () => {
-            message.success(editingProject ? '更新项目成功' : '创建项目成功');
+            message.success(editingProject ? t('project.updateSuccess') : t('project.createSuccess'));
             setIsModalVisible(false);
             setEditingProject(null);
             form.resetFields();
@@ -66,7 +66,7 @@ const ProjectManagement: React.FC = () => {
     const deleteMutation = useMutation({
         mutationFn: deleteProject,
         onSuccess: () => {
-            message.success('删除项目成功');
+            message.success(t('project.deleteSuccess'));
             queryClient.invalidateQueries({ queryKey: ['projects'] });
             getProjects({ page_size: 1000 }).then((res: any) => {
                 useAppStore.getState().setProjects(res.data || []);
@@ -94,34 +94,34 @@ const ProjectManagement: React.FC = () => {
             role: values.role
         }),
         onSuccess: () => {
-            message.success('添加成员成功');
+            message.success(t('project.addMemberSuccess'));
             addMemberForm.resetFields();
             refetchMembers();
         },
         onError: (err: any) => {
-            message.error(err.response?.data?.message || err.response?.data?.non_field_errors?.[0] || '添加成员失败');
+            message.error(err.response?.data?.message || err.response?.data?.non_field_errors?.[0] || t('project.addMemberFailed'));
         }
     });
 
     const updateMemberRoleMutation = useMutation({
         mutationFn: ({ id, role }: { id: number; role: string }) => updateProjectMember(id, { role }),
         onSuccess: () => {
-            message.success('修改角色成功');
+            message.success(t('project.updateRoleSuccess'));
             refetchMembers();
         },
         onError: (err: any) => {
-            message.error(err.response?.data?.message || '修改角色失败');
+            message.error(err.response?.data?.message || t('project.updateRoleFailed'));
         }
     });
 
     const deleteMemberMutation = useMutation({
         mutationFn: deleteProjectMember,
         onSuccess: () => {
-            message.success('移除成员成功');
+            message.success(t('project.removeMemberSuccess'));
             refetchMembers();
         },
         onError: (err: any) => {
-            message.error(err.response?.data?.message || '移除成员失败');
+            message.error(err.response?.data?.message || t('project.removeMemberFailed'));
         }
     });
 
@@ -144,7 +144,7 @@ const ProjectManagement: React.FC = () => {
 
     const columns = [
         { 
-            title: t('project.columnCode', '项目标识'), 
+            title: t('project.columnCode'),
             dataIndex: 'code', 
             key: 'code', 
             width: 150, 
@@ -152,7 +152,7 @@ const ProjectManagement: React.FC = () => {
             render: (code: string) => <Text code>{code}</Text>
         },
         { 
-            title: t('project.columnName', '项目名称'), 
+            title: t('project.columnName'),
             dataIndex: 'name', 
             key: 'name', 
             width: 180, 
@@ -160,7 +160,7 @@ const ProjectManagement: React.FC = () => {
             render: (name: string) => <Text strong>{name}</Text>
         },
         { 
-            title: t('project.columnOwner', '负责人'), 
+            title: t('project.columnOwner'),
             dataIndex: 'owner_name', 
             key: 'owner_name', 
             width: 150, 
@@ -168,28 +168,28 @@ const ProjectManagement: React.FC = () => {
             render: (_: any, record: any) => record.owner_username || '-'
         },
         { 
-            title: t('project.columnDesc', '项目描述'), 
+            title: t('project.columnDesc'),
             dataIndex: 'description', 
             key: 'description', 
             width: 250, 
             ellipsis: true 
         },
         { 
-            title: t('project.columnAction', '操作'), 
+            title: t('project.columnAction'),
             key: 'action', 
             width: 120,
             render: (_: any, record: any) => {
                 const isDefault = record.code === 'default';
                 return (
                     <Space>
-                        <Tooltip title="成员管理">
+                        <Tooltip title={t('project.manageMembers')}>
                             <Button 
                                 type="text" 
                                 icon={<TeamOutlined />} 
                                 onClick={() => handleManageMembers(record)} 
                             />
                         </Tooltip>
-                        <Tooltip title={t('common.edit', '编辑')}>
+                        <Tooltip title={t('common.edit')}>
                             <Button 
                                 type="text" 
                                 icon={<EditOutlined />} 
@@ -197,17 +197,17 @@ const ProjectManagement: React.FC = () => {
                             />
                         </Tooltip>
                         {!isDefault && (
-                            <Tooltip title={t('common.delete', '删除')}>
+                            <Tooltip title={t('common.delete')}>
                                 <Button 
                                     type="text" 
                                     danger 
                                     icon={<DeleteOutlined />} 
                                     onClick={() => {
                                         modal.confirm({
-                                            title: '确认删除该项目？',
-                                            content: '项目删除后，相关的独立资产可能失去关联，请确认。',
-                                            okText: t('common.confirm', '确认'),
-                                            cancelText: t('common.cancel', '取消'),
+                                            title: t('project.confirmDeleteTitle'),
+                                            content: t('project.confirmDeleteContent'),
+                                            okText: t('common.confirm'),
+                                            cancelText: t('common.cancel'),
                                             onOk: () => deleteMutation.mutate(record.id),
                                         });
                                     }} 
@@ -225,14 +225,14 @@ const ProjectManagement: React.FC = () => {
             <div className="flex justify-between items-center mb-4">
                 <Space>
                     <ProjectOutlined style={{ fontSize: '20px', color: token.colorPrimary }} />
-                    <Title level={4} style={{ margin: 0 }}>{t('project.title', '项目管理')}</Title>
+                    <Title level={4} style={{ margin: 0 }}>{t('project.title')}</Title>
                 </Space>
                 <Button 
                     type="primary" 
                     icon={<PlusOutlined />} 
                     onClick={handleAdd}
                 >
-                    {t('project.addProject', '新建项目')}
+                    {t('project.addProject')}
                 </Button>
             </div>
 
@@ -254,7 +254,7 @@ const ProjectManagement: React.FC = () => {
             </Card>
 
             <Modal 
-                title={editingProject ? t('project.editProject', '编辑项目') : t('project.createProject', '创建项目')} 
+                title={editingProject ? t('project.editProject') : t('project.createProject')}
                 open={isModalVisible} 
                 onOk={() => form.submit()} 
                 onCancel={() => setIsModalVisible(false)} 
@@ -267,30 +267,30 @@ const ProjectManagement: React.FC = () => {
                     onFinish={(values) => mutation.mutate(values)}
                 >
                     <Form.Item 
-                        label={t('project.projectCode', '项目标识')} 
+                        label={t('project.projectCode')}
                         name="code" 
                         rules={[
-                            { required: true, message: '请输入项目标识' },
-                            { pattern: /^[a-zA-Z0-9_-]+$/, message: '项目标识仅支持字母、数字、下划线和连字符' }
+                            { required: true, message: t('project.codeRequired') },
+                            { pattern: /^[a-zA-Z0-9_-]+$/, message: t('project.codePattern') }
                         ]}
                     >
-                        <Input placeholder="例如: default, marketing, devops" disabled={!!editingProject} />
+                        <Input placeholder={t('project.codePlaceholder')} disabled={!!editingProject} />
                     </Form.Item>
 
                     <Form.Item 
-                        label={t('project.projectName', '项目名称')} 
+                        label={t('project.projectName')}
                         name="name" 
-                        rules={[{ required: true, message: '请输入项目名称' }]}
+                        rules={[{ required: true, message: t('project.nameRequired') }]}
                     >
-                        <Input placeholder="例如: 默认项目, 市场系统, 智能运维平台" />
+                        <Input placeholder={t('project.namePlaceholder')} />
                     </Form.Item>
 
                     <Form.Item 
-                        label={t('project.projectOwner', '项目负责人')} 
+                        label={t('project.projectOwner')}
                         name="owner"
                     >
                         <Select 
-                            placeholder="请选择项目负责人" 
+                            placeholder={t('project.ownerPlaceholder')}
                             allowClear
                             showSearch
                             optionFilterProp="label"
@@ -302,17 +302,17 @@ const ProjectManagement: React.FC = () => {
                     </Form.Item>
 
                     <Form.Item 
-                        label={t('project.projectDesc', '项目描述')} 
+                        label={t('project.projectDesc')}
                         name="description"
                     >
-                        <Input.TextArea placeholder="请输入项目用途、团队以及描述信息" rows={4} />
+                        <Input.TextArea placeholder={t('project.descPlaceholder')} rows={4} />
                     </Form.Item>
                 </Form>
             </Modal>
 
             {/* Member Management Modal */}
             <Modal
-                title={`项目成员管理 - ${currentProjectForMembers?.name || ''}`}
+                title={t('project.memberModalTitle', { name: currentProjectForMembers?.name || '' })}
                 open={memberModalVisible}
                 onCancel={() => {
                     setMemberModalVisible(false);
@@ -326,7 +326,7 @@ const ProjectManagement: React.FC = () => {
                 <div className="flex flex-col gap-6 py-2">
                     {/* Add Member Form */}
                     <div className="p-4 rounded-lg bg-ans-bg-secondary border border-solid border-black/5 dark:border-white/5" style={{ background: token.colorFillAlter, border: `1px solid ${token.colorBorder}` }}>
-                        <Typography.Title level={5} className="mt-0 mb-3" style={{ fontSize: '14px', marginTop: 0, marginBottom: '12px' }}>添加项目成员</Typography.Title>
+                        <Typography.Title level={5} className="mt-0 mb-3" style={{ fontSize: '14px', marginTop: 0, marginBottom: '12px' }}>{t('project.addMember')}</Typography.Title>
                         <Form
                             form={addMemberForm}
                             layout="inline"
@@ -335,16 +335,16 @@ const ProjectManagement: React.FC = () => {
                         >
                             <Form.Item
                                 name="user"
-                                rules={[{ required: true, message: '请选择成员' }]}
+                                rules={[{ required: true, message: t('project.selectMember') }]}
                                 style={{ flex: '1 1 200px', margin: 0 }}
                             >
                                 <Select
-                                    placeholder="搜索并选择用户"
+                                    placeholder={t('project.selectUser')}
                                     showSearch
                                     optionFilterProp="label"
                                     options={usersList.map((u: any) => ({
                                         value: u.id,
-                                        label: `${u.username} (${u.email || '无邮箱'})`
+                                        label: `${u.username} (${u.email || t('project.noEmail')})`
                                     }))}
                                 />
                             </Form.Item>
@@ -356,15 +356,15 @@ const ProjectManagement: React.FC = () => {
                             >
                                 <Select
                                     options={[
-                                        { value: 'admin', label: '项目管理员' },
-                                        { value: 'member', label: '成员' },
-                                        { value: 'viewer', label: '只读成员' }
+                                        { value: 'admin', label: t('project.roleAdmin') },
+                                        { value: 'member', label: t('project.roleMember') },
+                                        { value: 'viewer', label: t('project.roleViewer') }
                                     ]}
                                 />
                             </Form.Item>
                             <Form.Item style={{ margin: 0 }}>
                                 <Button type="primary" htmlType="submit" loading={addMemberMutation.isPending}>
-                                    添加
+                                    {t('project.add')}
                                 </Button>
                             </Form.Item>
                         </Form>
@@ -379,13 +379,13 @@ const ProjectManagement: React.FC = () => {
                         pagination={{ pageSize: 5 }}
                         columns={[
                             {
-                                title: '用户名',
+                                title: t('project.username'),
                                 dataIndex: 'username',
                                 key: 'username',
                                 render: (text: string) => <Text strong>{text}</Text>
                             },
                             {
-                                title: '项目内角色',
+                                title: t('project.projectRole'),
                                 dataIndex: 'role',
                                 key: 'role',
                                 render: (role: string, record: any) => {
@@ -398,9 +398,9 @@ const ProjectManagement: React.FC = () => {
 
                                     if (!canManage || isOwnerSelf) {
                                         const roleLabel = {
-                                            admin: '项目管理员',
-                                            member: '成员',
-                                            viewer: '只读成员'
+                                            admin: t('project.roleAdmin'),
+                                            member: t('project.roleMember'),
+                                            viewer: t('project.roleViewer')
                                         }[role] || role;
                                         return <Tag color={role === 'admin' ? 'blue' : role === 'viewer' ? 'default' : 'green'}>{roleLabel}</Tag>;
                                     }
@@ -411,22 +411,22 @@ const ProjectManagement: React.FC = () => {
                                             style={{ width: 120 }}
                                             onChange={(newRole) => updateMemberRoleMutation.mutate({ id: record.id, role: newRole })}
                                             options={[
-                                                { value: 'admin', label: '项目管理员' },
-                                                { value: 'member', label: '成员' },
-                                                { value: 'viewer', label: '只读成员' }
+                                                { value: 'admin', label: t('project.roleAdmin') },
+                                                { value: 'member', label: t('project.roleMember') },
+                                                { value: 'viewer', label: t('project.roleViewer') }
                                             ]}
                                         />
                                     );
                                 }
                             },
                             {
-                                title: '加入时间',
+                                title: t('project.joinedAt'),
                                 dataIndex: 'create_time',
                                 key: 'create_time',
                                 render: (val: string) => val ? new Date(val).toLocaleString() : '-'
                             },
                             {
-                                title: '操作',
+                                title: t('common.actions'),
                                 key: 'action',
                                 width: 80,
                                 render: (_: any, record: any) => {
@@ -441,13 +441,13 @@ const ProjectManagement: React.FC = () => {
 
                                     return (
                                         <Popconfirm
-                                            title="确定移除该成员吗？"
+                                            title={t('project.confirmRemoveMember')}
                                             onConfirm={() => deleteMemberMutation.mutate(record.id)}
-                                            okText="确定"
-                                            cancelText="取消"
+                                            okText={t('common.confirm')}
+                                            cancelText={t('common.cancel')}
                                         >
                                             <Button type="link" danger size="small">
-                                                移除
+                                                {t('project.remove')}
                                             </Button>
                                         </Popconfirm>
                                     );

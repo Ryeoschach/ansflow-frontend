@@ -181,7 +181,7 @@ const DistributionCharts: React.FC<DistributionChartsProps> = ({ data, isLoading
             </Col>
             <Col xs={24} md={12} lg={8}>
                 <Card 
-                    title={<span className="text-[11px] font-bold text-ans-text-secondary uppercase tracking-widest">{t('dashboard.alertSeverityDist') || '告警级别分布'}</span>} 
+                    title={<span className="text-[11px] font-bold text-ans-text-secondary uppercase tracking-widest">{t('dashboard.alertSeverityDist')}</span>} 
                     className="ans-card"
                 >
                     {isLoading ? (

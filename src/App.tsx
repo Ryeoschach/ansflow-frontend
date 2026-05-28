@@ -136,7 +136,7 @@ try {
     queryClient.setQueryData(['k8sHelm', Number(helmListWithMeta.clusterId), helmListWithMeta.namespace], helmListWithMeta.list);
   }
 } catch (e) {
-  console.warn("[AnsFlow Sync Cache] 初始化回填失败:", e);
+  console.warn("[AnsFlow Sync Cache] Initial cache backfill failed:", e);
 }
 
 // 单例锁
@@ -299,7 +299,7 @@ function App() {
 
   const { isInitializing, setIsInitializing } = useAppStore();
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
 
   useEffect(() => {
     const syncLang = (l: string) => useAppStore.getState().setLanguage(l);
@@ -415,7 +415,7 @@ function App() {
       >
         <AntdApp>
           <AntdInitializer />
-          <AppErrorBoundary isGlobal={true} title="AnsFlow 全局运行时异常">
+          <AppErrorBoundary isGlobal={true} title={t('errorBoundary.globalTitle')}>
             <QueryPersistenceManager />
             <Routes>
               <Route path="/login" element={<LoginPage />} />
@@ -462,7 +462,7 @@ function App() {
                 <Route path="v1/system/vault" element={<CredentialVault />} />
                 <Route path="v1/system/projects" element={<ProjectManagement />} />
                 <Route path="v1/system/asset-shares" element={<AssetShareCenter />} />
-                <Route path="*" element={<div>^^页面正在开发中^^</div>} />
+                <Route path="*" element={<div>{t('common.underDevelopment')}</div>} />
               </Route>
             </Routes>
           </AppErrorBoundary>
