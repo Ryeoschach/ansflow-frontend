@@ -112,10 +112,10 @@ const PipelineWebhooks: React.FC = () => {
     };
 
     const eventTypeMap: Record<string, { text: string; color: string }> = {
-        push: { text: '代码推送', color: 'green' },
-        tag: { text: '标签创建', color: 'purple' },
-        pull_request: { text: 'Pull Request', color: 'blue' },
-        manual: { text: '手动触发', color: 'default' },
+        push: { text: t('webhook.eventPush'), color: 'green' },
+        tag: { text: t('webhook.eventTag'), color: 'purple' },
+        pull_request: { text: t('webhook.eventPR'), color: 'blue' },
+        manual: { text: t('webhook.eventManual'), color: 'default' },
     };
 
     const columns = [

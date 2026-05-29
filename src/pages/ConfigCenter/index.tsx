@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Card, Table, Button, Space, Modal, Form, Input, Select, Tag, Popconfirm,
-  Tabs, Typography, Tooltip, Descriptions, Timeline, App, Divider, Switch, Checkbox, Statistic, InputNumber
+  Tabs, Typography, Tooltip, Descriptions, Timeline, App, Divider, Switch, Checkbox, Statistic, InputNumber, Alert, Empty
 } from 'antd';
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, HistoryOutlined,
@@ -17,7 +17,8 @@ import useAppStore from '../../store/useAppStore';
 import {
   getCategories, getCategory, createCategory, updateCategory, deleteCategory,
   createConfigItem, updateConfigItem, deleteConfigItem,
-  getChangeLogs, rollbackConfigItem, validateConfigItemValue, ConfigCategory, ConfigItem, ConfigChangeLog
+  getChangeLogs, rollbackConfigItem, validateConfigItemValue, getConfigRegistry,
+  ConfigCategory, ConfigItem, ConfigChangeLog, ConfigRegistryItem
 } from '../../api/config';
 
 const { Text, Title } = Typography;
@@ -45,17 +46,68 @@ const ConfigCenter: React.FC = () => {
   const [itemForm] = Form.useForm();
   const [rollbackForm] = Form.useForm();
 
+  const normalizeValueForSubmit = (record: ConfigItem, value: any) => {
+    if (record.value_type === 'bool') {
+      return value === true || value === 'true' || value === 'True' || value === '1';
+    }
+    if (record.value_type === 'int') {
+      return typeof value === 'number' ? Math.trunc(value) : Number.parseInt(value, 10);
+    }
+    if (record.value_type === 'float') {
+      return typeof value === 'number' ? value : Number.parseFloat(value);
+    }
+    if (record.value_type === 'json' && typeof value === 'string') {
+      return JSON.parse(value || 'null');
+    }
+    return value;
+  };
+
+  const normalizeCreateValueForSubmit = (values: any) => {
+    const valueType = values.value_type;
+    if (valueType === 'bool') return values.value === true || values.value === 'true';
+    if (valueType === 'int') return typeof values.value === 'number' ? Math.trunc(values.value) : Number.parseInt(values.value, 10);
+    if (valueType === 'float') return typeof values.value === 'number' ? values.value : Number.parseFloat(values.value);
+    if (valueType === 'json' && typeof values.value === 'string') return JSON.parse(values.value || 'null');
+    return values.value;
+  };
+
+  const formatEditableValue = (record: ConfigItem) => {
+    if (record.is_encrypted) return '';
+    if (record.value_type === 'json') {
+      return typeof record.value === 'string' ? record.value : JSON.stringify(record.value ?? null, null, 2);
+    }
+    return record.value;
+  };
+
+  const formatRegistryDefaultValue = (value: any) => {
+    if (value === undefined || value === null) return '-';
+    if (typeof value === 'string') return value || '""';
+    return JSON.stringify(value);
+  };
+
   // 获取分类列表
   const { data: categoriesData, isLoading: categoriesLoading, refetch: refetchCategories } = useQuery({
     queryKey: ['config_categories'],
     queryFn: () => getCategories(),
   });
 
+  const categoriesList = Array.isArray(categoriesData)
+    ? categoriesData
+    : (categoriesData as any)?.results || (categoriesData as any)?.data || [];
+
   // 获取选中分类的详情（含 items）
-  const { data: categoryDetail, refetch: refetchCategoryDetail } = useQuery({
+  const { data: categoryDetail, isLoading: categoryDetailLoading, refetch: refetchCategoryDetail } = useQuery({
     queryKey: ['config_category_detail', selectedCategory?.id],
     queryFn: () => getCategory(selectedCategory!.id),
     enabled: !!selectedCategory,
+  });
+
+  // 获取通知分类详情
+  const notificationCategory = categoriesList.find((c: any) => c.name === 'notification');
+  const { data: notificationCategoryDetail, isLoading: notificationLoading, refetch: refetchNotificationDetail } = useQuery({
+    queryKey: ['config_category_detail', notificationCategory?.id],
+    queryFn: () => getCategory(notificationCategory!.id),
+    enabled: !!notificationCategory?.id,
   });
 
   // 获取变更日志
@@ -63,6 +115,17 @@ const ConfigCenter: React.FC = () => {
     queryKey: ['config_change_logs'],
     queryFn: () => getChangeLogs(),
   });
+
+  const { data: registryData, isLoading: registryLoading, refetch: refetchRegistry } = useQuery({
+    queryKey: ['config_registry'],
+    queryFn: () => getConfigRegistry(),
+  });
+
+  const changeLogsList = Array.isArray(changeLogsData)
+    ? changeLogsData
+    : (changeLogsData as any)?.results || (changeLogsData as any)?.data || [];
+
+  const registryItems = registryData?.items || [];
 
   // 创建/更新分类
   const categoryMutation = useMutation({
@@ -94,15 +157,24 @@ const ConfigCenter: React.FC = () => {
   const itemMutation = useMutation({
     mutationFn: (values: any) => {
       if (editingItem) {
-        return updateConfigItem(editingItem.id, values);
+        const normalizedValues = { ...values };
+        if ('value' in values) {
+          normalizedValues.value = normalizeValueForSubmit(editingItem, values.value);
+        }
+        return updateConfigItem(editingItem.id, normalizedValues);
       }
-      return createConfigItem({ ...values, category: selectedCategory!.id });
+      return createConfigItem({
+        ...values,
+        value: normalizeCreateValueForSubmit(values),
+        category: selectedCategory!.id,
+      });
     },
     onSuccess: () => {
       message.success(editingItem ? t('common.success') : t('common.success'));
       setIsItemModalOpen(false);
-      if (selectedCategory) refetchCategoryDetail();
+      queryClient.invalidateQueries({ queryKey: ['config_category_detail'] });
       queryClient.invalidateQueries({ queryKey: ['config_change_logs'] });
+      queryClient.invalidateQueries({ queryKey: ['config_registry'] });
     },
     onError: (err: any) => message.error(err?.message || t('common.error')),
   });
@@ -112,8 +184,9 @@ const ConfigCenter: React.FC = () => {
     mutationFn: deleteConfigItem,
     onSuccess: () => {
       message.success(t('common.success'));
-      if (selectedCategory) refetchCategoryDetail();
+      queryClient.invalidateQueries({ queryKey: ['config_category_detail'] });
       queryClient.invalidateQueries({ queryKey: ['config_change_logs'] });
+      queryClient.invalidateQueries({ queryKey: ['config_registry'] });
     },
     onError: (err: any) => message.error(err?.message || t('common.error')),
   });
@@ -126,7 +199,7 @@ const ConfigCenter: React.FC = () => {
       message.success(t('configCenter.rollbackSuccess'));
       setIsRollbackModalOpen(false);
       rollbackForm.resetFields();
-      if (selectedCategory) refetchCategoryDetail();
+      queryClient.invalidateQueries({ queryKey: ['config_category_detail'] });
       queryClient.invalidateQueries({ queryKey: ['config_change_logs'] });
     },
     onError: (err: any) => message.error(err?.message || t('common.error')),
@@ -160,7 +233,7 @@ const ConfigCenter: React.FC = () => {
   const handleOpenRollback = (item: ConfigItem) => {
     setSelectedItem(item);
     // 获取该 item 的所有变更记录
-    const logs = ((changeLogsData as any)?.results || changeLogsData?.data || [])?.filter((l: ConfigChangeLog) => l.item === item.id) || [];
+    const logs = changeLogsList.filter((l: ConfigChangeLog) => l.item === item.id) || [];
     setRollbackLogs(logs);
     setIsRollbackModalOpen(true);
   };
@@ -181,7 +254,7 @@ const ConfigCenter: React.FC = () => {
     setEditingItem(item || null);
     setValidationError(null);
     if (item) {
-      itemForm.setFieldsValue({ ...item, value: item.is_encrypted ? '' : item.value });
+      itemForm.setFieldsValue({ ...item, value: formatEditableValue(item) });
     } else {
       itemForm.resetFields();
     }
@@ -191,7 +264,20 @@ const ConfigCenter: React.FC = () => {
   // 表格列定义
   const categoryColumns: ColumnType<ConfigCategory>[] = [
     { title: t('configCenter.categoryLabel'), dataIndex: 'label', key: 'label' },
-    { title: t('configCenter.categoryName'), dataIndex: 'name', key: 'name', render: (v: string) => <Tag>{v}</Tag> },
+    {
+      title: t('configCenter.categoryName'),
+      dataIndex: 'name',
+      key: 'name',
+      render: (v: string, record: ConfigCategory) => (
+        <Space wrap>
+          <Tag>{v}</Tag>
+          <Tag color={record.is_system ? 'blue' : 'default'}>
+            {record.is_system ? t('configCenter.systemRecognized') : t('configCenter.customVariable')}
+          </Tag>
+          {record.module && <Tag>{record.module}</Tag>}
+        </Space>
+      )
+    },
     { title: t('configCenter.categoryDescription'), dataIndex: 'description', key: 'description', ellipsis: true },
     { title: t('configCenter.categoryItemCount'), dataIndex: 'item_count', key: 'item_count', width: 100 },
     {
@@ -203,7 +289,7 @@ const ConfigCenter: React.FC = () => {
           {hasPermission('config:category:edit') && (
             <Button type="text" icon={<EditOutlined />} onClick={() => openCategoryModal(record)} />
           )}
-          {hasPermission('config:category:delete') && (
+          {hasPermission('config:category:delete') && record.allow_delete !== false && (
             <Popconfirm
               title={t('configCenter.confirmDeleteCategory')}
               onConfirm={() => deleteCategoryMutation.mutate(record.id)}
@@ -216,14 +302,65 @@ const ConfigCenter: React.FC = () => {
     },
   ];
 
+  const registryColumns: ColumnType<ConfigRegistryItem>[] = [
+    {
+      title: t('configCenter.itemKey'),
+      dataIndex: 'key',
+      key: 'key',
+      render: (v: string, record: ConfigRegistryItem) => (
+        <Space wrap>
+          <Tag color="processing">{record.category}.{v}</Tag>
+          <Tooltip title={t('common.copy')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<CopyOutlined />}
+              onClick={() => {
+                navigator.clipboard.writeText(`${record.category}.${v}`);
+                message.success(t('common.success'));
+              }}
+            />
+          </Tooltip>
+        </Space>
+      )
+    },
+    { title: t('configCenter.categoryName'), dataIndex: 'category', key: 'category', width: 130, render: (v: string) => <Tag>{v}</Tag> },
+    { title: t('configCenter.module'), dataIndex: 'module', key: 'module', width: 160, render: (v: string) => <Tag>{v}</Tag> },
+    { title: t('configCenter.itemValueType'), dataIndex: 'value_type', key: 'value_type', width: 100 },
+    {
+      title: t('configCenter.registryStatus'),
+      dataIndex: 'exists',
+      key: 'exists',
+      width: 110,
+      render: (exists: boolean) => (
+        <Tag color={exists ? 'success' : 'warning'}>
+          {exists ? t('configCenter.registryInstalled') : t('configCenter.registryMissing')}
+        </Tag>
+      )
+    },
+    {
+      title: t('configCenter.defaultValue'),
+      dataIndex: 'default_value',
+      key: 'default_value',
+      width: 220,
+      ellipsis: true,
+      render: (v: any) => <Text code>{formatRegistryDefaultValue(v)}</Text>
+    },
+    { title: t('configCenter.itemDescription'), dataIndex: 'description', key: 'description', ellipsis: true },
+  ];
+
   const itemColumns: ColumnType<ConfigItem>[] = [
     {
       title: t('configCenter.itemKey'),
       dataIndex: 'key',
       key: 'key',
-      render: (v: string) => (
-        <Space>
+      render: (v: string, record: ConfigItem) => (
+        <Space wrap>
           <Tag color="processing">{v}</Tag>
+          <Tag color={record.registered ? 'blue' : 'default'}>
+            {record.registered ? t('configCenter.systemRecognized') : t('configCenter.customVariable')}
+          </Tag>
+          {record.module && <Tag>{record.module}</Tag>}
           <Tooltip title={t('common.copy')}>
             <Button
               type="text"
@@ -244,15 +381,15 @@ const ConfigCenter: React.FC = () => {
       dataIndex: 'value_display',
       key: 'value_display',
       width: 350,
-      render: (v: string, record: ConfigItem) => {
+      render: (v: any, record: ConfigItem) => {
         if (record.value_type === 'bool') {
           return (
             <Switch
-              checked={v === 'true' || v === 'True' || v === '1'}
+              checked={record.value === true || record.value === 'true' || record.value === 'True' || record.value === '1'}
               onChange={(checked) => {
-                updateConfigItem(record.id, { value: checked ? 'true' : 'false' }).then(() => {
+                updateConfigItem(record.id, { value: checked }).then(() => {
                   message.success(t('common.success'));
-                  if (selectedCategory) refetchCategoryDetail();
+                  queryClient.invalidateQueries({ queryKey: ['config_category_detail'] });
                 }).catch((err: any) => message.error(err?.message || t('common.error')));
               }}
               disabled={!hasPermission('config:item:edit')}
@@ -263,7 +400,9 @@ const ConfigCenter: React.FC = () => {
         if (record.key === 'notify_on') {
           let currentValues: string[] = [];
           try {
-            const parsed = v ? JSON.parse(v) : [];
+            const parsed = Array.isArray(record.value)
+              ? record.value
+              : (typeof record.value === 'string' ? JSON.parse(record.value || '[]') : []);
             currentValues = Array.isArray(parsed) ? parsed : [];
           } catch { 
             currentValues = []; 
@@ -274,30 +413,33 @@ const ConfigCenter: React.FC = () => {
             { label: t('configCenter.notifyOnApprovalRequested'), value: 'approval_requested' },
             { label: t('configCenter.notifyOnApprovalResult'), value: 'approval_result' },
             { label: t('configCenter.notifyOnTaskResult'), value: 'task_result' },
+            { label: t('configCenter.notifyOnAlertFiring'), value: 'alert_firing' },
+            { label: t('configCenter.notifyOnAlertResolved'), value: 'alert_resolved' },
           ];
           return (
             <Checkbox.Group
               options={allOptions}
               value={currentValues}
               onChange={(checkedValues) => {
-                updateConfigItem(record.id, { value: JSON.stringify(checkedValues) }).then(() => {
+                updateConfigItem(record.id, { value: checkedValues }).then(() => {
                   message.success(t('common.success'));
-                  if (selectedCategory) refetchCategoryDetail();
+                  queryClient.invalidateQueries({ queryKey: ['config_category_detail'] });
                 }).catch((err: any) => message.error(err?.message || t('common.error')));
               }}
               disabled={!hasPermission('config:item:edit')}
             />
           );
         }
+        const displayValue = typeof v === 'string' ? v : JSON.stringify(v ?? '');
         return (
           <Input
-            defaultValue={v}
+            defaultValue={displayValue}
             onBlur={(e) => {
               const newValue = e.target.value;
-              if (newValue !== v) {
-                updateConfigItem(record.id, { value: newValue }).then(() => {
+              if (newValue !== displayValue) {
+                updateConfigItem(record.id, { value: normalizeValueForSubmit(record, newValue) }).then(() => {
                   message.success(t('common.success'));
-                  if (selectedCategory) refetchCategoryDetail();
+                  queryClient.invalidateQueries({ queryKey: ['config_category_detail'] });
                 }).catch((err: any) => message.error(err?.message || t('common.error')));
               }
             }}
@@ -333,7 +475,7 @@ const ConfigCenter: React.FC = () => {
               <Button type="text" icon={<HistoryOutlined />} onClick={() => handleOpenRollback(record)} />
             </Tooltip>
           )}
-          {hasPermission('config:item:delete') && (
+          {hasPermission('config:item:delete') && record.allow_delete !== false && (
             <Popconfirm
               title={t('configCenter.confirmDeleteItem')}
               onConfirm={() => deleteItemMutation.mutate(record.id)}
@@ -377,7 +519,9 @@ const ConfigCenter: React.FC = () => {
         <Button icon={<ReloadOutlined />} onClick={() => {
           refetchCategories();
           refetchLogs();
+          refetchRegistry();
           if (selectedCategory) refetchCategoryDetail();
+          if (notificationCategory) refetchNotificationDetail();
         }} />
       </div>
 
@@ -385,15 +529,22 @@ const ConfigCenter: React.FC = () => {
         <Card size="small" className="shadow-sm border-none bg-emerald-50 dark:bg-emerald-900/10">
           <Statistic
             title={t('configCenter.totalCategories')}
-            value={(categoriesData as any)?.count || (categoriesData as any)?.data?.length || 0}
+            value={(categoriesData as any)?.total || (categoriesData as any)?.count || categoriesList.length || 0}
             prefix={<InfoCircleOutlined className="text-emerald-600" />}
           />
         </Card>
         <Card size="small" className="shadow-sm border-none bg-green-50 dark:bg-green-900/10">
           <Statistic
             title={t('configCenter.totalItems')}
-            value={(categoriesData as any)?.results?.reduce((acc: number, cur: any) => acc + cur.item_count, 0) || 0}
+            value={categoriesList.reduce((acc: number, cur: any) => acc + (cur.item_count || 0), 0)}
             prefix={<CheckCircleOutlined className="text-green-600" />}
+          />
+        </Card>
+        <Card size="small" className="shadow-sm border-none bg-sky-50 dark:bg-sky-900/10">
+          <Statistic
+            title={t('configCenter.registeredItems')}
+            value={registryItems.length}
+            prefix={<InfoCircleOutlined className="text-sky-600" />}
           />
         </Card>
       </div>
@@ -420,7 +571,7 @@ const ConfigCenter: React.FC = () => {
                     </div>
                     <Table
                       size="small"
-                      dataSource={(categoriesData as any)?.results || categoriesData?.data || []}
+                      dataSource={categoriesList}
                       columns={categoryColumns}
                       rowKey="id"
                       loading={categoriesLoading}
@@ -437,12 +588,36 @@ const ConfigCenter: React.FC = () => {
               ),
             },
             {
+              key: 'registry',
+              label: t('configCenter.systemRegistry'),
+              children: (
+                <div className="py-4">
+                  <Alert
+                    message={t('configCenter.systemRegistry')}
+                    description={t('configCenter.registryDescription')}
+                    type="info"
+                    showIcon
+                    className="mb-4"
+                  />
+                  <Table
+                    size="small"
+                    dataSource={registryItems}
+                    columns={registryColumns}
+                    rowKey={(record) => `${record.category}.${record.key}`}
+                    loading={registryLoading}
+                    pagination={false}
+                    scroll={{ x: 'max-content' }}
+                  />
+                </div>
+              ),
+            },
+            {
               key: 'changeLogs',
               label: t('configCenter.changeLogs'),
               children: (
                 <Table
                   size="small"
-                  dataSource={(changeLogsData as any)?.results || changeLogsData?.data || []}
+                  dataSource={changeLogsList}
                   columns={changeLogColumns}
                   rowKey="id"
                   loading={logsLoading}
@@ -451,6 +626,33 @@ const ConfigCenter: React.FC = () => {
                 />
               ),
             },
+            {
+              key: 'notification',
+              label: t('configCenter.notificationConfig'),
+              children: (
+                <div className="py-4">
+                  <Alert 
+                    message={t('configCenter.configDescription')} 
+                    description={t('configCenter.notificationConfigDesc')} 
+                    type="info" 
+                    showIcon 
+                    className="mb-6"
+                  />
+                  {notificationCategory ? (
+                    <Table
+                      size="small"
+                      dataSource={notificationCategoryDetail?.items || []}
+                      columns={itemColumns}
+                      rowKey="id"
+                      pagination={false}
+                      loading={notificationLoading}
+                    />
+                  ) : (
+                    <Empty description={t('configCenter.notificationConfigMissing')} />
+                  )}
+                </div>
+              )
+            }
           ]}
         />
       </Card>
@@ -495,7 +697,11 @@ const ConfigCenter: React.FC = () => {
           onFinish={(values) => itemMutation.mutate(values)}
           onValuesChange={(changedValues) => {
             if (editingItem && 'value' in changedValues) {
-              handleValidate(editingItem.id, changedValues.value);
+              try {
+                handleValidate(editingItem.id, normalizeValueForSubmit(editingItem, changedValues.value));
+              } catch {
+                setValidationError(t('configCenter.invalidValue'));
+              }
             }
           }}
         >
@@ -541,6 +747,17 @@ const ConfigCenter: React.FC = () => {
               <Descriptions column={2} size="small" className="mb-4">
                 <Descriptions.Item label={t('configCenter.itemKey')}>{editingItem.key}</Descriptions.Item>
                 <Descriptions.Item label={t('configCenter.itemValueType')}>{editingItem.value_type}</Descriptions.Item>
+                <Descriptions.Item label={t('configCenter.scope')}>
+                  <Tag color={editingItem.registered ? 'blue' : 'default'}>
+                    {editingItem.registered ? t('configCenter.systemRecognized') : t('configCenter.customVariable')}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label={t('configCenter.module')}>{editingItem.module || '-'}</Descriptions.Item>
+                {editingItem.registered && (
+                  <Descriptions.Item label={t('configCenter.defaultValue')} span={2}>
+                    <Text code>{formatRegistryDefaultValue(editingItem.default_value)}</Text>
+                  </Descriptions.Item>
+                )}
               </Descriptions>
               <Form.Item 
                 name="value" 
@@ -645,11 +862,18 @@ const ConfigCenter: React.FC = () => {
       {/* 分类详情 Modal */}
       <Modal
         title={
-          <Space>
-            <Text strong>{selectedCategory?.label}</Text>
-            {selectedCategory && <Tag>{selectedCategory.name}</Tag>}
-            {selectedCategory?.description && <Text type="secondary" className="text-sm">{selectedCategory.description}</Text>}
-          </Space>
+          <div className="flex justify-between items-center w-full pr-8">
+            <Space>
+              <Text strong>{selectedCategory?.label}</Text>
+              {selectedCategory && <Tag>{selectedCategory.name}</Tag>}
+              {selectedCategory?.description && <Text type="secondary" className="text-sm">{selectedCategory.description}</Text>}
+            </Space>
+            {hasPermission('config:item:edit') && selectedCategory?.allow_custom_items !== false && (
+              <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => openItemModal()}>
+                {t('configCenter.addItem')}
+              </Button>
+            )}
+          </div>
         }
         open={isCategoryDetailModalOpen}
         onCancel={() => setIsCategoryDetailModalOpen(false)}
@@ -657,15 +881,23 @@ const ConfigCenter: React.FC = () => {
         width={900}
       >
         {selectedCategory && (
-          <Table
-            size="small"
-            dataSource={categoryDetail?.items || []}
-            columns={itemColumns}
-            rowKey="id"
-            loading={!categoryDetail}
-            pagination={false}
-            scroll={{ x: 'max-content' }}
-          />
+          <>
+            <Alert
+              message={selectedCategory.is_system ? t('configCenter.systemCategoryTip') : t('configCenter.customCategoryTip')}
+              type={selectedCategory.is_system ? 'info' : 'success'}
+              showIcon
+              className="mb-4"
+            />
+            <Table
+              size="small"
+              dataSource={categoryDetail?.items || []}
+              columns={itemColumns}
+              rowKey="id"
+              loading={categoryDetailLoading}
+              pagination={false}
+              scroll={{ x: 'max-content' }}
+            />
+          </>
         )}
       </Modal>
     </div>

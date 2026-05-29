@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Table, Button, Space, Modal, Form, Input, App, Popconfirm, Card, Drawer, Tag, Tooltip, Tabs, Spin, Select, Typography, Alert, Divider, Checkbox, Collapse, theme } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SecurityScanOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SecurityScanOutlined, SearchOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getRoles, createRole, updateRole, deleteRole, getPermissions, getMenus, updateRoleDataPolicies } from '../../api/rbac';
@@ -77,6 +77,8 @@ const RoleManagement: React.FC = () => {
     // 树形选择的数据状态
     const [selectedMenus, setSelectedMenus] = useState<string[]>([]);
     const [selectedPerms, setSelectedPerms] = useState<string[]>([]);
+    const [menuSearchText, setMenuSearchText] = useState('');
+    const [permSearchText, setPermSearchText] = useState('');
     const [dataPolicies, setDataPolicies] = useState<Record<string, any>>({
         pipeline: { manage: [], use: [] },
         ansible_task: { manage: [], use: [] },
@@ -85,6 +87,29 @@ const RoleManagement: React.FC = () => {
         registry: { manage: [], use: [] },
         credential: { manage: [], use: [] }
     });
+
+    const handlePolicyChange = (resourceType: string, actionType: string, selectedValues: any[]) => {
+        let updatedValues = [...selectedValues];
+        const previouslySelected = dataPolicies[resourceType]?.[actionType] || [];
+        const hadAll = previouslySelected.includes('*');
+        const hasAllNow = selectedValues.includes('*');
+
+        if (hasAllNow) {
+            if (!hadAll) {
+                updatedValues = ['*'];
+            } else if (selectedValues.length > 1) {
+                updatedValues = selectedValues.filter(v => v !== '*');
+            }
+        }
+
+        setDataPolicies(prev => ({
+            ...prev,
+            [resourceType]: {
+                ...prev[resourceType],
+                [actionType]: updatedValues
+            }
+        }));
+    };
 
     // 获取数据
     const { data: roles, isLoading } = useQuery<PaginatedResponse<any>, Error>({
@@ -104,32 +129,32 @@ const RoleManagement: React.FC = () => {
     });
 
     // 数据范围资源
-    const { data: pipelines } = useQuery({
+    const { data: pipelines, isLoading: isLoadingPipelines } = useQuery({
         queryKey: ['resource_pipelines'],
         queryFn: () => getPipelines({ size: 1000 }),
         enabled: isDrawerOpen
     });
-    const { data: clusters } = useQuery({
+    const { data: clusters, isLoading: isLoadingClusters } = useQuery({
         queryKey: ['resource_clusters'],
         queryFn: () => getK8sClusters({ size: 1000 }),
         enabled: isDrawerOpen
     });
-    const { data: resourcePools } = useQuery({
+    const { data: resourcePools, isLoading: isLoadingPools } = useQuery({
         queryKey: ['resource_pools'],
         queryFn: () => getResourcePools({ size: 1000 }),
         enabled: isDrawerOpen
     });
-    const { data: registries } = useQuery({
+    const { data: registries, isLoading: isLoadingRegistries } = useQuery({
         queryKey: ['resource_registries'],
         queryFn: () => getRegistries({ size: 1000 }),
         enabled: isDrawerOpen
     });
-    const { data: credentials } = useQuery({
+    const { data: credentials, isLoading: isLoadingCredentials } = useQuery({
         queryKey: ['resource_credentials'],
         queryFn: () => getCredentials({ size: 1000 }),
         enabled: isDrawerOpen
     });
-    const { data: ansibleTasks } = useQuery({
+    const { data: ansibleTasks, isLoading: isLoadingAnsibleTasks } = useQuery({
         queryKey: ['resource_ansible_tasks'],
         queryFn: () => getAnsibleTasks({ size: 1000 }),
         enabled: isDrawerOpen
@@ -336,7 +361,7 @@ const RoleManagement: React.FC = () => {
 
                             console.log('Final Payload:', { menus: cleanMenus, permissions: cleanPerms, policies: dataPolicies });
 
-                            assignMutation.mutate({
+            assignMutation.mutate({
                                 menus: cleanMenus,
                                 permissions: cleanPerms,
                                 policies: dataPolicies
@@ -357,7 +382,44 @@ const RoleManagement: React.FC = () => {
                                     {isLoadingMenuTree ? (
                                         <div className="text-center py-8"><Spin /></div>
                                     ) : (() => {
-                                        const tree: any[] = menuTree || [];
+                                        // 收集菜单树下所有节点 ID
+                                        const collectAllMenuIds = (nodes: any[]): string[] => {
+                                            let ids: string[] = [];
+                                            nodes.forEach(node => {
+                                                ids.push(String(node.id));
+                                                if (node.children) {
+                                                    ids.push(...collectAllMenuIds(node.children));
+                                                }
+                                            });
+                                            return ids;
+                                        };
+
+                                        const selectAllMenus = () => {
+                                            const allIds = collectAllMenuIds(menuTree || []);
+                                            setSelectedMenus(allIds);
+                                        };
+
+                                        const clearAllMenus = () => {
+                                            setSelectedMenus([]);
+                                        };
+
+                                        // 菜单树过滤逻辑
+                                        const filterTree = (nodes: any[]): any[] => {
+                                            if (!menuSearchText) return nodes;
+                                            return nodes
+                                                .map(node => {
+                                                    const children = filterTree(node.children || []);
+                                                    const matchParent = node.title?.toLowerCase().includes(menuSearchText.toLowerCase());
+                                                    const hasMatchingChildren = children.length > 0;
+                                                    if (matchParent || hasMatchingChildren) {
+                                                        return { ...node, children };
+                                                    }
+                                                    return null;
+                                                })
+                                                .filter(Boolean);
+                                        };
+
+                                        const tree: any[] = filterTree(menuTree || []);
 
                                         // 收集某节点下所有子孙节点 ID
                                         const collectChildIds = (node: any): string[] => {
@@ -384,19 +446,21 @@ const RoleManagement: React.FC = () => {
                                             const parentId = String(parentNode.id);
 
                                             setSelectedMenus(prev => {
-                                                let next: string[];
-                                                if (prev.includes(childId)) {
-                                                    next = prev.filter(id => id !== childId);
+                                                const isChecking = !prev.includes(childId);
+                                                let next = isChecking 
+                                                    ? [...prev, childId] 
+                                                    : prev.filter((id: string) => id !== childId);
+
+                                                // 计算当前该父菜单下还有多少个选中的子菜单
+                                                const checkedChildren = childIds.filter((id: string) => next.includes(id));
+                                                
+                                                if (checkedChildren.length > 0) {
+                                                    // 只要有至少一个子菜单被选中，父菜单就必须处于选中状态
+                                                    if (!next.includes(parentId)) {
+                                                        next.push(parentId);
+                                                    }
                                                 } else {
-                                                    next = [...prev, childId];
-                                                }
-                                                // 若子菜单全选，自动勾选父菜单
-                                                const allChildrenSelected = childIds.every((id: string) => next.includes(id));
-                                                if (allChildrenSelected && !next.includes(parentId)) {
-                                                    next = [...next, parentId];
-                                                }
-                                                // 若子菜单有取消，自动取消父菜单
-                                                if (!allChildrenSelected) {
+                                                    // 仅当子菜单全部清空时，父菜单才被取消选中
                                                     next = next.filter(id => id !== parentId);
                                                 }
                                                 return next;
@@ -404,95 +468,118 @@ const RoleManagement: React.FC = () => {
                                         };
 
                                         return (
-                                            <Collapse
-                                                defaultActiveKey={tree.map((n: any) => String(n.id))}
-                                                ghost
-                                                expandIconPosition="end"
-                                            >
-                                                {tree.map((parent: any) => {
-                                                    const parentId = String(parent.id);
-                                                    const isParentChecked = selectedMenus.includes(parentId);
-                                                    const children: any[] = parent.children || [];
-                                                    const hasChildren = children.length > 0;
-                                                    const checkedChildCount = children.filter((c: any) => selectedMenus.includes(String(c.id))).length;
-                                                    const isPartial = !isParentChecked && checkedChildCount > 0;
+                                            <div className="flex flex-col gap-4">
+                                                <div className="flex items-center justify-between gap-4 pb-3 border-b mb-2" style={{ borderColor: token.colorBorderSecondary }}>
+                                                    <Input
+                                                        placeholder={t('role.searchMenusPlaceholder')}
+                                                        prefix={<SearchOutlined style={{ color: token.colorTextPlaceholder }} />}
+                                                        value={menuSearchText}
+                                                        onChange={e => setMenuSearchText(e.target.value)}
+                                                        allowClear
+                                                        style={{ maxWidth: '320px' }}
+                                                    />
+                                                    <Space>
+                                                        <Button size="small" onClick={selectAllMenus}>{t('role.selectAll')}</Button>
+                                                        <Button size="small" onClick={clearAllMenus}>{t('role.clearAll')}</Button>
+                                                    </Space>
+                                                </div>
+                                                {tree.length === 0 ? (
+                                                    <div className="text-center py-12 text-gray-400" style={{ color: token.colorTextDisabled }}>
+                                                        {t('role.noMatchingMenus')}
+                                                    </div>
+                                                ) : (
+                                                    <Collapse
+                                                        key={menuSearchText ? 'filtered' : 'normal'}
+                                                        defaultActiveKey={tree.map((n: any) => String(n.id))}
+                                                        ghost
+                                                        expandIconPosition="end"
+                                                    >
+                                                        {tree.map((parent: any) => {
+                                                            const parentId = String(parent.id);
+                                                            const isParentChecked = selectedMenus.includes(parentId);
+                                                            const children: any[] = parent.children || [];
+                                                            const hasChildren = children.length > 0;
+                                                            const checkedChildCount = children.filter((c: any) => selectedMenus.includes(String(c.id))).length;
+                                                            const isPartial = !isParentChecked && checkedChildCount > 0;
 
-                                                    return (
-                                                        <Collapse.Panel
-                                                            key={parentId}
-                                                            header={
-                                                                <div className="flex items-center gap-3 py-1">
-                                                                    <div
-                                                                        className="w-1.5 h-5 rounded-full"
-                                                                        style={{ background: `linear-gradient(to bottom, ${token.colorPrimary}, ${token.colorPrimaryActive})` }}
-                                                                    />
-                                                                    <Checkbox
-                                                                        checked={isParentChecked}
-                                                                        indeterminate={isPartial}
-                                                                        onClick={e => { e.stopPropagation(); toggleParent(parent); }}
-                                                                    />
-                                                                    <Typography.Text strong style={{ fontSize: '15px', color: token.colorTextHeading }}>
-                                                                        {parent.title}
-                                                                    </Typography.Text>
-                                                                    {hasChildren && (
-                                                                        <span style={{ fontSize: '12px', color: token.colorTextQuaternary }}>
-                                                                            ({t('role.selectedCount', { checked: checkedChildCount, total: children.length })})
-                                                                        </span>
+                                                            return (
+                                                                <Collapse.Panel
+                                                                    key={parentId}
+                                                                    header={
+                                                                        <div className="flex items-center gap-3 py-1">
+                                                                            <div
+                                                                                className="w-1.5 h-5 rounded-full"
+                                                                                style={{ background: `linear-gradient(to bottom, ${token.colorPrimary}, ${token.colorPrimaryActive})` }}
+                                                                            />
+                                                                            <Checkbox
+                                                                                checked={isParentChecked}
+                                                                                indeterminate={isPartial}
+                                                                                onClick={e => { e.stopPropagation(); toggleParent(parent); }}
+                                                                            />
+                                                                            <Typography.Text strong style={{ fontSize: '15px', color: token.colorTextHeading }}>
+                                                                                {parent.title}
+                                                                            </Typography.Text>
+                                                                            {hasChildren && (
+                                                                                <span style={{ fontSize: '12px', color: token.colorTextQuaternary }}>
+                                                                                    ({t('role.selectedCount', { checked: checkedChildCount, total: children.length })})
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    }
+                                                                    className="mb-4 rounded-xl overflow-hidden"
+                                                                    style={{
+                                                                        background: token.colorBgElevated,
+                                                                        border: `1px solid ${token.colorBorderSecondary}`,
+                                                                        boxShadow: token.boxShadowTertiary
+                                                                    }}
+                                                                >
+                                                                    {hasChildren ? (
+                                                                        <div className="px-5 py-4 flex flex-wrap gap-3">
+                                                                            {children.map((child: any) => {
+                                                                                const childId = String(child.id);
+                                                                                const isChecked = selectedMenus.includes(childId);
+                                                                                return (
+                                                                                    <Tooltip key={childId} title={child.path || child.key} placement="top">
+                                                                                        <label
+                                                                                            className="flex items-center gap-2 cursor-pointer select-none"
+                                                                                            onClick={() => toggleChild(childId, parent)}
+                                                                                            style={{
+                                                                                                display: 'inline-flex',
+                                                                                                alignItems: 'center',
+                                                                                                gap: '6px',
+                                                                                                padding: '5px 14px',
+                                                                                                borderRadius: '20px',
+                                                                                                fontSize: '13px',
+                                                                                                fontWeight: isChecked ? 600 : 400,
+                                                                                                transition: 'all 0.25s ease',
+                                                                                                cursor: 'pointer',
+                                                                                                color: isChecked ? token.colorPrimary : token.colorTextSecondary,
+                                                                                                background: isChecked ? token.colorPrimaryBg : token.colorFillQuaternary,
+                                                                                                border: `1.5px solid ${isChecked ? token.colorPrimaryBorder : 'transparent'}`,
+                                                                                            }}
+                                                                                        >
+                                                                                            <span style={{
+                                                                                                width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
+                                                                                                background: token.colorPrimary,
+                                                                                                opacity: isChecked ? 1 : 0.3,
+                                                                                            }} />
+                                                                                            {child.title}
+                                                                                        </label>
+                                                                                    </Tooltip>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="px-5 py-3" style={{ color: token.colorTextQuaternary, fontSize: '13px' }}>
+                                                                            {t('role.noChildren')}
+                                                                        </div>
                                                                     )}
-                                                                </div>
-                                                            }
-                                                            className="mb-4 rounded-xl overflow-hidden"
-                                                            style={{
-                                                                background: token.colorBgElevated,
-                                                                border: `1px solid ${token.colorBorderSecondary}`,
-                                                                boxShadow: token.boxShadowTertiary
-                                                            }}
-                                                        >
-                                                            {hasChildren ? (
-                                                                <div className="px-5 py-4 flex flex-wrap gap-3">
-                                                                    {children.map((child: any) => {
-                                                                        const childId = String(child.id);
-                                                                        const isChecked = selectedMenus.includes(childId);
-                                                                        return (
-                                                                            <Tooltip key={childId} title={child.path || child.key} placement="top">
-                                                                                <label
-                                                                                    className="flex items-center gap-2 cursor-pointer select-none"
-                                                                                    onClick={() => toggleChild(childId, parent)}
-                                                                                    style={{
-                                                                                        display: 'inline-flex',
-                                                                                        alignItems: 'center',
-                                                                                        gap: '6px',
-                                                                                        padding: '5px 14px',
-                                                                                        borderRadius: '20px',
-                                                                                        fontSize: '13px',
-                                                                                        fontWeight: isChecked ? 600 : 400,
-                                                                                        transition: 'all 0.25s ease',
-                                                                                        cursor: 'pointer',
-                                                                                        color: isChecked ? token.colorPrimary : token.colorTextSecondary,
-                                                                                        background: isChecked ? token.colorPrimaryBg : token.colorFillQuaternary,
-                                                                                        border: `1.5px solid ${isChecked ? token.colorPrimaryBorder : 'transparent'}`,
-                                                                                    }}
-                                                                                >
-                                                                                    <span style={{
-                                                                                        width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
-                                                                                        background: token.colorPrimary,
-                                                                                        opacity: isChecked ? 1 : 0.3,
-                                                                                    }} />
-                                                                                    {child.title}
-                                                                                </label>
-                                                                            </Tooltip>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            ) : (
-                                                                <div className="px-5 py-3" style={{ color: token.colorTextQuaternary, fontSize: '13px' }}>
-                                                                    {t('role.noChildren')}
-                                                                </div>
-                                                            )}
-                                                        </Collapse.Panel>
-                                                    );
-                                                })}
-                                            </Collapse>
+                                                                </Collapse.Panel>
+                                                            );
+                                                        })}
+                                                    </Collapse>
+                                                )}
+                                            </div>
                                         );
                                     })()}
                                 </div>
@@ -523,8 +610,16 @@ const RoleManagement: React.FC = () => {
                                             'high': { color: token.colorError,   border: token.colorErrorBorder,   bg: token.colorErrorBg   },
                                         };
 
+                                        const filteredPerms = permsList.filter((p: any) => {
+                                            if (!permSearchText) return true;
+                                            const term = permSearchText.toLowerCase();
+                                            return (p.name?.toLowerCase().includes(term) ||
+                                                    p.code?.toLowerCase().includes(term) ||
+                                                    (p.desc && p.desc.toLowerCase().includes(term)));
+                                        });
+
                                         const grouped: Record<string, Record<string, any[]>> = {};
-                                        permsList.forEach((p: any) => {
+                                        filteredPerms.forEach((p: any) => {
                                             const modKey = p.code.split(':')[0] || 'other';
                                             const resKey = p.code.split(':')[1] || 'core';
                                             if (!grouped[modKey]) grouped[modKey] = {};
@@ -533,150 +628,176 @@ const RoleManagement: React.FC = () => {
                                         });
 
                                         return (
-                                            <Collapse defaultActiveKey={Object.keys(grouped)} ghost expandIconPosition="end">
-                                                {Object.entries(grouped).map(([mod, resources]) => {
-                                                    const allModPerms = Object.values(resources).flat();
-                                                    const allModPermIds = allModPerms.map((p: any) => String(p.id));
-                                                    const checkedModCount = allModPermIds.filter(id => selectedPerms.includes(id)).length;
-                                                    const isAllChecked = allModPermIds.length > 0 && checkedModCount === allModPermIds.length;
-                                                    const isPartial = checkedModCount > 0 && checkedModCount < allModPermIds.length;
+                                            <div className="flex flex-col gap-4">
+                                                <div className="flex items-center justify-between gap-4 pb-3 border-b mb-2" style={{ borderColor: token.colorBorderSecondary }}>
+                                                    <Input
+                                                        placeholder={t('role.searchPermsPlaceholder')}
+                                                        prefix={<SearchOutlined style={{ color: token.colorTextPlaceholder }} />}
+                                                        value={permSearchText}
+                                                        onChange={e => setPermSearchText(e.target.value)}
+                                                        allowClear
+                                                        style={{ maxWidth: '320px' }}
+                                                    />
+                                                </div>
+                                                {Object.keys(grouped).length === 0 ? (
+                                                    <div className="text-center py-12 text-gray-400" style={{ color: token.colorTextDisabled }}>
+                                                        {t('role.noMatchingPerms')}
+                                                    </div>
+                                                ) : (
+                                                    <Collapse
+                                                        key={permSearchText ? 'filtered-perms' : 'normal-perms'}
+                                                        defaultActiveKey={Object.keys(grouped)}
+                                                        ghost
+                                                        expandIconPosition="end"
+                                                    >
+                                                        {Object.entries(grouped).map(([mod, resources]) => {
+                                                            const allModPerms = Object.values(resources).flat();
+                                                            const allModPermIds = allModPerms.map((p: any) => String(p.id));
+                                                            const checkedModCount = allModPermIds.filter(id => selectedPerms.includes(id)).length;
+                                                            const isAllChecked = allModPermIds.length > 0 && checkedModCount === allModPermIds.length;
+                                                            const isPartial = checkedModCount > 0 && checkedModCount < allModPermIds.length;
 
-                                                    const toggleModule = () => {
-                                                        if (isAllChecked) {
-                                                            setSelectedPerms(prev => prev.filter(id => !allModPermIds.includes(id)));
-                                                        } else {
-                                                            setSelectedPerms(prev => Array.from(new Set([...prev, ...allModPermIds])));
-                                                        }
-                                                    };
+                                                            const toggleModule = () => {
+                                                                if (isAllChecked) {
+                                                                    setSelectedPerms(prev => prev.filter(id => !allModPermIds.includes(id)));
+                                                                } else {
+                                                                    setSelectedPerms(prev => Array.from(new Set([...prev, ...allModPermIds])));
+                                                                }
+                                                            };
 
-                                                    return (
-                                                        <Collapse.Panel
-                                                            key={mod}
-                                                            header={
-                                                                <div className="flex items-center gap-3 py-1">
-                                                                    <div className="w-1.5 h-5 rounded-full"
-                                                                        style={{ background: `linear-gradient(to bottom, ${token.colorPrimary}, ${token.colorPrimaryActive})` }}
-                                                                    />
-                                                                    <Checkbox
-                                                                        checked={isAllChecked}
-                                                                        indeterminate={isPartial}
-                                                                        onClick={e => { e.stopPropagation(); toggleModule(); }}
-                                                                    />
-                                                                    <Typography.Text strong style={{ fontSize: '15px', color: token.colorTextHeading }}>
-                                                                        {MODULE_NAMES[mod] || mod.toUpperCase()}
-                                                                    </Typography.Text>
-                                                                    <span style={{ fontSize: '12px', color: token.colorTextQuaternary }}>
-                                                                        ({t('role.selectedCount', { checked: checkedModCount, total: allModPermIds.length })})
-                                                                    </span>
-                                                                </div>
-                                                            }
-                                                            className="mb-4 rounded-xl overflow-hidden"
-                                                            style={{
-                                                                background: token.colorBgElevated,
-                                                                border: `1px solid ${token.colorBorderSecondary}`,
-                                                                boxShadow: token.boxShadowTertiary
-                                                            }}
-                                                        >
-                                                            {Object.entries(resources).map(([res, plist]) => {
-                                                                const allResPermIds = plist.map((p: any) => String(p.id));
-                                                                const checkedResCount = allResPermIds.filter(id => selectedPerms.includes(id)).length;
-                                                                const isAllResChecked = allResPermIds.length > 0 && checkedResCount === allResPermIds.length;
-                                                                const isResPartial = checkedResCount > 0 && checkedResCount < allResPermIds.length;
-
-                                                                const toggleResource = () => {
-                                                                    if (isAllResChecked) {
-                                                                        setSelectedPerms(prev => prev.filter(id => !allResPermIds.includes(id)));
-                                                                    } else {
-                                                                        setSelectedPerms(prev => Array.from(new Set([...prev, ...allResPermIds])));
-                                                                    }
-                                                                };
-
-                                                                return (
-                                                                    <div
-                                                                        key={`${mod}-${res}`}
-                                                                        className="px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-4"
-                                                                        style={{ borderBottom: `1px solid ${token.colorFillQuaternary}` }}
-                                                                    >
-                                                                        <div className="min-w-[160px] shrink-0 flex items-center gap-2 mt-1">
-                                                                            <Checkbox
-                                                                                checked={isAllResChecked}
-                                                                                indeterminate={isResPartial}
-                                                                                onChange={toggleResource}
+                                                            return (
+                                                                <Collapse.Panel
+                                                                    key={mod}
+                                                                    header={
+                                                                        <div className="flex items-center gap-3 py-1">
+                                                                            <div className="w-1.5 h-5 rounded-full"
+                                                                                style={{ background: `linear-gradient(to bottom, ${token.colorPrimary}, ${token.colorPrimaryActive})` }}
                                                                             />
-                                                                            <div className="flex flex-col">
-                                                                                <span style={{
-                                                                                    fontSize: '12px', fontWeight: 600,
-                                                                                    letterSpacing: '1px', textTransform: 'uppercase',
-                                                                                    color: token.colorTextTertiary,
-                                                                                    background: token.colorFillTertiary,
-                                                                                    padding: '2px 8px', borderRadius: '4px',
-                                                                                    width: 'fit-content'
-                                                                                }}>
-                                                                                    {res}
-                                                                                </span>
-                                                                                <span style={{ fontSize: '11px', color: token.colorTextQuaternary, marginTop: '2px' }}>
-                                                                                    ({t('role.selectedCount', { checked: checkedResCount, total: allResPermIds.length })})
-                                                                                </span>
-                                                                            </div>
+                                                                            <Checkbox
+                                                                                checked={isAllChecked}
+                                                                                indeterminate={isPartial}
+                                                                                onClick={e => { e.stopPropagation(); toggleModule(); }}
+                                                                            />
+                                                                            <Typography.Text strong style={{ fontSize: '15px', color: token.colorTextHeading }}>
+                                                                                {MODULE_NAMES[mod] || mod.toUpperCase()}
+                                                                            </Typography.Text>
+                                                                            <span style={{ fontSize: '12px', color: token.colorTextQuaternary }}>
+                                                                                ({t('role.selectedCount', { checked: checkedModCount, total: allModPermIds.length })})
+                                                                            </span>
                                                                         </div>
-                                                                        <Checkbox.Group
-                                                                            value={selectedPerms}
-                                                                            onChange={(values) => {
-                                                                                setSelectedPerms(prev => [
-                                                                                    ...prev.filter(id => !allResPermIds.includes(id)),
-                                                                                    ...(values as string[]),
-                                                                                ]);
-                                                                            }}
-                                                                            className="flex-1"
-                                                                        >
-                                                                            <div className="flex flex-wrap gap-3">
-                                                                                {plist.map((p: any) => {
-                                                                                    const isChecked = Array.isArray(selectedPerms) && selectedPerms.includes(String(p.id));
-                                                                                    const danger = p.danger_level || 'safe';
-                                                                                    const variant = dangerVariants[danger] || dangerVariants['safe'];
-                                                                                    return (
-                                                                                        <Tooltip
-                                                                                            key={p.id}
-                                                                                            placement="top"
-                                                                                            title={
-                                                                                                <div>
-                                                                                                    <div style={{ fontWeight: 600 }}>{p.name}</div>
-                                                                                                    {p.desc && <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', marginTop: '2px' }}>{p.desc}</div>}
-                                                                                                    <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', marginTop: '4px', fontFamily: 'monospace' }}>{p.code}</div>
-                                                                                                </div>
-                                                                                            }
-                                                                                        >
-                                                                                            <Checkbox value={String(p.id)} className="m-0">
-                                                                                                <span style={{
-                                                                                                    display: 'inline-flex', alignItems: 'center', gap: '5px',
-                                                                                                    fontSize: '13px',
-                                                                                                    fontWeight: isChecked ? 600 : 400,
-                                                                                                    padding: '4px 12px', borderRadius: '20px',
-                                                                                                    transition: 'all 0.25s ease',
-                                                                                                    color: isChecked ? variant.color : token.colorTextSecondary,
-                                                                                                    background: isChecked ? variant.bg : token.colorFillQuaternary,
-                                                                                                    border: `1.5px solid ${isChecked ? variant.border : 'transparent'}`,
-                                                                                                }}>
-                                                                                                    <span style={{
-                                                                                                        width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
-                                                                                                        background: variant.color,
-                                                                                                        opacity: isChecked ? 1 : 0.35,
-                                                                                                    }} />
-                                                                                                    {p.name}
-                                                                                                </span>
-                                                                                            </Checkbox>
-                                                                                        </Tooltip>
-                                                                                    );
-                                                                                })}
+                                                                    }
+                                                                    className="mb-4 rounded-xl overflow-hidden"
+                                                                    style={{
+                                                                        background: token.colorBgElevated,
+                                                                        border: `1px solid ${token.colorBorderSecondary}`,
+                                                                        boxShadow: token.boxShadowTertiary
+                                                                    }}
+                                                                >
+                                                                    {Object.entries(resources).map(([res, plist]) => {
+                                                                        const allResPermIds = plist.map((p: any) => String(p.id));
+                                                                        const checkedResCount = allResPermIds.filter(id => selectedPerms.includes(id)).length;
+                                                                        const isAllResChecked = allResPermIds.length > 0 && checkedResCount === allResPermIds.length;
+                                                                        const isResPartial = checkedResCount > 0 && checkedResCount < allResPermIds.length;
+
+                                                                        const toggleResource = () => {
+                                                                            if (isAllResChecked) {
+                                                                                setSelectedPerms(prev => prev.filter(id => !allResPermIds.includes(id)));
+                                                                            } else {
+                                                                                setSelectedPerms(prev => Array.from(new Set([...prev, ...allResPermIds])));
+                                                                            }
+                                                                        };
+
+                                                                        return (
+                                                                            <div
+                                                                                key={`${mod}-${res}`}
+                                                                                className="px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-4"
+                                                                                style={{ borderBottom: `1px solid ${token.colorFillQuaternary}` }}
+                                                                            >
+                                                                                <div className="min-w-[160px] shrink-0 flex items-center gap-2 mt-1">
+                                                                                    <Checkbox
+                                                                                        checked={isAllResChecked}
+                                                                                        indeterminate={isResPartial}
+                                                                                        onChange={toggleResource}
+                                                                                    />
+                                                                                    <div className="flex flex-col">
+                                                                                        <span style={{
+                                                                                            fontSize: '12px', fontWeight: 600,
+                                                                                            letterSpacing: '1px', textTransform: 'uppercase',
+                                                                                            color: token.colorTextTertiary,
+                                                                                            background: token.colorFillTertiary,
+                                                                                            padding: '2px 8px', borderRadius: '4px',
+                                                                                            width: 'fit-content'
+                                                                                        }}>
+                                                                                            {res}
+                                                                                        </span>
+                                                                                        <span style={{ fontSize: '11px', color: token.colorTextQuaternary, marginTop: '2px' }}>
+                                                                                            ({t('role.selectedCount', { checked: checkedResCount, total: allResPermIds.length })})
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <Checkbox.Group
+                                                                                    value={selectedPerms}
+                                                                                    onChange={(values) => {
+                                                                                        setSelectedPerms(prev => [
+                                                                                            ...prev.filter(id => !allResPermIds.includes(id)),
+                                                                                            ...(values as string[]),
+                                                                                        ]);
+                                                                                    }}
+                                                                                    className="flex-1"
+                                                                                >
+                                                                                    <div className="flex flex-wrap gap-3">
+                                                                                        {plist.map((p: any) => {
+                                                                                            const isChecked = Array.isArray(selectedPerms) && selectedPerms.includes(String(p.id));
+                                                                                            const danger = p.danger_level || 'safe';
+                                                                                            const variant = dangerVariants[danger] || dangerVariants['safe'];
+                                                                                            const isHighUnchecked = !isChecked && danger === 'high';
+                                                                                            return (
+                                                                                                <Tooltip
+                                                                                                    key={p.id}
+                                                                                                    placement="top"
+                                                                                                    title={
+                                                                                                        <div>
+                                                                                                            <div style={{ fontWeight: 600 }}>{p.name}</div>
+                                                                                                            {p.desc && <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '11px', marginTop: '2px' }}>{p.desc}</div>}
+                                                                                                            <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', marginTop: '4px', fontFamily: 'monospace' }}>{p.code}</div>
+                                                                                                        </div>
+                                                                                                    }
+                                                                                                >
+                                                                                                    <Checkbox value={String(p.id)} className="m-0">
+                                                                                                        <span style={{
+                                                                                                            display: 'inline-flex', alignItems: 'center', gap: '5px',
+                                                                                                            fontSize: '13px',
+                                                                                                            fontWeight: isChecked ? 600 : 400,
+                                                                                                            padding: '4px 12px', borderRadius: '20px',
+                                                                                                            transition: 'all 0.25s ease',
+                                                                                                            color: isChecked ? variant.color : (isHighUnchecked ? token.colorError : token.colorTextSecondary),
+                                                                                                            background: isChecked ? variant.bg : (isHighUnchecked ? token.colorErrorBg : token.colorFillQuaternary),
+                                                                                                            border: isChecked
+                                                                                                                ? `1.5px solid ${variant.border}`
+                                                                                                                : (isHighUnchecked ? `1.5px dashed ${token.colorErrorBorder}` : '1.5px solid transparent'),
+                                                                                                        }}>
+                                                                                                            <span style={{
+                                                                                                                width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
+                                                                                                                background: variant.color,
+                                                                                                                opacity: isChecked ? 1 : (isHighUnchecked ? 0.7 : 0.35),
+                                                                                                            }} />
+                                                                                                            {p.name}
+                                                                                                        </span>
+                                                                                                    </Checkbox>
+                                                                                                </Tooltip>
+                                                                                            );
+                                                                                        })}
+                                                                                    </div>
+                                                                                </Checkbox.Group>
                                                                             </div>
-                                                                        </Checkbox.Group>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </Collapse.Panel>
-                                                    );
-                                                })}
-                                            </Collapse>
+                                                                        );
+                                                                    })}
+                                                                </Collapse.Panel>
+                                                            );
+                                                        })}
+                                                    </Collapse>
+                                                )}
+                                            </div>
                                         );
                                     })()}
                                 </div>
@@ -708,10 +829,14 @@ const RoleManagement: React.FC = () => {
                                                 <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.managePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
+                                                    showSearch={true}
+                                                    optionFilterProp="label"
+                                                    filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                                                     className="w-full mt-1"
                                                     placeholder={t('role.managePlaceholder')}
                                                     value={dataPolicies.pipeline?.manage}
-                                                    onChange={(v) => setDataPolicies({...dataPolicies, pipeline: {...dataPolicies.pipeline, manage: v}})}
+                                                    onChange={(v) => handlePolicyChange('pipeline', 'manage', v)}
+                                                    loading={isLoadingPipelines}
                                                     options={[{label: t('role.allOption'), value: '*'}, ...(pipelines?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
@@ -719,10 +844,14 @@ const RoleManagement: React.FC = () => {
                                                 <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.usePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
+                                                    showSearch={true}
+                                                    optionFilterProp="label"
+                                                    filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                                                     className="w-full mt-1"
                                                     placeholder={t('role.usePlaceholder')}
                                                     value={dataPolicies.pipeline?.use}
-                                                    onChange={(v) => setDataPolicies({...dataPolicies, pipeline: {...dataPolicies.pipeline, use: v}})}
+                                                    onChange={(v) => handlePolicyChange('pipeline', 'use', v)}
+                                                    loading={isLoadingPipelines}
                                                     options={[{label: t('role.allOption'), value: '*'}, ...(pipelines?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
@@ -744,10 +873,14 @@ const RoleManagement: React.FC = () => {
                                                 <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.managePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
+                                                    showSearch={true}
+                                                    optionFilterProp="label"
+                                                    filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                                                     className="w-full mt-1"
                                                     placeholder={t('role.ansibleManagePlaceholder')}
                                                     value={dataPolicies.ansible_task?.manage}
-                                                    onChange={(v) => setDataPolicies({...dataPolicies, ansible_task: {...dataPolicies.ansible_task, manage: v}})}
+                                                    onChange={(v) => handlePolicyChange('ansible_task', 'manage', v)}
+                                                    loading={isLoadingAnsibleTasks}
                                                     options={[{label: t('role.allOption'), value: '*'}, ...(ansibleTasks?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
@@ -755,10 +888,14 @@ const RoleManagement: React.FC = () => {
                                                 <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.runPermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
+                                                    showSearch={true}
+                                                    optionFilterProp="label"
+                                                    filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                                                     className="w-full mt-1"
                                                     placeholder={t('role.ansibleRunPlaceholder')}
                                                     value={dataPolicies.ansible_task?.use}
-                                                    onChange={(v) => setDataPolicies({...dataPolicies, ansible_task: {...dataPolicies.ansible_task, use: v}})}
+                                                    onChange={(v) => handlePolicyChange('ansible_task', 'use', v)}
+                                                    loading={isLoadingAnsibleTasks}
                                                     options={[{label: t('role.allOption'), value: '*'}, ...(ansibleTasks?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
@@ -780,10 +917,14 @@ const RoleManagement: React.FC = () => {
                                                 <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.managePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
+                                                    showSearch={true}
+                                                    optionFilterProp="label"
+                                                    filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                                                     className="w-full mt-1"
                                                     placeholder={t('role.k8sManagePlaceholder')}
                                                     value={dataPolicies.k8s_cluster?.manage}
-                                                    onChange={(v) => setDataPolicies({...dataPolicies, k8s_cluster: {...dataPolicies.k8s_cluster, manage: v}})}
+                                                    onChange={(v) => handlePolicyChange('k8s_cluster', 'manage', v)}
+                                                    loading={isLoadingClusters}
                                                     options={[{label: t('role.allOption'), value: '*'}, ...(clusters?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
@@ -791,10 +932,14 @@ const RoleManagement: React.FC = () => {
                                                 <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.usePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
+                                                    showSearch={true}
+                                                    optionFilterProp="label"
+                                                    filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                                                     className="w-full mt-1"
                                                     placeholder={t('role.k8sUsePlaceholder')}
                                                     value={dataPolicies.k8s_cluster?.use}
-                                                    onChange={(v) => setDataPolicies({...dataPolicies, k8s_cluster: {...dataPolicies.k8s_cluster, use: v}})}
+                                                    onChange={(v) => handlePolicyChange('k8s_cluster', 'use', v)}
+                                                    loading={isLoadingClusters}
                                                     options={[{label: t('role.allOption'), value: '*'}, ...(clusters?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
@@ -816,21 +961,29 @@ const RoleManagement: React.FC = () => {
                                                 <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.managePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
+                                                    showSearch={true}
+                                                    optionFilterProp="label"
+                                                    filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                                                     className="w-full mt-1"
                                                     placeholder={t('role.poolManagePlaceholder')}
                                                     value={dataPolicies.resource_pool?.manage}
-                                                    onChange={(v) => setDataPolicies({...dataPolicies, resource_pool: {...dataPolicies.resource_pool, manage: v}})}
+                                                    onChange={(v) => handlePolicyChange('resource_pool', 'manage', v)}
+                                                    loading={isLoadingPools}
                                                     options={[{label: t('role.allOption'), value: '*'}, ...(resourcePools?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
                                             <div>
-                                                <Typography.Text type="secondary">{t('role.usePermission')}</Typography.Text>
+                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.usePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
+                                                    showSearch={true}
+                                                    optionFilterProp="label"
+                                                    filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                                                     className="w-full mt-1"
                                                     placeholder={t('role.poolUsePlaceholder')}
                                                     value={dataPolicies.resource_pool?.use}
-                                                    onChange={(v) => setDataPolicies({...dataPolicies, resource_pool: {...dataPolicies.resource_pool, use: v}})}
+                                                    onChange={(v) => handlePolicyChange('resource_pool', 'use', v)}
+                                                    loading={isLoadingPools}
                                                     options={[{label: t('role.allOption'), value: '*'}, ...(resourcePools?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
@@ -852,21 +1005,29 @@ const RoleManagement: React.FC = () => {
                                                 <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.managePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
+                                                    showSearch={true}
+                                                    optionFilterProp="label"
+                                                    filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                                                     className="w-full mt-1"
                                                     placeholder={t('role.registryManagePlaceholder')}
                                                     value={dataPolicies.registry?.manage}
-                                                    onChange={(v) => setDataPolicies({...dataPolicies, registry: {...dataPolicies.registry, manage: v}})}
+                                                    onChange={(v) => handlePolicyChange('registry', 'manage', v)}
+                                                    loading={isLoadingRegistries}
                                                     options={[{label: t('role.allOption'), value: '*'}, ...(registries?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
                                             <div>
-                                                <Typography.Text type="secondary">{t('role.usePermission')}</Typography.Text>
+                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.usePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
+                                                    showSearch={true}
+                                                    optionFilterProp="label"
+                                                    filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                                                     className="w-full mt-1"
                                                     placeholder={t('role.registryUsePlaceholder')}
                                                     value={dataPolicies.registry?.use}
-                                                    onChange={(v) => setDataPolicies({...dataPolicies, registry: {...dataPolicies.registry, use: v}})}
+                                                    onChange={(v) => handlePolicyChange('registry', 'use', v)}
+                                                    loading={isLoadingRegistries}
                                                     options={[{label: t('role.allOption'), value: '*'}, ...(registries?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
@@ -888,21 +1049,29 @@ const RoleManagement: React.FC = () => {
                                                 <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.managePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
+                                                    showSearch={true}
+                                                    optionFilterProp="label"
+                                                    filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                                                     className="w-full mt-1"
                                                     placeholder={t('role.credManagePlaceholder')}
                                                     value={dataPolicies.credential?.manage}
-                                                    onChange={(v) => setDataPolicies({...dataPolicies, credential: {...dataPolicies.credential, manage: v}})}
+                                                    onChange={(v) => handlePolicyChange('credential', 'manage', v)}
+                                                    loading={isLoadingCredentials}
                                                     options={[{label: t('role.allOption'), value: '*'}, ...((credentials as any)?.results || (credentials as any)?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>
                                             <div>
-                                                <Typography.Text type="secondary">{t('role.usePermission')}</Typography.Text>
+                                                <Typography.Text strong style={{ fontSize: '13px', color: token.colorTextSecondary }}>{t('role.usePermission')}</Typography.Text>
                                                 <Select
                                                     mode="multiple"
+                                                    showSearch={true}
+                                                    optionFilterProp="label"
+                                                    filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
                                                     className="w-full mt-1"
                                                     placeholder={t('role.credUsePlaceholder')}
                                                     value={dataPolicies.credential?.use}
-                                                    onChange={(v) => setDataPolicies({...dataPolicies, credential: {...dataPolicies.credential, use: v}})}
+                                                    onChange={(v) => handlePolicyChange('credential', 'use', v)}
+                                                    loading={isLoadingCredentials}
                                                     options={[{label: t('role.allOption'), value: '*'}, ...((credentials as any)?.results || (credentials as any)?.data || []).map((i: any) => ({ label: i.name, value: i.id }))]}
                                                 />
                                             </div>

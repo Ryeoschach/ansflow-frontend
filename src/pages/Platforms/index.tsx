@@ -28,7 +28,7 @@ const PlatformManagement: React.FC = () => {
     });
 
     const saveMutation = useMutation({
-        mutationFn: (values) => editingRecord ? updatePlatform(editingRecord.id, values) : createPlatform(values),
+        mutationFn: (values: any) => editingRecord ? updatePlatform(editingRecord.id, values) : createPlatform(values),
         onSuccess: () => {
             message.success(editingRecord ? t('platform.platformUpdated') : t('platform.platformCreated'));
             setIsModalOpen(false);
@@ -218,6 +218,7 @@ const PlatformManagement: React.FC = () => {
                     current: params.page,
                     pageSize: params.size,
                     showSizeChanger: true,
+                    showTotal: (total) => t('common.total', { total }),
                     onChange: (p, s) => setParams({ ...params, page: p, size: s }),
                 }}
             />
@@ -249,7 +250,7 @@ const PlatformManagement: React.FC = () => {
                     <Divider plain style={{ margin: '12px 0' }}>{t('platform.connectionConfig')}</Divider>
 
                     <Form.Item label={t('platform.accessKey')} name="access_key">
-                        <Input placeholder="AK / Username" />
+                        <Input.Password placeholder="AK / Username" />
                     </Form.Item>
 
                     <Form.Item label={t('platform.secretKey')} name="secret_key">

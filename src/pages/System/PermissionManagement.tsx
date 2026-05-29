@@ -125,10 +125,10 @@ const PermissionManagement: React.FC = () => {
                                         <p><strong>{t('permission.codeNamingTitle')}：</strong> {t('permission.codeNamingResource')}</p>
                                         <p><strong>{t('permission.codeNamingCommon')}</strong></p>
                                         <ul>
-                                            <li><code>list</code> 或 <code>view</code>: {t('permission.codeNamingListView')}</li>
-                                            <li><code>create</code> 或 <code>add</code>: {t('permission.codeNamingCreateAdd')}</li>
-                                            <li><code>update</code> 或 <code>edit</code>: {t('permission.codeNamingUpdateEdit')}</li>
-                                            <li><code>destroy</code> 或 <code>delete</code>: {t('permission.codeNamingDestroyDelete')}</li>
+                                            <li><code>list</code> / <code>view</code>: {t('permission.codeNamingListView')}</li>
+                                            <li><code>create</code> / <code>add</code>: {t('permission.codeNamingCreateAdd')}</li>
+                                            <li><code>update</code> / <code>edit</code>: {t('permission.codeNamingUpdateEdit')}</li>
+                                            <li><code>destroy</code> / <code>delete</code>: {t('permission.codeNamingDestroyDelete')}</li>
                                         </ul>
                                         <p><strong>{t('permission.codeNamingExample')}</strong> <code>user:list</code>, <code>rbac:menu:create</code></p>
                                         <p><strong>{t('permission.codeNamingWildcard')}</strong> <code>*</code> {t('permission.codeNamingWildcardDesc')}</p>

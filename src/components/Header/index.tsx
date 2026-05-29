@@ -1,10 +1,15 @@
 import React from 'react';
-import { Layout, Button, theme, Space, Avatar, Dropdown, Switch, Select } from 'antd';
-import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, LogoutOutlined, SunOutlined, MoonOutlined, MenuOutlined } from '@ant-design/icons';
+import { Layout, Button, theme, Space, Avatar, Dropdown, Switch, Select, Badge, Popover, List } from 'antd';
+import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, LogoutOutlined, SunOutlined, MoonOutlined, MenuOutlined, ProjectOutlined, BellOutlined, DownloadOutlined, CheckOutlined } from '@ant-design/icons';
 import useAppStore from '../../store/useAppStore';
 import { useNavigate } from 'react-router-dom';
 import { useBreakpoint } from '@/utils/useBreakpoint';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
+import useWebSocket from 'react-use-websocket';
+import dayjs from 'dayjs';
+import { getUserNotifications, markNotificationRead, markAllNotificationsRead, UserNotification } from '../../api/system';
+import { notification } from '../../utils/antd';
 
 const { Header: AntHeader } = Layout;
 
@@ -12,16 +17,174 @@ const { Header: AntHeader } = Layout;
  * 顶部导航栏组件 - 响应式版本
  */
 const Header: React.FC = () => {
-    const { collapsed, toggleCollapsed, isDark, setIsDark, setToken, setCurrentUser, currentUser, language, setLanguage, avatar, setAvatar } = useAppStore();
+    const { collapsed, toggleCollapsed, isDark, setIsDark, setToken, setCurrentUser, currentUser, language, setLanguage, avatar, setAvatar, projects, currentProject, setCurrentProject, token } = useAppStore();
     const { toggleMobileSidebar } = useAppStore();
     const { isMobile } = useBreakpoint();
     const { i18n, t } = useTranslation();
+    const queryClient = useQueryClient();
 
     const {
         token: { colorText },
     } = theme.useToken();
 
     const navigate = useNavigate();
+
+    // --- 消息通知中心 ---
+    const { data: notifications = [], refetch } = useQuery<UserNotification[]>({
+        queryKey: ['userNotifications'],
+        queryFn: getUserNotifications,
+        enabled: !!token,
+    });
+
+    const wsUrl = token ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/notifications/` : null;
+
+    const { sendJsonMessage } = useWebSocket(wsUrl, {
+        onOpen: () => {
+            sendJsonMessage({ type: 'auth', token });
+        },
+        onMessage: (event) => {
+            try {
+                const messageData = JSON.parse(event.data);
+                if (messageData.type === 'notification') {
+                    const newNotif = messageData.data;
+                    
+                    // 弹出全局通知
+                    notification.info({
+                        message: newNotif.title,
+                        description: (
+                            <div>
+                                <div>{newNotif.content}</div>
+                                {newNotif.extra_data?.download_url && (
+                                    <Button 
+                                        type="link" 
+                                        size="small" 
+                                        icon={<DownloadOutlined />}
+                                        onClick={() => {
+                                            window.open(newNotif.extra_data.download_url, '_blank');
+                                        }}
+                                        className="p-0 mt-1"
+                                    >
+                                        {t('header.downloadReport')}
+                                    </Button>
+                                )}
+                            </div>
+                        ),
+                        placement: 'topRight',
+                        duration: 5,
+                    });
+
+                    // 动态更新通知列表
+                    queryClient.setQueryData<UserNotification[]>(['userNotifications'], (prev) => {
+                        const list: UserNotification[] = Array.isArray(prev) ? prev : ((prev as any)?.data || []);
+                        if (list.some(n => n.id === newNotif.id)) return list;
+                        return [newNotif, ...list];
+                    });
+                }
+            } catch (err) {
+                console.error('Failed to parse WS notification message:', err);
+            }
+        },
+        shouldReconnect: () => !!token,
+        reconnectAttempts: 10,
+        reconnectInterval: 3000,
+    });
+
+    const markReadMutation = useMutation({
+        mutationFn: markNotificationRead,
+        onSuccess: (_, id) => {
+            queryClient.setQueryData<UserNotification[]>(['userNotifications'], (prev) => {
+                const list: UserNotification[] = Array.isArray(prev) ? prev : ((prev as any)?.data || []);
+                return list.map(n => n.id === id ? { ...n, is_read: true } : n);
+            });
+        }
+    });
+
+    const markAllReadMutation = useMutation({
+        mutationFn: markAllNotificationsRead,
+        onSuccess: () => {
+            queryClient.setQueryData<UserNotification[]>(['userNotifications'], (prev) => {
+                const list: UserNotification[] = Array.isArray(prev) ? prev : ((prev as any)?.data || []);
+                return list.map(n => ({ ...n, is_read: true }));
+            });
+        }
+    });
+
+    const notificationList: UserNotification[] = Array.isArray(notifications) ? notifications : ((notifications as any)?.data || []);
+    const unreadCount = notificationList.filter(n => !n.is_read).length;
+
+    const notificationContent = (
+        <div className="w-80 sm:w-96 flex flex-col max-h-[480px]">
+            <div className="flex justify-between items-center px-4 py-2 border-b border-black/5 dark:border-white/5">
+                <span className="font-bold text-sm">{t('header.notifications')}</span>
+                {unreadCount > 0 && (
+                    <Button 
+                        type="link" 
+                        size="small" 
+                        icon={<CheckOutlined />}
+                        onClick={() => markAllReadMutation.mutate()}
+                        className="text-xs p-0"
+                    >
+                        {t('header.markAllRead')}
+                    </Button>
+                )}
+            </div>
+            <div className="overflow-y-auto flex-1 max-h-[360px]">
+                <List
+                    dataSource={notificationList}
+                    locale={{ emptyText: <div className="py-8 text-neutral-400 text-center">{t('header.noNotifications')}</div> }}
+                    renderItem={(item: UserNotification) => (
+                        <List.Item 
+                            key={item.id}
+                            className={`px-4 py-3 cursor-pointer transition-colors duration-200 border-b border-black/5 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 ${!item.is_read ? 'bg-primary/5 dark:bg-primary/10' : ''}`}
+                            onClick={() => {
+                                if (!item.is_read) {
+                                    markReadMutation.mutate(item.id);
+                                }
+                            }}
+                        >
+                            <List.Item.Meta
+                                title={
+                                    <div className="flex justify-between items-start gap-2">
+                                        <span className={`text-xs font-semibold ${!item.is_read ? 'text-primary' : 'text-neutral-500'}`}>
+                                            {item.title}
+                                        </span>
+                                        <span className="text-[10px] text-neutral-400 whitespace-nowrap">
+                                            {dayjs(item.create_time).format('MM-DD HH:mm')}
+                                        </span>
+                                    </div>
+                                }
+                                description={
+                                    <div className="mt-1 flex flex-col gap-2">
+                                        <span className="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed block break-words">
+                                            {item.content}
+                                        </span>
+                                        {item.extra_data?.download_url && (
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                                <Button 
+                                                    type="primary" 
+                                                    size="small" 
+                                                    icon={<DownloadOutlined />}
+                                                    onClick={() => {
+                                                        window.open(item.extra_data.download_url, '_blank');
+                                                        if (!item.is_read) {
+                                                            markReadMutation.mutate(item.id);
+                                                        }
+                                                    }}
+                                                    className="ans-btn text-[11px] h-7 px-3 rounded-full mt-1"
+                                                >
+                                                    {t('header.downloadReport')}
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
+                                }
+                            />
+                        </List.Item>
+                    )}
+                />
+            </div>
+        </div>
+    );
 
     const userMenuItems = {
         items: [
@@ -84,6 +247,31 @@ const Header: React.FC = () => {
                     />
                 )}
                 <h2 className="m-0 text-lg font-semibold ml-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-[160px] sm:max-w-none">{t('header.platformTitle')}</h2>
+
+                {/* 项目/工作区切换器 */}
+                {projects && projects.length > 0 && (
+                    <div className="ml-4 flex items-center bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full border border-black/10 dark:border-white/10 hover:border-primary transition-all flex-shrink-0">
+                        <ProjectOutlined className="mr-1 text-primary text-sm flex-shrink-0" />
+                        <Select
+                            variant="borderless"
+                            value={currentProject?.id}
+                            onChange={(val) => {
+                                const selected = projects.find((p: any) => p.id === val);
+                                setCurrentProject(selected || null);
+                                // 切换项目后，清空并刷新所有 React Query 缓存
+                                queryClient.invalidateQueries();
+                            }}
+                            className="font-medium text-xs h-6 leading-6"
+                            style={{ width: 130 }}
+                            placeholder={t('common.selectProject')}
+                            options={projects.map((p: any) => ({
+                                value: p.id,
+                                label: p.name,
+                            }))}
+                            dropdownStyle={{ minWidth: 160 }}
+                        />
+                    </div>
+                )}
             </div>
 
             <div className="px-2 sm:px-6 flex items-center gap-1 sm:gap-2 flex-shrink-0">
@@ -105,11 +293,28 @@ const Header: React.FC = () => {
                     }}
                     size="small"
                     options={[
-                        { value: 'zh-CN', label: '中文' },
-                        { value: 'en-US', label: 'English' },
+                        { value: 'zh-CN', label: t('common.languageZh') },
+                        { value: 'en-US', label: t('common.languageEn') },
                     ]}
                     style={{ width: 80 }}
                 />
+
+                {/* 通知中心 */}
+                {token && (
+                    <Popover 
+                        content={notificationContent} 
+                        trigger="click" 
+                        placement="bottomRight"
+                        overlayClassName="ans-popover"
+                    >
+                        <div className="cursor-pointer hover:bg-fill-hover p-2 rounded-lg transition-colors flex items-center justify-center">
+                            <Badge count={unreadCount} overflowCount={99} size="small">
+                                <BellOutlined style={{ fontSize: '18px', color: colorText }} />
+                            </Badge>
+                        </div>
+                    </Popover>
+                )}
+
                 <Space size={8}>
                     <Dropdown menu={userMenuItems}>
                         <Space className="cursor-pointer hover:bg-fill-hover px-2 rounded-lg transition-colors min-w-0">

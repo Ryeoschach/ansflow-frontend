@@ -23,8 +23,7 @@ const { Text } = Typography;
 
 /**
  * @name PipelineHistory
- * @description 流水线执行历史子模块。负责全局/单流水线的运行记录追踪。
- * 支持：WebSocket 实时状态补丁、多维搜索、强制中止、耗时统计渲染。
+ * @description 流水线执行历史子模块。
  */
 export default function PipelineHistory() {
   const { t } = useTranslation();
@@ -34,27 +33,28 @@ export default function PipelineHistory() {
   const { message, modal } = App.useApp();
   const { token, hasPermission } = useAppStore();
   
-  // URL 参数：支持从蓝图模板点选“历史”进入，自动过滤
   const pipelineId = searchParams.get('pipeline_id');
   const [searchText, setSearchText] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  /**
-   * @section 数据查询 (React Query)
-   */
   const { data: runsData, isLoading, refetch } = useQuery({
-    queryKey: ['pipelineRuns', searchText, pipelineId],
-    queryFn: () => getPipelineRuns({ search: searchText, pipeline: pipelineId }),
-    // 即使有 WS，也保持 1 分钟一次的钝化同步，防止心跳失效后的孤岛数据
+    queryKey: ['pipelineRuns', searchText, pipelineId, page, pageSize],
+    queryFn: () => getPipelineRuns({ 
+        search: searchText, 
+        pipeline: pipelineId,
+        page: page,
+        size: pageSize
+    }),
     refetchInterval: 60000,
     enabled: !!token && hasPermission('pipeline:run:view'),
   });
 
-  /**
-   * @section WebSocket 实时补丁逻辑
-   * 基于全局广播频道 /ws/pipeline/all/ 实现免刷新的状态同步。
-   */
+  useEffect(() => {
+    setPage(1);
+  }, [searchText, pipelineId]);
+
   const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-  // 修正：使用 host 保证端口一致，避免跨域握手失败
   const wsUrl = `${protocol}://${window.location.host}/ws/pipeline/all/`;
   
   const { lastJsonMessage } = useWebSocket(wsUrl, {
@@ -63,7 +63,6 @@ export default function PipelineHistory() {
     reconnectInterval: 5000,
   });
 
-  /** @description 接收全局推送，精准更新本地缓存列表中的特定任务行 */
   useEffect(() => {
     if (lastJsonMessage && (lastJsonMessage as any).type === 'all_status_update') {
         const newData = (lastJsonMessage as any).data;
@@ -72,11 +71,9 @@ export default function PipelineHistory() {
             const index = old.data.findIndex((r: any) => r.id === newData.id);
             if (index > -1) {
                 const newDataList = [...old.data];
-                // 仅更新变更字段，合并保留上下文
                 newDataList[index] = { ...newDataList[index], ...newData };
                 return { ...old, data: newDataList };
             } else {
-                // 如果是新任务且处于第一页，触发 Refetch 以拉取最新行
                 refetch();
                 return old;
             }
@@ -84,7 +81,6 @@ export default function PipelineHistory() {
     }
   }, [lastJsonMessage, queryClient, searchText, pipelineId, refetch]);
 
-  /** @description 任务调度指令：中止 */
   const stopRunMutation = useMutation({
     mutationFn: (id: number) => stopPipelineRun(id),
     onSuccess: () => {
@@ -94,17 +90,26 @@ export default function PipelineHistory() {
     onError: (err: any) => message.error(`${t('pipeline.stopError')}: ${err.message}`)
   });
 
-  /** @description 状态标识美化渲染 */
   const getStatusTag = (status: string) => {
     const config: any = {
-      success: { color: 'success', icon: <CheckCircleOutlined />, text: t('pipeline.statusSuccess') },
-      failed: { color: 'error', icon: <CloseCircleOutlined />, text: t('pipeline.statusFailed') },
-      running: { color: 'processing', icon: <SyncOutlined spin />, text: t('pipeline.statusRunning') },
-      cancelled: { color: 'default', icon: <StopOutlined />, text: t('pipeline.statusCancelled') },
-      pending: { color: 'warning', icon: <ClockCircleOutlined />, text: t('pipeline.statusPending') },
+      success: { color: 'var(--ans-success)', icon: <CheckCircleOutlined />, text: t('pipeline.statusSuccess') },
+      failed: { color: 'var(--ans-error)', icon: <CloseCircleOutlined />, text: t('pipeline.statusFailed') },
+      running: { color: 'var(--ans-primary)', icon: <SyncOutlined spin />, text: t('pipeline.statusRunning') },
+      cancelled: { color: 'var(--ans-text-secondary)', icon: <StopOutlined />, text: t('pipeline.statusCancelled') },
+      pending: { color: 'var(--ans-warning)', icon: <ClockCircleOutlined />, text: t('pipeline.statusPending') },
     };
     const c = config[status] || config.pending;
-    return <Tag icon={c.icon} color={c.color} className="rounded-full px-3">{c.text}</Tag>;
+    return (
+        <Tag 
+            className="rounded-full px-3 border-0 font-extrabold text-[10px] uppercase flex items-center gap-1 w-fit"
+            style={{ 
+                backgroundColor: `color-mix(in srgb, ${c.color}, transparent 90%)`,
+                color: c.color
+            }}
+        >
+            {c.icon} {c.text}
+        </Tag>
+    );
   };
 
   const columns = [
@@ -112,7 +117,8 @@ export default function PipelineHistory() {
       title: t('pipeline.runId'),
       dataIndex: 'id',
       key: 'id',
-      render: (id: number) => <Text code className="text-primary font-mono opacity-80">#{id}</Text>
+      width: 80,
+      render: (id: number) => <span className="font-mono text-[11px] font-bold opacity-30 tracking-tighter">#{id}</span>
     },
     {
       title: t('pipeline.blueprint'),
@@ -120,10 +126,10 @@ export default function PipelineHistory() {
       key: 'pipeline_name',
       ellipsis: true,
       render: (text: string, record: any) => (
-          <div className="flex flex-col">
-              <Text strong className="text-sm">{text || record.pipeline?.name}</Text>
-              <Text type="secondary" className="text-[10px] opacity-40 uppercase tracking-tighter">
-                Ref: {record.pipeline}
+          <div className="flex flex-col group cursor-pointer" onClick={() => navigate(`/v1/pipeline/runs/${record.id}`)}>
+              <Text strong className="text-sm text-ans-text-primary group-hover:text-primary transition-colors">{text || record.pipeline?.name}</Text>
+              <Text className="text-[9px] opacity-30 font-mono tracking-widest mt-0.5 uppercase">
+                Reference: {record.pipeline}
               </Text>
           </div>
       )
@@ -132,6 +138,7 @@ export default function PipelineHistory() {
       title: t('pipeline.currentStatus'),
       dataIndex: 'status',
       key: 'status',
+      width: 120,
       render: (status: string) => getStatusTag(status)
     },
     {
@@ -139,10 +146,12 @@ export default function PipelineHistory() {
         dataIndex: 'trigger_user_name',
         key: 'trigger_user_name',
         render: (text: string) => (
-            <Space className="text-xs text-slate-500">
-                <UserOutlined className="text-[10px]" />
-                {text || 'SYSTEM'}
-            </Space>
+            <div className="flex items-center gap-1.5 text-ans-text-secondary opacity-60">
+                <div className="w-5 h-5 rounded-full bg-ans-bg-layout flex items-center justify-center border border-ans-border">
+                    <UserOutlined className="text-[9px]" />
+                </div>
+                <span className="text-[11px] font-medium tracking-tight">{text || 'SYSTEM'}</span>
+            </div>
         )
     },
     {
@@ -156,36 +165,37 @@ export default function PipelineHistory() {
           const diffSec = end.diff(start, 'second');
           return (
               <div className="flex flex-col">
-                  <Text className="text-xs">{start.format('YYYY-MM-DD HH:mm')}</Text>
-                  <Text type="secondary" className="text-[10px] text-primary font-medium opacity-80">
-                    {t('dashboard.duration')}: {diffSec > 60 ? `${Math.floor(diffSec/60)}m ${diffSec%60}s` : `${diffSec}s`}
-                  </Text>
+                  <div className="flex items-center gap-2">
+                    <Text className="text-xs text-ans-text-primary font-medium">{start.format('MM/DD HH:mm')}</Text>
+                    <div className="w-1 h-1 rounded-full bg-ans-border" />
+                    <Text className="text-[10px] text-ans-primary font-extrabold uppercase italic">
+                        {diffSec > 60 ? `${Math.floor(diffSec/60)}m ${diffSec%60}s` : `${diffSec}s`}
+                    </Text>
+                  </div>
+                  <Text className="text-[9px] opacity-30 uppercase tracking-tighter mt-0.5">ESTIMATED RUNTIME</Text>
               </div>
           );
       }
     },
     {
-      title: t('pipeline.actionCenter'),
+      title: '',
       key: 'action',
+      width: 100,
       render: (_: any, record: any) => (
         <Space size="middle">
-          {hasPermission('pipeline:run:view') && (
           <Button 
-            type="link" 
+            type="text" 
             size="small"
-            icon={<EyeOutlined />} 
+            icon={<EyeOutlined style={{ fontSize: 14, color: 'var(--ans-primary)' }} />} 
             onClick={() => navigate(`/v1/pipeline/runs/${record.id}`)}
-            className="p-0"
-          >
-            {t('pipeline.detail')}
-          </Button>
-          )}
+            className="hover:bg-ans-primary/5 rounded-lg"
+          />
           {hasPermission('pipeline:run:stop') && (record.status === 'running' || record.status === 'pending') && (
               <Button
-                type="link"
+                type="text"
                 size="small"
                 danger
-                icon={<StopOutlined />}
+                icon={<StopOutlined style={{ fontSize: 14 }} />}
                 onClick={() => {
                    modal.confirm({
                      title: t('pipeline.confirmStopTitle'),
@@ -196,10 +206,8 @@ export default function PipelineHistory() {
                    });
                 }}
                 loading={stopRunMutation.isPending && (stopRunMutation.variables as any) === record.id}
-                className="p-0"
-              >
-                {t('pipeline.stop')}
-              </Button>
+                className="hover:bg-ans-error/5 rounded-lg"
+              />
           )}
         </Space>
       ),
@@ -207,22 +215,20 @@ export default function PipelineHistory() {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-transparent">
-      <div className="mb-4 flex justify-between items-center px-1">
-            <Space size="middle">
-                <Input
-                    placeholder={t('pipeline.searchHistoryPlaceholder')}
-                    prefix={<SearchOutlined />}
-                    value={searchText}
-                    onChange={e => setSearchText(e.target.value)}
-                    className="w-72 h-9 rounded-xl"
-                    allowClear
-                />
-            </Space>
+    <div className="flex flex-col h-full bg-ans-bg-container">
+      <div className="mb-6 flex justify-between items-center px-1">
+            <Input
+                placeholder={t('pipeline.searchHistoryPlaceholder')}
+                prefix={<SearchOutlined className="opacity-30" />}
+                value={searchText}
+                onChange={e => setSearchText(e.target.value)}
+                className="w-80 h-10 rounded-ans-md border-ans-border hover:border-ans-primary transition-all bg-ans-bg-layout/20"
+                allowClear
+            />
             <Button 
-                icon={<RedoOutlined />} 
+                icon={<RedoOutlined className="text-ans-primary" />} 
                 onClick={() => refetch()}
-                className="rounded-lg"
+                className="h-10 rounded-ans-md border-ans-border font-bold text-xs uppercase tracking-tight"
             >
                 {t('pipeline.manualRefresh')}
             </Button>
@@ -236,13 +242,18 @@ export default function PipelineHistory() {
           loading={isLoading}
           size="middle"
           pagination={{ 
+              current: page,
+              pageSize: pageSize,
               total: runsData?.total || 0,
               showSizeChanger: true,
-              className: "pt-4 px-2"
+              className: "pt-6 px-2",
+              onChange: (p, s) => {
+                  setPage(p);
+                  setPageSize(s);
+              }
           }}
-          className="custom-table-modern"
-          scroll={{ x: 'max-content', y: 'calc(100vh - 420px)' }}
-         
+          className="ans-table-clean"
+          scroll={{ x: 'max-content' }}
         />
       </div>
     </div>

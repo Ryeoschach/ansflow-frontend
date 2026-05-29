@@ -8,7 +8,7 @@ import ReactFlow, {
   Edge
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Layout, Typography, Space, Button, theme, Tag, Drawer, Spin, Card, App, Tooltip, Dropdown } from 'antd';
+import { Layout, Typography, Space, Button, theme, Tag, Drawer, Spin, Card, App, Tooltip, Dropdown, Input } from 'antd';
 import {
   ArrowLeftOutlined,
   LoadingOutlined,
@@ -21,10 +21,12 @@ import {
   LineHeightOutlined,
   ForkOutlined,
   DownOutlined,
-  MinusCircleOutlined
+  MinusCircleOutlined,
+  RobotOutlined
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPipelineRunDetail, stopPipelineRun, retryPipelineRun } from '../../api/pipeline';
+import { getPipelineRunDetail, stopPipelineRun, retryPipelineRun, approvePipelineNode } from '../../api/pipeline';
+import { summarizePipelineRun } from '../../api/ai';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useWebSocket from 'react-use-websocket';
 import { useTranslation } from 'react-i18next';
@@ -49,15 +51,25 @@ const nodeTypes = {
   git_clone: GitNode,
   docker_build: BuildNode,
   kaniko_build: KanikoNode,
+  approval: (props: any) => {
+    const { data } = props;
+    const isWaiting = data?.runStatus === 'waiting';
+    return (
+      <div className={`relative ${isWaiting ? 'animate-pulse scale-105 transition-all duration-1000' : ''}`}>
+        <HttpNode {...props} />
+      </div>
+    );
+  },
+  host_deploy: AnsibleNode,
 };
 
 /**
  * [Performance Optimizer] ANSI Log Parser
  * 将 Ansible 的色彩代码 (ANSI Codes) 瞬间解析为 React 样式
  */
-const AnsiLog = React.memo(({ text }: { text: string }) => {
+const AnsiLog = React.memo(({ text, token }: { text: string; token: any }) => {
   if (!text) return null;
-  
+
   const parseAnsi = (str: string) => {
     // 基础 ANSI 颜色映射表
     const colorMap: Record<string, string> = {
@@ -118,7 +130,7 @@ const ViewerCore = () => {
   const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
   // 生产环境通常使用当前 Host 的子协议
   const wsUrl = `${protocol}://${window.location.host}/ws/pipeline/${runId}/`;
-  
+
   const { lastJsonMessage, readyState } = useWebSocket(wsUrl, {
     shouldReconnect: () => true,
     reconnectAttempts: 20,
@@ -132,7 +144,7 @@ const ViewerCore = () => {
       if (msg.type === 'status_update') {
         const newData = msg.data;
         queryClient.setQueryData(['pipeline_run', runId], (old: any) => ({
-            ...old, 
+            ...old,
             data: old?.data ? { ...old.data, ...newData } : { ...old, ...newData }
         }));
       } else if (msg.type === 'pipeline_node_log_append') {
@@ -159,7 +171,7 @@ const ViewerCore = () => {
 
       const state = query.state.data?.data || query.state.data;
       if (state?.status && ['success', 'failed', 'cancelled'].includes(state.status)) {
-        return false; 
+        return false;
       }
       return 15000;
     },
@@ -183,6 +195,25 @@ const ViewerCore = () => {
       navigate(`/v1/pipeline/runs/${res.run_id || res.id}`);
     },
     onError: (err: any) => message.error(`${t('runViewer.controlCommandRejected')}: ${err.message}`)
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: (action: 'pass' | 'reject') => {
+        const payload = runData?.data || runData;
+        const nodeRun = payload.nodes.find((n: any) => n.node_id === selectedNodeData?.id);
+        return approvePipelineNode(nodeRun.id, action, (document.getElementById('approval-comment') as HTMLTextAreaElement)?.value);
+    },
+    onSuccess: () => {
+        message.success(t('common.success'));
+        queryClient.invalidateQueries({ queryKey: ['pipeline_run', runId] });
+    }
+  });
+
+  const summarizeMutation = useMutation({
+    mutationFn: () => summarizePipelineRun(runId!),
+    onSuccess: (res: any) => {
+        message.success(res.message);
+    }
   });
 
   /**
@@ -246,22 +277,22 @@ const ViewerCore = () => {
           runStart: runInfo?.start_time,
           runEnd: runInfo?.end_time
         };
-        
+
         // 如果 Drawer 正开着，实时同步当前节点的日志
         if (drawerVisible && selectedNodeData && selectedNodeData.id === n.id) {
             setSelectedNodeData((prev: any) => ({ ...prev, ...newData }));
         }
-        
-        return { 
-            ...n, 
+
+        return {
+            ...n,
             data: newData,
             // 针对 Trigger 节点的基础样式对齐
-            style: n.type === 'input' ? { 
-                ...n.style, 
-                background: token.colorBgContainer, 
-                color: token.colorText, 
-                border: `2px solid ${runInfo?.status === 'success' ? token.colorSuccess : token.colorPrimary}`, 
-                borderRadius: '12px' 
+            style: n.type === 'input' ? {
+                ...n.style,
+                background: token.colorBgContainer,
+                color: token.colorText,
+                border: `2px solid ${runInfo?.status === 'success' ? token.colorSuccess : token.colorPrimary}`,
+                borderRadius: '12px'
             } : n.style
         };
       });
@@ -289,6 +320,7 @@ const ViewerCore = () => {
           case 'running': return <Tag icon={<SyncOutlined spin />} color="processing" className="rounded-full px-3">{t('runViewer.executing')}</Tag>;
           case 'success': return <Tag color="success" className="rounded-full px-3">{t('runViewer.success')}</Tag>;
           case 'failed': return <Tag color="error" className="rounded-full px-3">{t('runViewer.failed')}</Tag>;
+          case 'waiting': return <Tag icon={<SyncOutlined spin />} color="purple" className="rounded-full px-3">{t('runViewer.waitingApproval')}</Tag>;
           case 'cancelled': return <Tag icon={<StopOutlined />} color="default" className="rounded-full px-3">{t('runViewer.cancelled')}</Tag>;
           case 'skipped': return <Tag icon={<MinusCircleOutlined />} color="default" className="rounded-full px-3">{t('runViewer.skipped')}</Tag>;
           default: return <Tag color="default" className="rounded-full px-3">{t('runViewer.queued')}</Tag>;
@@ -297,36 +329,47 @@ const ViewerCore = () => {
 
   return (
     <Layout style={{ background: token.colorBgLayout }} className="h-full overflow-hidden">
-      <Header 
+      <Header
         className="px-6 flex items-center justify-between h-16 shadow-sm dark:shadow-none z-20"
         style={{ background: token.colorBgContainer, borderBottom: `1px solid ${token.colorBorderSecondary}` }}
       >
         <Space size="large" className="flex-1">
-          <Button 
-            type="text" 
-            icon={<ArrowLeftOutlined />} 
-            onClick={() => navigate('/v1/pipeline/list')} 
+          <Button
+            type="text"
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate('/v1/pipeline/list')}
             className="rounded-xl flex items-center justify-center"
           />
           <div className="flex flex-col">
             <div className="flex items-center gap-3">
-                <MonitorOutlined className="text-blue-500 text-lg" /> 
+                <MonitorOutlined style={{ color: token.colorPrimary }} className="text-lg" />
                 <Title level={5} style={{ margin: 0 }}>{payload?.pipeline_name || t('runViewer.detecting')}</Title>
                 {getStatusTag(payload?.status)}
             </div>
             <Text type="secondary" className="text-[10px] uppercase tracking-tighter">
-                RUN ID: #{runId} | TRIGGER: {payload?.trigger_type || 'MANUAL'}
+                {t('runViewer.runMeta', { runId, trigger: payload?.trigger_type || 'MANUAL' })}
             </Text>
           </div>
         </Space>
-        
+
         <Space>
+           {payload?.status === 'success' && (
+              <Tooltip title={t('runViewer.aiSummaryTip')}>
+                <Button
+                    icon={<RobotOutlined className="text-blue-500" />}
+                    onClick={() => summarizeMutation.mutate()}
+                    loading={summarizeMutation.isPending}
+                >
+                    {t('runViewer.aiSummary')}
+                </Button>
+              </Tooltip>
+           )}
            {hasPermission('pipeline:run:stop') && (payload?.status === 'running' || payload?.status === 'pending') && (
-              <Button 
-                danger 
+              <Button
+                danger
                 type="primary"
-                size="middle" 
-                icon={<StopOutlined />} 
+                size="middle"
+                icon={<StopOutlined />}
                 onClick={() => {
                     modal.confirm({
                         title: t('runViewer.highRiskOperationForceStop'),
@@ -364,7 +407,7 @@ const ViewerCore = () => {
           )}
         </Space>
       </Header>
-      
+
       <Content className="relative flex-1">
         {isLoading ? (
           <div className="flex h-full flex-col items-center justify-center gap-4 bg-white/50 backdrop-blur-xl">
@@ -385,15 +428,16 @@ const ViewerCore = () => {
             className="bg-transparent"
           >
             <Controls showInteractive={false} style={{ background: token.colorBgContainer, border: 'none' }} className="shadow-xl rounded-xl overflow-hidden" />
-            <MiniMap 
+            <MiniMap
                 maskColor="rgba(241, 245, 249, 0.6)"
                 style={{ background: token.colorBgContainer, borderColor: token.colorBorderSecondary }}
                 className="rounded-2xl shadow-lg"
                 nodeColor={(n) => {
-                    const s = n.data.runStatus;
+                    const s = n.data?.runStatus;
                     if (s === 'success') return token.colorSuccess;
                     if (s === 'failed') return token.colorError;
                     if (s === 'running') return token.colorPrimary;
+                    if (s === 'waiting') return '#722ed1';
                     return token.colorTextTertiary;
                 }}
             />
@@ -406,8 +450,8 @@ const ViewerCore = () => {
       <Drawer
         title={
             <Space size="middle">
-                <HistoryOutlined className="text-blue-600" />
-                <span className="text-slate-900 dark:text-slate-200 font-bold text-base">{t('runViewer.title')}</span>
+                <HistoryOutlined style={{ color: token.colorPrimary }} />
+                <span className="font-bold text-base" style={{ color: token.colorTextHeading }}>{t('runViewer.title')}</span>
             </Space>
         }
         placement="right"
@@ -423,17 +467,53 @@ const ViewerCore = () => {
       >
         <div className="flex flex-col h-full">
           <div className="p-6">
+            {selectedNodeData?.runStatus === 'waiting' && (
+                <Card
+                    size="small"
+                    title={<Space><MonitorOutlined className="text-purple-500" /><span>{t('runViewer.approvalIntervention')}</span></Space>}
+                    className="mb-4 border-2 border-purple-100 bg-purple-50/30 rounded-2xl overflow-hidden shadow-sm"
+                >
+                    <div className="space-y-3">
+                        <Text type="secondary" className="text-[11px]">{t('runViewer.approvalInstruction')}</Text>
+                        <Input.TextArea
+                            id="approval-comment"
+                            placeholder={t('runViewer.approvalCommentPlaceholder')}
+                            rows={3}
+                            className="rounded-xl border-purple-200"
+                        />
+                        <Space className="w-full justify-end">
+                            <Button
+                                danger
+                                ghost
+                                className="rounded-lg"
+                                onClick={() => approveMutation.mutate('reject')}
+                                loading={approveMutation.isPending}
+                            >
+                                {t('runViewer.reject')}
+                            </Button>
+                            <Button
+                                type="primary"
+                                className="rounded-lg bg-purple-600 hover:bg-purple-500 border-none"
+                                onClick={() => approveMutation.mutate('pass')}
+                                loading={approveMutation.isPending}
+                            >
+                                {t('runViewer.approveAndContinue')}
+                            </Button>
+                        </Space>
+                    </div>
+                </Card>
+            )}
             <Card size="small" className="border-none shadow-sm rounded-2xl">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-xs py-2">
                     <div className="flex flex-col gap-1">
-                        <Text type="secondary" className="uppercase text-[10px] tracking-widest font-bold text-slate-500 dark:text-slate-400">{t('runViewer.nodeAlias')}</Text>
-                        <Text strong className="text-sm text-slate-800 dark:text-slate-200">{selectedNodeData?.label || t('runViewer.unnamedHostNode')}</Text>
+                        <Text type="secondary" className="uppercase text-[10px] tracking-widest font-bold" style={{ color: token.colorTextTertiary }}>{t('runViewer.nodeAlias')}</Text>
+                        <Text strong className="text-sm" style={{ color: token.colorText }}>{selectedNodeData?.label || t('runViewer.unnamedHostNode')}</Text>
                     </div>
                     <div className="flex flex-col gap-1">
-                        <Text type="secondary" className="uppercase text-[10px] tracking-widest font-bold dark:text-slate-500">{t('runViewer.totalDuration')}</Text>
-                        <Space className="text-blue-600 dark:text-blue-400 font-mono">
+                        <Text type="secondary" className="uppercase text-[10px] tracking-widest font-bold" style={{ color: token.colorTextTertiary }}>{t('runViewer.totalDuration')}</Text>
+                        <Space className="font-mono" style={{ color: token.colorPrimary }}>
                             <ClockCircleOutlined />
-                            <Text strong className="dark:text-blue-400">
+                            <Text strong style={{ color: token.colorPrimary }}>
                                 {(() => {
                                     if (!selectedNodeData?.runStart) return '00:00:00';
                                     const start = new Date(selectedNodeData.runStart).getTime();
@@ -448,6 +528,61 @@ const ViewerCore = () => {
                         </Space>
                     </div>
                 </div>
+                {selectedNodeData?.runStatus === 'failed' && (
+                  <div className="mt-4 pt-4 border-t flex gap-2" style={{ borderColor: token.colorBorderSecondary }}>
+                    {payload?.diagnosis_history_id ? (
+                      <>
+                        <Button
+                          type="primary"
+                          icon={<RobotOutlined />}
+                          className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl"
+                          onClick={() => {
+                            setDrawerVisible(false);
+                            useAppStore.getState().setAiDiagnosis({
+                              target_type: 'pipeline',
+                              target_id: runId!,
+                              target_name: payload?.pipeline_name,
+                              history_id: payload.diagnosis_history_id
+                            });
+                          }}
+                        >
+                          {t('runViewer.viewAiDiagnosis')}
+                        </Button>
+                        <Tooltip title={t('runViewer.reanalyze')}>
+                          <Button
+                            icon={<SyncOutlined />}
+                            className="h-10 w-10 flex items-center justify-center rounded-xl"
+                            onClick={() => {
+                              setDrawerVisible(false);
+                              useAppStore.getState().setAiDiagnosis({
+                                target_type: 'pipeline',
+                                target_id: runId!,
+                                target_name: payload?.pipeline_name
+                              });
+                            }}
+                          />
+                        </Tooltip>
+                      </>
+                    ) : (
+                      <Button
+                        type="primary"
+                        danger
+                        icon={<RobotOutlined />}
+                        className="w-full flex items-center justify-center gap-2 h-10 rounded-xl"
+                        onClick={() => {
+                          setDrawerVisible(false);
+                          useAppStore.getState().setAiDiagnosis({
+                            target_type: 'pipeline',
+                            target_id: runId!,
+                            target_name: payload?.pipeline_name
+                          });
+                        }}
+                      >
+                        {t('runViewer.aiDiagnosis')}
+                      </Button>
+                    )}
+                  </div>
+                )}
             </Card>
           </div>
 
@@ -474,7 +609,7 @@ const ViewerCore = () => {
 
           <div className="flex-1 px-6 pb-6 flex flex-col min-h-0">
              <div className="flex items-center justify-between mb-3 px-2">
-                <Text className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t('runViewer.terminalRealtimeEcho')}</Text>
+                <Text className="text-[11px] font-bold uppercase tracking-widest" style={{ color: token.colorTextTertiary }}>{t('runViewer.terminalRealtimeEcho')}</Text>
                 <Space size="middle">
                     <Tooltip title={t('runViewer.autoScrollToBottom')}>
                         <Button
@@ -486,17 +621,17 @@ const ViewerCore = () => {
                         />
                     </Tooltip>
                     <Tooltip title={t('runViewer.adjustFontSize')}>
-                        <Button 
-                            type="text" 
-                            size="small" 
-                            icon={<LineHeightOutlined />} 
+                        <Button
+                            type="text"
+                            size="small"
+                            icon={<LineHeightOutlined />}
                             onClick={() => setLogFontSize(logFontSize >= 16 ? 11 : logFontSize + 1)}
                             className="rounded-lg"
                         />
                     </Tooltip>
                 </Space>
              </div>
-             
+
              <div className="flex-1 bg-slate-950 border border-solid border-slate-800 rounded-2xl shadow-2xl relative overflow-hidden group">
                 {(selectedNodeData?.logs || (selectedNodeData?.id && incrementalLog?.nodeId === selectedNodeData.id)) ? (
                     <LogTerminal
@@ -508,7 +643,7 @@ const ViewerCore = () => {
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full opacity-20 gap-2">
                         <SyncOutlined className="text-3xl animate-spin" />
-                        <span className="text-[10px]">WAITING FOR STDIO BUFFER...</span>
+                        <span className="text-[10px]">{t('runViewer.waitingForStdioBuffer')}</span>
                     </div>
                 )}
                 {/* 日志底部渐变阴影 */}

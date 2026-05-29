@@ -34,6 +34,8 @@ import {
   SyncOutlined,
   CodeOutlined,
   ConsoleSqlOutlined,
+  RocketOutlined,
+  ShareAltOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -41,6 +43,7 @@ import {
   createK8sCluster,
   deleteK8sCluster,
   verifyK8sCluster,
+  syncK8sClusterStatus,
   getK8sNodes,
   getK8sNamespaces,
   getK8sPods,
@@ -61,11 +64,13 @@ import { K8sResource } from '../../types';
 import request from "../../utils/requests";
 import useAppStore from "../../store/useAppStore.ts";
 import useBreakpoint from '../../utils/useBreakpoint';
+import ShareAssetModal from '../../components/ShareAssetModal';
 
 import useK8sStore from "../../store/useK8sStore";
 import K8sTerminal from './components/K8sTerminal';
 import K8sStreamingLogs from './components/K8sStreamingLogs';
 import K8sYamlEditor from './components/K8sYamlEditor';
+import GitOpsCenter from './components/GitOpsCenter';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -106,7 +111,7 @@ const K8sCenter: React.FC = () => {
   const { t } = useTranslation();
   const { token } = theme.useToken();
   const { message, modal } = App.useApp();
-  const { hasPermission } = useAppStore();
+  const { hasPermission, currentProject } = useAppStore();
   const { isMobile } = useBreakpoint();
   
   // 接入 Zustand 持久化状态集
@@ -120,6 +125,7 @@ const K8sCenter: React.FC = () => {
   
   // 仅保留临时选中的集群对象用于 UI 回显
   const [selectedCluster, setSelectedCluster] = useState<K8sResource | null>(null);
+  const [sharingCluster, setSharingCluster] = useState<any>(null);
   
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
@@ -369,6 +375,17 @@ const K8sCenter: React.FC = () => {
     },
   });
 
+  const syncStatusMutation = useMutation({
+    mutationFn: (id: number) => syncK8sClusterStatus(id),
+    onSuccess: () => {
+      message.success(t('k8s.healthRefreshed'));
+      queryClient.invalidateQueries({ queryKey: ['k8s', 'clusters'] });
+    },
+    onError: (err: any) => {
+      message.error(`${t('k8s.refreshFailed')}: ${err.response?.data?.error || err.message}`);
+    },
+  });
+
   const handleSubmit = (values: any) => {
     if (selectedCluster) {
       updateMutation.mutate({ id: selectedCluster.id, data: values });
@@ -429,21 +446,40 @@ const K8sCenter: React.FC = () => {
       title: t('k8s.status'),
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => {
+      render: (status: string, record: any) => {
         let color = 'default';
         let text = t('k8s.unknown');
-        if (status === 'connected') {
+        if (status === 'connected' || status === 'running') {
           color = 'success';
           text = t('k8s.connected');
-        } else if (status === 'failed') {
+        } else if (status === 'failed' || status === 'error') {
           color = 'error';
           text = t('k8s.connectionFailed');
         } else if (status === 'pending') {
           color = 'processing';
           text = t('k8s.pendingVerify');
         }
-        return <Badge status={color as any} text={text} />;
+        return (
+          <Tooltip title={record.error_message}>
+             <Badge status={color as any} text={text} />
+          </Tooltip>
+        );
       },
+    },
+    {
+      title: t('k8s.resourceMetrics'),
+      key: 'metrics',
+      render: (_: any, record: any) => (
+        <div className="flex flex-col gap-1">
+          <Tag bordered={false} className="m-0 text-[10px] py-0" color="blue">
+            Nodes: {record.ready_node_count || 0} / {record.node_count || 0}
+          </Tag>
+          <div className="flex gap-1">
+             <Text type="secondary" className="text-[9px]">{record.cpu_capacity || '-'}</Text>
+             <Text type="secondary" className="text-[9px]">{record.memory_capacity || '-'}</Text>
+          </div>
+        </div>
+      )
     },
     {
       title: t('k8s.k8sVersion'),
@@ -462,7 +498,7 @@ const K8sCenter: React.FC = () => {
       render: (status: string) => <Tag color={status === 'Ready' ? 'success' : 'error'}>{status}</Tag>,
     },
     {
-      title: 'CPU 利用率',
+      title: t('k8s.cpuUsage'),
       key: 'cpu',
       render: (_: any, record: any) => {
         const metricsList = Array.isArray(nodesMetrics) ? nodesMetrics : (nodesMetrics as any)?.data || [];
@@ -475,7 +511,7 @@ const K8sCenter: React.FC = () => {
       }
     },
     {
-      title: '内存利用率',
+      title: t('k8s.memoryUsage'),
       key: 'mem',
       render: (_: any, record: any) => {
         const metricsList = Array.isArray(nodesMetrics) ? nodesMetrics : (nodesMetrics as any)?.data || [];
@@ -509,7 +545,7 @@ const K8sCenter: React.FC = () => {
     { title: t('k8s.podName'), dataIndex: 'name', key: 'name' },
     { title: t('k8s.namespace'), dataIndex: 'namespace', key: 'namespace' },
     {
-      title: '实时负载',
+      title: t('k8s.realtimeLoad'),
       key: 'metrics',
       render: (_: any, record: any) => {
         const metricsList = Array.isArray(podsMetrics) ? podsMetrics : [];
@@ -521,7 +557,7 @@ const K8sCenter: React.FC = () => {
         const mem = metric.containers.reduce((acc: number, c: any) => acc + parseK8sResource(c.usage.memory, 'mem'), 0);
         return (
           <Space direction="vertical" size={0} className="w-full">
-            <Text style={{ fontSize: '10px' }} strong>CPU: {cpu < 0.001 ? '<0.001' : cpu.toFixed(3)} 核</Text>
+            <Text style={{ fontSize: '10px' }} strong>CPU: {t('k8s.cpuCores', { value: cpu < 0.001 ? '<0.001' : cpu.toFixed(3) })}</Text>
             <Text style={{ fontSize: '10px' }} strong>Mem: {mem.toFixed(1)} MiB</Text>
           </Space>
         );
@@ -686,11 +722,11 @@ const K8sCenter: React.FC = () => {
   ];
 
   const eventColumns = [
-    { title: '最后发生', dataIndex: 'last_timestamp', key: 'last_timestamp', width: 150, render: (t: string) => t ? new Date(t).toLocaleString() : '-' },
-    { title: '类型', dataIndex: 'type', key: 'type', width: 100, render: (t: string) => <Tag color={t === 'Warning' ? 'orange' : 'processing'}>{t}</Tag> },
-    { title: '原因', dataIndex: 'reason', key: 'reason', width: 120 },
-    { title: '对象', dataIndex: 'object', key: 'object', width: 180, ellipsis: true },
-    { title: '消息', dataIndex: 'message', key: 'message', ellipsis: true },
+    { title: t('k8s.lastOccurred'), dataIndex: 'last_timestamp', key: 'last_timestamp', width: 150, render: (t: string) => t ? new Date(t).toLocaleString() : '-' },
+    { title: t('k8s.eventType'), dataIndex: 'type', key: 'type', width: 100, render: (t: string) => <Tag color={t === 'Warning' ? 'orange' : 'processing'}>{t}</Tag> },
+    { title: t('k8s.reason'), dataIndex: 'reason', key: 'reason', width: 120 },
+    { title: t('k8s.object'), dataIndex: 'object', key: 'object', width: 180, ellipsis: true },
+    { title: t('k8s.message'), dataIndex: 'message', key: 'message', ellipsis: true },
   ];
 
   return (
@@ -721,11 +757,20 @@ const K8sCenter: React.FC = () => {
           columns={[
             ...columns,
             {
-              title: '操作中心',
+              title: t('k8s.actionCenter'),
               key: 'action',
               className: "text-center",
               render: (_: any, record: K8sResource) => (
                 <Space>
+                  <Tooltip title={t('k8s.refreshHealth')}>
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<SyncOutlined />}
+                      onClick={() => syncStatusMutation.mutate(record.id)}
+                      loading={syncStatusMutation.isPending && syncStatusMutation.variables === record.id}
+                    />
+                  </Tooltip>
                   {hasPermission('k8s:cluster:verify') && (
                   <Tooltip title={t('k8s.verifyConnection')}>
                     <Button
@@ -748,6 +793,17 @@ const K8sCenter: React.FC = () => {
                     />
                   </Tooltip>
                       )}
+
+                  {(hasPermission('*') || hasPermission('k8s:cluster:edit')) && (
+                  <Tooltip title={t('assetShare.crossProjectGrant')}>
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<ShareAltOutlined style={{ color: '#1677ff' }} />}
+                      onClick={() => setSharingCluster(record)}
+                    />
+                  </Tooltip>
+                  )}
 
                   {hasPermission('k8s:cluster:edit') && (
                   <Tooltip title={t('k8s.modifyConfig')}>
@@ -936,6 +992,16 @@ const K8sCenter: React.FC = () => {
             defaultActiveKey="pods"
             items={[
               {
+                key: 'gitops',
+                label: (
+                  <Space>
+                    <RocketOutlined />
+                    <span>{t('k8s.gitOpsApps')}</span>
+                  </Space>
+                ),
+                children: <GitOpsCenter />,
+              },
+              {
                 key: 'nodes',
                 label: (
                   <Space>
@@ -980,7 +1046,7 @@ const K8sCenter: React.FC = () => {
                 label: (
                   <Space>
                     <FileTextOutlined />
-                    <span>事件中心</span>
+                    <span>{t('k8s.events')}</span>
                   </Space>
                 ),
                 children: <Table columns={eventColumns} dataSource={eventsData} rowKey="name" loading={eventsLoading} pagination={{ pageSize: 10 }} />,
@@ -1095,6 +1161,17 @@ const K8sCenter: React.FC = () => {
           />
         )}
       </Modal>
+
+      {sharingCluster && currentProject && (
+        <ShareAssetModal
+          open={!!sharingCluster}
+          onClose={() => setSharingCluster(null)}
+          assetType="k8s_cluster"
+          assetId={sharingCluster.id}
+          assetName={sharingCluster.name}
+          fromProjectId={currentProject.id}
+        />
+      )}
     </div>
   );
 };

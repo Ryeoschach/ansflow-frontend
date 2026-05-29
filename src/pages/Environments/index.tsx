@@ -1,6 +1,6 @@
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import React, {useState} from 'react';
-import {Button, Card, Modal, Popconfirm, Space, Table, Tooltip, Form, Input, Tag, Select, App} from "antd";
+import {Button, Card, Modal, Popconfirm, Space, Table, Tooltip, Form, Input, Tag, Select, App, ColorPicker} from "antd";
 import {createEnvironment, deleteEnvironment, getEnvironments, updateEnvironment} from "../../api/hosts.ts";
 import useAppStore from "../../store/useAppStore.ts";
 import {DeleteOutlined, EditOutlined, PlusOutlined} from "@ant-design/icons";
@@ -25,7 +25,14 @@ const Environment: React.FC = () => {
     })
 
     const saveMutation = useMutation({
-        mutationFn: (values) =>  editingRecord? updateEnvironment(editingRecord.id, values) : createEnvironment(values),
+        mutationFn: (values: any) => {
+            // 处理颜色值，从 AntD ColorPicker 的对象转换为十六进制字符串
+            const submitValues = {
+                ...values,
+                color: typeof values.color === 'string' ? values.color : values.color?.toHexString?.() || values.color
+            };
+            return editingRecord? updateEnvironment(editingRecord.id, submitValues) : createEnvironment(submitValues);
+        },
         onSuccess: () => {
             message.success(editingRecord? t('environment.envUpdated') : t('environment.envCreated'));
             setIsModalOpen(false);
@@ -41,12 +48,12 @@ const Environment: React.FC = () => {
         }
     })
 
-    const typeMap: Record<string, { text: string, color: string }> = {
-        'dev': { text: t('environment.typeDev'), color: 'blue' },
-        'prd': { text: t('environment.typePrd'), color: 'red' },
-        'uat': { text: 'UAT', color: 'orange' },
-        'test': { text: t('environment.typeTest'), color: 'green' },
-        'others': { text: 'others', color: 'default' }
+    const typeMap: Record<string, { text: string }> = {
+        'dev': { text: t('environment.typeDev') },
+        'prd': { text: t('environment.typePrd') },
+        'uat': { text: 'UAT' },
+        'test': { text: t('environment.typeTest') },
+        'others': { text: 'others' }
     };
 
     const columns = [
@@ -61,9 +68,9 @@ const Environment: React.FC = () => {
             title: t('environment.envLabel'),
             dataIndex: 'code',
             key: 'code',
-            render: (val: string) => {
+            render: (val: string, record: any) => {
                 const mappedInfo = typeMap[val] || typeMap['others'];
-                return <Tag color={mappedInfo.color}>{mappedInfo.text}</Tag>;
+                return <Tag color={record.color || 'blue'}>{mappedInfo.text}</Tag>;
             },
         },
         {
@@ -71,7 +78,7 @@ const Environment: React.FC = () => {
             dataIndex: 'remark',
             key: 'remark',
             ellipsis: true,
-            render: (text: string) => <span className="font-semibold">{text}</span>
+            render: (text: string) => <span className="text-gray-500">{text || '-'}</span>
         },
         {
             title: t('environment.action'),
@@ -112,6 +119,7 @@ const Environment: React.FC = () => {
                         onClick={() => {
                             setEditingRecord(null);
                             form.resetFields();
+                            form.setFieldValue('color', '#1890ff');
                             setIsModalOpen(true);
                         }}
                     >
@@ -134,6 +142,7 @@ const Environment: React.FC = () => {
                     current: params.page,
                     pageSize: params.size,
                     showSizeChanger: true,
+                    showTotal: (total) => t('common.total', { total }),
                     onChange: (p, s) => setParams({ ...params, page: p, size: s }),
                 }}
             />
@@ -156,11 +165,17 @@ const Environment: React.FC = () => {
                         <Input placeholder={t('environment.namePlaceholder')} />
                     </Form.Item>
 
-                    <Form.Item label={t('environment.envLabel')} name="code" rules={[{ required: true, message: t('environment.codeRequired') }]}>
-                        <Select options={Object.entries(typeMap).map(([key, val]) => ({
-                            label: val.text, value: key
-                        }))} />
-                    </Form.Item>
+                    <div className="flex gap-4">
+                        <Form.Item label={t('environment.envLabel')} name="code" className="flex-1" rules={[{ required: true, message: t('environment.codeRequired') }]}>
+                            <Select options={Object.entries(typeMap).map(([key, val]) => ({
+                                label: val.text, value: key
+                            }))} />
+                        </Form.Item>
+
+                        <Form.Item label={t('environment.displayColor')} name="color" valuePropName="value">
+                            <ColorPicker showText />
+                        </Form.Item>
+                    </div>
 
                     <Form.Item label={t('environment.remarkLabel')} name="remark">
                         <Input.TextArea placeholder={t('environment.remarkPlaceholder')} rows={3} />

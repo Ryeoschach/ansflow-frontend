@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { Card, Table, Typography, Tag, Space, Button, theme, Select, Drawer, Descriptions, Badge, Modal, Input, App, Tooltip, Tabs, Timeline, Form, Switch, Popconfirm, List, Avatar, Alert, Divider } from 'antd';
+import { Card, Table, Typography, Tag, Space, Button, theme, Select, Drawer, Descriptions, Badge, Modal, Input, App, Tooltip, Tabs, Timeline, Form, Switch, Popconfirm, Avatar, Alert, Divider } from 'antd';
 const { Text } = Typography;
-import { CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, EyeOutlined, PlusOutlined, DeleteOutlined, EditOutlined, SafetyCertificateOutlined, UserOutlined, ClockCircleOutlined, SendOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, EyeOutlined, PlusOutlined, DeleteOutlined, EditOutlined, SafetyCertificateOutlined, UserOutlined, ClockCircleOutlined, SendOutlined, ThunderboltOutlined, ArrowRightOutlined, RobotOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { 
     getApprovalTickets, approveTicket, rejectTicket, 
-    getApprovalTemplates,
+    getApprovalResources, updateApprovalResource, 
     getApprovalPolicies, createApprovalPolicy, updateApprovalPolicy, deleteApprovalPolicy,
-    ApprovalTicket, ApprovalPolicy, ResourceTemplate 
+    ApprovalTicket, ApprovalPolicy, ApprovalResource 
 } from '../../api/approval';
 import { getRoles } from '../../api/rbac';
 import useAppStore from '../../store/useAppStore';
@@ -24,7 +25,7 @@ const STATUS_MAP = (t: (key: string) => string) => ({
 } as const);
 
 const ApprovalCenter: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { token } = theme.useToken();
     const { message, modal } = App.useApp();
     const queryClient = useQueryClient();
@@ -50,11 +51,25 @@ const ApprovalCenter: React.FC = () => {
         enabled: !!authToken && hasPermission('system:approval_ticket:view'),
     });
 
-    const { data: templatesData } = useQuery({
-        queryKey: ['approvalTemplates'],
-        queryFn: () => getApprovalTemplates(),
-        enabled: !!authToken && activeTab !== 'tickets',
+    const { data: qResourcesData, refetch: refetchResources } = useQuery({
+        queryKey: ['approvalResources'],
+        queryFn: () => getApprovalResources(),
+        enabled: !!authToken && hasPermission('system:approval_resource:view') && (activeTab === 'templates' || activeTab === 'policies'),
     });
+
+    const resourceMutation = useMutation({
+        mutationFn: ({ id, ...data }: any) => updateApprovalResource(id, data),
+        onSuccess: () => {
+            message.success(t('common.success'));
+            refetchResources();
+            queryClient.invalidateQueries({ queryKey: ['approvalResources'] });
+        }
+    });
+
+    const activeResources = React.useMemo(() => {
+        const raw = Array.isArray(qResourcesData) ? qResourcesData : ((qResourcesData as any)?.data?.results || (qResourcesData as any)?.data || []);
+        return Array.isArray(raw) ? raw.filter((r: any) => r.is_active) : [];
+    }, [qResourcesData]);
 
     const { data: policiesData, refetch: refetchPolicies } = useQuery({
         queryKey: ['approvalPolicies'],
@@ -98,9 +113,22 @@ const ApprovalCenter: React.FC = () => {
     });
 
     const policyMutation = useMutation({
-        mutationFn: (values: any) => editingPolicy 
-            ? updateApprovalPolicy(editingPolicy.id, values) 
-            : createApprovalPolicy(values),
+        mutationFn: (values: any) => {
+            let processedValues = { ...values };
+            if (typeof processedValues.match_rules === 'string' && processedValues.match_rules.trim() !== '') {
+                try {
+                    processedValues.match_rules = JSON.parse(processedValues.match_rules);
+                } catch(e) {
+                    message.error(t('approval.matchRulesError'));
+                    throw new Error("Invalid JSON");
+                }
+            } else {
+                processedValues.match_rules = {};
+            }
+
+            if (editingPolicy) return updateApprovalPolicy(editingPolicy.id, processedValues);
+            return createApprovalPolicy(processedValues);
+        },
         onSuccess: () => {
             message.success(t('common.success'));
             setIsPolicyModalOpen(false);
@@ -144,21 +172,32 @@ const ApprovalCenter: React.FC = () => {
         {
             title: t('approval.columnIntent'),
             key: 'intent',
-            render: (_: any, record: ApprovalTicket) => (
-                <div>
+            render: (_: any, record: ApprovalTicket) => {
+                const isSre = record.payload && (record.payload as any).alert_id;
+                return (
                     <div>
-                        <Tag color={record.method === 'DELETE' ? 'error' : (record.method === 'POST' ? 'success' : 'processing')}>
-                            {record.method}
-                        </Tag>
-                        <span style={{ fontWeight: 500 }}>{record.title}</span>
-                    </div>
-                    <Tooltip title={record.url_path}>
-                        <div style={{ marginTop: '4px', fontSize: '11px', color: token.colorTextTertiary, width: '230px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {record.url_path}
+                        <div>
+                            <Tag color={record.method === 'DELETE' ? 'error' : (record.method === 'POST' ? 'success' : 'processing')}>
+                                {record.method}
+                            </Tag>
+                            {isSre && <ThunderboltOutlined style={{ color: '#faad14', marginRight: 4 }} />}
+                            <span style={{ fontWeight: 500 }}>{record.title}</span>
                         </div>
-                    </Tooltip>
-                </div>
-            )
+                        {isSre ? (
+                            <div style={{ marginTop: '4px', fontSize: '11px', color: '#faad14' }}>
+                                <RobotOutlined style={{ marginRight: 4 }} />
+                                {t('approval.sreAlertTitle')}: {(record.payload as any).alert_name}
+                            </div>
+                        ) : (
+                            <Tooltip title={record.url_path}>
+                                <div style={{ marginTop: '4px', fontSize: '11px', color: token.colorTextTertiary, width: '230px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {record.url_path}
+                                </div>
+                            </Tooltip>
+                        )}
+                    </div>
+                );
+            }
         },
         {
             title: t('approval.columnSubmitter'),
@@ -216,9 +255,35 @@ const ApprovalCenter: React.FC = () => {
     ];
 
     const policyColumns = [
-        { title: t('approval.policyName'), dataIndex: 'name', key: 'name', render: (v: string) => <Text strong>{v}</Text> },
-        { title: t('approval.resourceType'), dataIndex: 'resource_type', key: 'resource_type', render: (v: string) => <Tag color="processing">{v}</Tag> },
-        { title: t('approval.environment'), dataIndex: 'environment', key: 'environment', render: (v: string) => v ? <Tag color="warning">{v}</Tag> : <Tag color="default">{t('common.all') || '全部'}</Tag> },
+        { 
+            title: t('approval.policyName'), 
+            dataIndex: 'name', 
+            key: 'name', 
+            render: (v: string, record: ApprovalPolicy) => (
+                <Text strong>{i18n.language === 'en-US' && record.name_en ? record.name_en : v}</Text>
+            )
+        },
+        { 
+            title: t('approval.resourceType'), 
+            dataIndex: 'resource_type', 
+            key: 'resource_type', 
+            render: (v: string) => {
+                const resources = Array.isArray(qResourcesData) ? qResourcesData : ((qResourcesData as any)?.data?.results || (qResourcesData as any)?.data || []);
+                const resource = resources.find((r: any) => r.code === v);
+                const displayName = i18n.language === 'en-US' && resource?.name_en ? resource.name_en : (resource?.name || v);
+                return (
+                    <Tooltip title={`${t('approval.resourceIdentifier')}: ${v}`}>
+                        <Tag color="processing">
+                            <Space size={4}>
+                                <SyncOutlined style={{ fontSize: '12px' }} />
+                                {displayName}
+                            </Space>
+                        </Tag>
+                    </Tooltip>
+                );
+            }
+        },
+        { title: t('approval.environment'), dataIndex: 'environment', key: 'environment', render: (v: string) => v ? <Tag color="warning">{v}</Tag> : <Tag color="default">{t('common.all')}</Tag> },
         { 
             title: t('approval.approverRoles'), 
             dataIndex: 'approver_roles_detail', 
@@ -242,6 +307,7 @@ const ApprovalCenter: React.FC = () => {
                         setEditingPolicy(record);
                         policyForm.setFieldsValue({
                             ...record,
+                            match_rules: record.match_rules && Object.keys(record.match_rules).length > 0 ? JSON.stringify(record.match_rules, null, 2) : '',
                             approver_roles: record.approver_roles || []
                         });
                         setIsPolicyModalOpen(true);
@@ -329,20 +395,51 @@ const ApprovalCenter: React.FC = () => {
                                         showIcon 
                                         style={{ marginBottom: 24 }} 
                                     />
-                                    <List
-                                        grid={{ gutter: 16, column: 2 }}
-                                        dataSource={templatesData || []}
-                                        renderItem={(item: ResourceTemplate) => (
-                                            <List.Item>
-                                                <Card size="small" hoverable>
-                                                    <Card.Meta 
-                                                        avatar={<Avatar icon={<SyncOutlined />} style={{ backgroundColor: token.colorPrimary }} />}
-                                                        title={item.name}
-                                                        description={`${t('approval.resourceIdentifier')}: ${item.code}`}
+                                    <Table
+                                        dataSource={Array.isArray(qResourcesData) ? qResourcesData : ((qResourcesData as any)?.data?.results || (qResourcesData as any)?.data || [])}
+                                        rowKey="code"
+                                        pagination={false}
+                                        scroll={{ x: 'max-content' }}
+                                        columns={[
+                                            { 
+                                                title: t('approval.resourceName'), 
+                                                dataIndex: 'name', 
+                                                render: (v, record: any) => (
+                                                    <Space>
+                                                        <Avatar size="small" icon={<SyncOutlined />} style={{ backgroundColor: token.colorPrimary }} />
+                                                        <Text strong>
+                                                            {i18n.language === 'en-US' && record.name_en ? record.name_en : v}
+                                                        </Text>
+                                                        {record.is_system && <Tag style={{ fontSize: '10px' }}>SYSTEM</Tag>}
+                                                    </Space>
+                                                )
+                                            },
+                                            { 
+                                                title: t('approval.resourceIdentifier'), 
+                                                dataIndex: 'code', 
+                                                render: (v) => <Typography.Text code style={{ fontSize: '12px' }}>{v}</Typography.Text> 
+                                            },
+                                            { 
+                                                title: t('approval.description'), 
+                                                dataIndex: 'description',
+                                                render: (v, record: any) => (
+                                                    i18n.language === 'en-US' && record.description_en ? record.description_en : v
+                                                )
+                                            },
+                                            { 
+                                                title: t('common.status'), 
+                                                dataIndex: 'is_active',
+                                                width: 80,
+                                                render: (active, record: any) => (
+                                                    <Switch 
+                                                        size="small" 
+                                                        checked={active} 
+                                                        onChange={(checked) => resourceMutation.mutate({ id: record.id, is_active: checked })} 
+                                                        loading={resourceMutation.isPending}
                                                     />
-                                                </Card>
-                                            </List.Item>
-                                        )}
+                                                )
+                                            }
+                                        ]}
                                     />
                                 </div>
                             )
@@ -367,6 +464,7 @@ const ApprovalCenter: React.FC = () => {
                                         dataSource={(policiesData as any)?.data || []}
                                         rowKey="id"
                                         pagination={false}
+                                        scroll={{ x: 'max-content' }}
                                     />
                                 </>
                             )
@@ -375,7 +473,6 @@ const ApprovalCenter: React.FC = () => {
                 />
             </Card>
 
-            {/* 驳回 Modal */}
             <Modal
                 title={t('approval.rejectModalTitle')}
                 open={rejectModalVisible}
@@ -393,7 +490,6 @@ const ApprovalCenter: React.FC = () => {
                 />
             </Modal>
 
-            {/* 策略编辑 Modal */}
             <Modal
                 title={editingPolicy ? t('approval.editPolicy') : t('approval.addPolicy')}
                 open={isPolicyModalOpen}
@@ -405,19 +501,43 @@ const ApprovalCenter: React.FC = () => {
                     <Form.Item name="name" label={t('approval.policyName')} rules={[{ required: true }]}>
                         <Input placeholder={t('approval.placeholderPolicyName')} />
                     </Form.Item>
+                    <Form.Item name="name_en" label={t('approval.policyNameEn')}>
+                        <Input placeholder={t('approval.placeholderPolicyNameEn')} />
+                    </Form.Item>
                     <Form.Item name="resource_type" label={t('approval.resourceType')} rules={[{ required: true }]}>
                         <Select 
                             placeholder={t('approval.selectResource')}
-                            options={templatesData?.map(t => ({ label: t.name, value: t.code }))}
+                            options={activeResources.map((t: any) => ({ 
+                                label: i18n.language === 'en-US' && t.name_en ? t.name_en : t.name, 
+                                value: t.code 
+                            }))}
                         />
                     </Form.Item>
                     <Form.Item name="environment" label={t('approval.environment')}>
                         <Input placeholder={t('approval.placeholderEnvironment')} />
                     </Form.Item>
+                    
+                    <Form.Item 
+                        name="match_rules" 
+                        label={t('approval.matchRules')} 
+                        extra={t('approval.matchRulesTip')}
+                    >
+                        <Input.TextArea rows={3} placeholder="{}" />
+                    </Form.Item>
+
+                    <Form.Item 
+                        name="auto_pass_if_ai_verified" 
+                        label={t('approval.autoPassAi')} 
+                        valuePropName="checked"
+                        extra={t('approval.autoPassAiTip')}
+                    >
+                        <Switch />
+                    </Form.Item>
+
                     <Form.Item name="approver_roles" label={t('approval.approverRoles')} extra={t('approval.anyAdminTip')}>
                         <Select 
                             mode="multiple"
-                            placeholder={t('common.selectRoles') || '请选择角色'}
+                            placeholder={t('common.selectRoles')}
                             options={(rolesData as any)?.data?.map((r: any) => ({ label: r.name, value: r.id }))}
                         />
                     </Form.Item>
@@ -427,7 +547,6 @@ const ApprovalCenter: React.FC = () => {
                 </Form>
             </Modal>
 
-            {/* 载荷查看 Drawer */}
             <Drawer
                 title={t('approval.drawerTitle')}
                 placement="right"
@@ -435,10 +554,19 @@ const ApprovalCenter: React.FC = () => {
                 onClose={() => setDetailVisible(false)}
                 open={detailVisible}
                 extra={
-                    currentTicket?.status === 'pending' && hasPermission('system:approval_ticket:approve') && (
+                    ['pending', 'failed'].includes(currentTicket?.status || '') && hasPermission('system:approval_ticket:approve') && (
                         <Space>
-                            <Button danger icon={<CloseCircleOutlined />} onClick={() => setRejectModalVisible(true)}>{t('approval.reject')}</Button>
-                            <Button type="primary" icon={<CheckCircleOutlined />} loading={approveMutation.isPending} onClick={() => handleApprove(currentTicket!.id)}>{t('approval.confirmOkText')}</Button>
+                            {currentTicket?.status === 'pending' && (
+                                <Button danger icon={<CloseCircleOutlined />} onClick={() => setRejectModalVisible(true)}>{t('approval.reject')}</Button>
+                            )}
+                            <Button 
+                                type="primary" 
+                                icon={currentTicket?.status === 'failed' ? <SyncOutlined /> : <CheckCircleOutlined />} 
+                                loading={approveMutation.isPending} 
+                                onClick={() => handleApprove(currentTicket!.id)}
+                            >
+                                {currentTicket?.status === 'failed' ? (t('approval.retry')) : t('approval.confirmOkText')}
+                            </Button>
                         </Space>
                     )
                 }
@@ -465,7 +593,7 @@ const ApprovalCenter: React.FC = () => {
                                     children: (
                                         <div>
                                             <Text strong>{t('approval.ticketCreated')}</Text>
-                                            <div className="text-xs text-gray-400">{t('common.operator') || '操作人'}: {currentTicket.submitter_name}</div>
+                                            <div className="text-xs text-gray-400">{t('common.operator')}: {currentTicket.submitter_name}</div>
                                         </div>
                                     ),
                                     color: 'blue'
@@ -486,6 +614,39 @@ const ApprovalCenter: React.FC = () => {
                         />
 
                         <div>
+                            {currentTicket.payload && (currentTicket.payload as any).alert_id && (
+                                <Alert
+                                    message={
+                                        <Space>
+                                            <ThunderboltOutlined style={{ color: '#faad14' }} />
+                                            <Text strong>{t('approval.sreAlertTitle')}: {(currentTicket.payload as any).alert_name}</Text>
+                                        </Space>
+                                    }
+                                    description={
+                                        <div className="mt-2">
+                                            <Descriptions column={1} size="small">
+                                                <Descriptions.Item label={t('approval.sreReason')}>
+                                                    <Tag color="volcano">{(currentTicket.payload as any).reason || t('approval.sreDefaultReason')}</Tag>
+                                                </Descriptions.Item>
+                                                <Descriptions.Item label={t('approval.sreAlertLink')}>
+                                                    <Link to={`/v1/sre/alerts?id=${(currentTicket.payload as any).alert_id}`}>
+                                                        {t('common.clickToView')} <ArrowRightOutlined />
+                                                    </Link>
+                                                </Descriptions.Item>
+                                                <Descriptions.Item label={t('approval.sreDevRef')}>
+                                                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                                                        Gemini SRE Integration (Managed by Creed)
+                                                    </Text>
+                                                </Descriptions.Item>
+                                            </Descriptions>
+                                        </div>
+                                    }
+                                    type="warning"
+                                    showIcon={false}
+                                    style={{ marginBottom: '16px', borderRadius: '8px' }}
+                                />
+                            )}
+
                             <Typography.Title level={5}><SendOutlined /> {t('approval.payloadTitle')}</Typography.Title>
                             <div style={{
                                 background: token.colorFillTertiary,

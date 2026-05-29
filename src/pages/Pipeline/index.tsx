@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-    Table, Button, Space, Input, App, Popconfirm, Tag, Typography, Tabs, theme, Card as AntdCard, Tooltip
+    Table, Button, Space, Input, App, Popconfirm, Tag, Typography, Tabs, Tooltip, Segmented, Modal, Form
 } from 'antd';
 import {
   PlusOutlined,
@@ -8,21 +8,22 @@ import {
   DeleteOutlined,
   EditOutlined,
   PlayCircleOutlined,
-  HistoryOutlined,
   ProjectOutlined,
   FieldTimeOutlined,
   RocketOutlined,
   ClockCircleOutlined,
-  BranchesOutlined
+  BranchesOutlined,
+  ShareAltOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getPipelines, deletePipeline, executePipeline } from '../../api/pipeline';
+import { getPipelines, deletePipeline, executePipeline, promotePipeline } from '../../api/pipeline';
 import dayjs from 'dayjs';
 import History from './History';
 import ScheduleList from './Schedule';
 import VersionHistoryDrawer from './VersionHistory';
 import useAppStore from '../../store/useAppStore';
+import ShareAssetModal from '../../components/ShareAssetModal';
 import { useTranslation } from 'react-i18next';
 
 const { Title, Text } = Typography;
@@ -35,21 +36,34 @@ const TemplateList = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { token } = theme.useToken();
-  const { hasPermission } = useAppStore();
+  const { hasPermission, currentProject } = useAppStore();
   const [searchText, setSearchText] = useState('');
   const { message, modal } = App.useApp();
   const [versionDrawerOpen, setVersionDrawerOpen] = useState(false);
   const [versionPipelineId, setVersionPipelineId] = useState<number | null>(null);
   const [versionPipelineName, setVersionPipelineName] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [createType, setCreateType] = useState<'manual' | 'ai'>('manual');
+  const [promoteModalVisible, setPromoteModalVisible] = useState(false);
+  const [promotingRecord, setPromotingRecord] = useState<any>(null);
+  const [promoteForm] = Form.useForm();
+  const [sharingPipeline, setSharingPipeline] = useState<any>(null);
 
-  /** @description 拉取所有流水线模板，支持全局搜索 */
   const { data: pipelineData, isLoading } = useQuery({
-    queryKey: ['pipelines', searchText],
-    queryFn: () => getPipelines({ search: searchText }),
+    queryKey: ['pipelines', searchText, page, pageSize, createType],
+    queryFn: () => getPipelines({ 
+        search: searchText,
+        page: page,
+        size: pageSize,
+        create_type: createType
+    }),
   });
 
-  /** @description 逻辑销毁指令 */
+  useEffect(() => {
+    setPage(1);
+  }, [searchText, createType]);
+
   const deleteMutation = useMutation({
     mutationFn: deletePipeline,
     onSuccess: () => {
@@ -59,7 +73,18 @@ const TemplateList = () => {
     onError: (err: any) => message.error(`${t('pipeline.deleteFailed')}: ${err.message}`)
   });
 
-  /** @description 立即触发流水线执行：支持审批拦截逻辑 */
+  const promoteMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name?: string; desc?: string } }) => promotePipeline(id, data),
+    onSuccess: () => {
+      message.success(t('pipeline.promoteSuccess'));
+      setPromoteModalVisible(false);
+      setPromotingRecord(null);
+      promoteForm.resetFields();
+      queryClient.invalidateQueries({ queryKey: ['pipelines'] });
+    },
+    onError: (err: any) => message.error(`${t('common.error')}: ${err.message}`)
+  });
+
   const executeMutation = useMutation({
     mutationFn: executePipeline,
     onSuccess: (res: any) => {
@@ -68,11 +93,11 @@ const TemplateList = () => {
             title: t('pipeline.approvalInterceptTitle'),
             content: (
                 <div className="mt-3">
-                    <p>{res.message || t('pipeline.approvalInterceptContent')}</p>
-                    <p className="text-gray-400 text-xs mt-2">
-                        {t('pipeline.approvalTicket')}: <Tag color="warning">#APP-{res.ticket_id || 'N/A'}</Tag>
+                    <p className="text-ans-text-primary">{res.message || t('pipeline.approvalInterceptContent')}</p>
+                    <p className="text-ans-text-secondary text-xs mt-2">
+                        {t('pipeline.approvalTicket')}: <Tag className="border-0 bg-ans-warning/10 text-ans-warning font-bold">#APP-{res.ticket_id || 'N/A'}</Tag>
                     </p>
-                    <p className="mt-3 font-semibold text-primary">{t('pipeline.approvalNote')}</p>
+                    <p className="mt-3 font-bold text-ans-primary">{t('pipeline.approvalNote')}</p>
                 </div>
             ),
             okText: t('pipeline.goToApproval'),
@@ -95,14 +120,17 @@ const TemplateList = () => {
       key: 'name',
       render: (text: string, record: any) => (
         <Space size="middle">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shadow-sm">
-                <RocketOutlined className="text-primary text-lg" />
+            <div 
+                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
+                style={{ backgroundColor: 'color-mix(in srgb, var(--ans-primary), transparent 90%)', color: 'var(--ans-primary)' }}
+            >
+                <RocketOutlined className="text-lg" />
             </div>
             <div onClick={() => navigate(`/v1/pipeline/designer?id=${record.id}`)} className="cursor-pointer group">
-                <Text strong className="text-sm block group-hover:text-primary transition-colors">
+                <Text strong className="text-sm block group-hover:text-primary transition-colors text-ans-text-primary">
                     {text}
                 </Text>
-                <Text type="secondary" className="text-[10px] uppercase opacity-50">ID: {record.id}</Text>
+                <Text className="text-[10px] uppercase opacity-40 font-mono tracking-tighter">ID: {record.id}</Text>
             </div>
         </Space>
       )
@@ -112,59 +140,74 @@ const TemplateList = () => {
       dataIndex: 'desc',
       key: 'desc',
       ellipsis: true,
-      render: (text: string) => text || <Text type="secondary" className="text-[11px] italic">{t('pipeline.descPlaceholder')}</Text>
+      render: (text: string) => text ? (
+          <Text className="text-ans-text-secondary text-xs opacity-70">{text}</Text>
+      ) : (
+          <Text className="text-[11px] italic opacity-30">{t('pipeline.descPlaceholder')}</Text>
+      )
     },
     {
         title: t('pipeline.status'),
         dataIndex: 'is_active',
         key: 'is_active',
         render: (active: boolean) => active ? (
-            <Tag color="success" className="rounded-full px-3">{t('pipeline.active')}</Tag>
+            <Tag className="rounded-full px-3 border-0 font-bold text-[10px] bg-ans-success/10 text-ans-success uppercase">{t('pipeline.active')}</Tag>
         ) : (
-            <Tag color="default" className="rounded-full px-3 text-gray-400 border-dashed">{t('pipeline.paused')}</Tag>
+            <Tag className="rounded-full px-3 border-0 font-bold text-[10px] bg-ans-text-secondary/10 text-ans-text-secondary opacity-50 uppercase">{t('pipeline.paused')}</Tag>
         )
     },
     {
       title: t('pipeline.updateTime'),
       dataIndex: 'update_time',
       key: 'update_time',
-      render: (val: string) => <Text type="secondary" className="text-xs">{dayjs(val).format('YYYY/MM/DD HH:mm')}</Text>
+      render: (val: string) => <Text className="text-[10px] text-ans-text-secondary opacity-50 font-mono">{dayjs(val).format('YYYY/MM/DD HH:mm')}</Text>
     },
     {
       title: t('pipeline.action'),
       key: 'action',
       render: (_: any, record: any) => (
         <Space size="small">
-          {hasPermission('pipeline:template:execute') && (
-          <Button
-            type="primary"
-            size="small"
-            icon={<PlayCircleOutlined />}
-            onClick={() => executeMutation.mutate(record.id)}
-            loading={executeMutation.isPending}
-            className="rounded-lg shadow-primary/10"
-          >
-            {t('pipeline.execute')}
-          </Button>
+          {createType === 'manual' ? (
+            hasPermission('pipeline:template:execute') && (
+              <Button
+                type="primary"
+                size="small"
+                icon={<PlayCircleOutlined />}
+                onClick={() => executeMutation.mutate(record.id)}
+                loading={executeMutation.isPending}
+                className="rounded-lg shadow-none font-bold text-xs"
+              >
+                {t('pipeline.execute')}
+              </Button>
+            )
+          ) : (
+            hasPermission('pipeline:template:edit') && (
+              <Button
+                type="primary"
+                size="small"
+                icon={<RocketOutlined />}
+                onClick={() => {
+                  setPromotingRecord(record);
+                  promoteForm.setFieldsValue({
+                    name: record.name.replace(/^AI_Auto_Draft_/, ''),
+                    desc: record.desc
+                  });
+                  setPromoteModalVisible(true);
+                }}
+                className="rounded-lg shadow-none font-bold text-xs bg-ans-success hover:bg-ans-success/80 border-0"
+              >
+                {t('pipeline.promote')}
+              </Button>
+            )
           )}
           {hasPermission('pipeline:template:edit') && (
           <Button
               size="small"
               icon={<EditOutlined />}
               onClick={() => navigate(`/v1/pipeline/designer?id=${record.id}`)}
-              className="rounded-lg"
+              className="rounded-lg text-xs"
             >
               {t('pipeline.edit')}
-          </Button>
-          )}
-          {hasPermission('pipeline:run:view') && (
-          <Button
-              size="small"
-              icon={<HistoryOutlined />}
-              onClick={() => navigate(`/v1/pipeline/list?tab=history&pipeline_id=${record.id}`)}
-              className="rounded-lg"
-            >
-              {t('pipeline.history2')}
           </Button>
           )}
           <Tooltip title={t('version.title', { name: '' })}>
@@ -179,6 +222,14 @@ const TemplateList = () => {
               className="rounded-lg"
             />
           </Tooltip>
+          <Tooltip title={t('assetShare.crossProjectGrant')}>
+            <Button
+              size="small"
+              icon={<ShareAltOutlined style={{ color: '#1677ff' }} />}
+              onClick={() => setSharingPipeline(record)}
+              className="rounded-lg"
+            />
+          </Tooltip>
           {hasPermission('pipeline:template:delete') && (
           <Popconfirm
             title={t('pipeline.confirmDeleteTitle')}
@@ -188,7 +239,7 @@ const TemplateList = () => {
             okButtonProps={{ danger: true }}
             cancelText={t('common.cancel')}
           >
-            <Button size="small" danger ghost icon={<DeleteOutlined />} className="rounded-lg" />
+            <Button size="small" danger ghost icon={<DeleteOutlined />} className="rounded-lg border-ans-error/20" />
           </Popconfirm>
           )}
         </Space>
@@ -197,22 +248,33 @@ const TemplateList = () => {
   ];
 
   return (
-    <div style={{ background: token.colorBgContainer }} className="flex flex-col h-full antialiased">
-        <div className="mb-5 flex justify-between items-center px-1">
-            <Input
-              placeholder={t('pipeline.searchPlaceholder')}
-              prefix={<SearchOutlined />}
-              value={searchText}
-              onChange={e => setSearchText(e.target.value)}
-              className="w-80 h-10 rounded-xl"
-              allowClear
-            />
-            {hasPermission('pipeline:template:add') && (
+    <div className="flex flex-col h-full bg-ans-bg-container">
+        <div className="mb-6 flex justify-between items-center px-1">
+            <Space size="middle">
+                <Input
+                  placeholder={t('pipeline.searchPlaceholder')}
+                  prefix={<SearchOutlined className="opacity-30" />}
+                  value={searchText}
+                  onChange={e => setSearchText(e.target.value)}
+                  className="w-80 h-10 rounded-ans-md border-ans-border hover:border-ans-primary transition-all bg-ans-bg-layout/20"
+                  allowClear
+                />
+                <Segmented
+                  value={createType}
+                  onChange={(val) => setCreateType(val as 'manual' | 'ai')}
+                  options={[
+                    { label: t('pipeline.manualTemplates'), value: 'manual' },
+                    { label: t('pipeline.aiDrafts'), value: 'ai' }
+                  ]}
+                  className="bg-ans-bg-layout/20 p-1 rounded-ans-md"
+                />
+            </Space>
+            {createType === 'manual' && hasPermission('pipeline:template:add') && (
             <Button
               type="primary"
               icon={<PlusOutlined />}
               onClick={() => navigate('/v1/pipeline/designer')}
-              className="h-10 px-6 rounded-xl"
+              className="h-10 px-6 rounded-ans-md font-bold tracking-tight shadow-none"
             >
               {t('pipeline.create')}
             </Button>
@@ -226,13 +288,19 @@ const TemplateList = () => {
                 rowKey="id"
                 loading={isLoading}
                 pagination={{ 
+                    current: page,
+                    pageSize: pageSize,
                     total: pipelineData?.total || 0,
                     showSizeChanger: true,
-                    className: "pt-4"
+                    showTotal: (total) => t('common.total', { total }),
+                    className: "pt-6",
+                    onChange: (p, s) => {
+                        setPage(p);
+                        setPageSize(s);
+                    }
                 }}
-                className="custom-table-modern"
+                className="ans-table-clean"
                 scroll={{ x: 'max-content' }}
-
             />
         </div>
 
@@ -242,6 +310,97 @@ const TemplateList = () => {
             open={versionDrawerOpen}
             onClose={() => setVersionDrawerOpen(false)}
         />
+
+        {sharingPipeline && currentProject && (
+            <ShareAssetModal
+                open={!!sharingPipeline}
+                onClose={() => setSharingPipeline(null)}
+                assetType="pipeline"
+                assetId={sharingPipeline.id}
+                assetName={sharingPipeline.name}
+                fromProjectId={currentProject.id}
+            />
+        )}
+
+        <Modal
+          title={t('pipeline.promoteTitle')}
+          open={promoteModalVisible}
+          onCancel={() => {
+            setPromoteModalVisible(false);
+            setPromotingRecord(null);
+            promoteForm.resetFields();
+          }}
+          onOk={() => promoteForm.submit()}
+          confirmLoading={promoteMutation.isPending}
+        >
+          <Form
+            form={promoteForm}
+            layout="vertical"
+            onFinish={(values) => {
+              if (promotingRecord) {
+                promoteMutation.mutate({ id: promotingRecord.id, data: values });
+              }
+            }}
+            className="mt-4"
+          >
+            <Form.Item
+              label={t('pipeline.promoteName')}
+              name="name"
+              rules={[{ required: true, message: t('pipeline.promoteNamePlaceholder') }]}
+            >
+              <Input placeholder={t('pipeline.promoteNamePlaceholder')} />
+            </Form.Item>
+            <Form.Item
+              label={t('pipeline.promoteDesc')}
+              name="desc"
+            >
+              <Input.TextArea rows={4} placeholder={t('pipeline.promoteDescPlaceholder')} />
+            </Form.Item>
+          </Form>
+          {promotingRecord && promotingRecord.graph_data && Array.isArray(promotingRecord.graph_data.nodes) && promotingRecord.graph_data.nodes.length > 0 && (
+            <div style={{ marginTop: '16px', borderTop: '1px solid #303030', paddingTop: '16px' }}>
+              <div style={{ fontWeight: 500, marginBottom: '10px', color: 'rgba(255, 255, 255, 0.85)', fontSize: '13px' }}>
+                {t('pipeline.promoteNodesSummary')}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
+                {promotingRecord.graph_data.nodes.map((node: any, idx: number) => {
+                  const label = node.data?.label || node.data?.name || node.id || t('pipeline.nodeDefaultLabel', { index: idx + 1 });
+                  const isAnsible = node.type === 'ansible';
+                  return (
+                    <div 
+                      key={node.id} 
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        padding: '6px 12px', 
+                        backgroundColor: isAnsible ? 'rgba(82, 196, 26, 0.08)' : 'rgba(255, 255, 255, 0.04)', 
+                        border: `1px solid ${isAnsible ? 'rgba(82, 196, 26, 0.25)' : '#303030'}`,
+                        borderRadius: '4px',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <span style={{ fontSize: '13px', color: '#d9d9d9' }}>
+                        {label}
+                      </span>
+                      <span 
+                        style={{ 
+                          fontSize: '11px', 
+                          padding: '2px 6px', 
+                          borderRadius: '10px',
+                          backgroundColor: isAnsible ? '#52c41a' : '#177ddc',
+                          color: '#fff',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        {isAnsible ? t('pipeline.nodeTypeAnsible') : (node.type || t('pipeline.nodeTypeGeneric'))}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </Modal>
     </div>
   );
 };
@@ -253,12 +412,8 @@ const TemplateList = () => {
 export default function PipelinePage() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { token } = theme.useToken();
 
-  // Zustand 持久化：活跃标签页
   const { pipelineActiveTab, setPipelineActiveTab } = useAppStore();
-  
-  // 响应 URL 参数中的 Tab 切换 (例如：从历史详情链接跳回)
   const queryTab = searchParams.get('tab');
 
   useEffect(() => {
@@ -273,17 +428,18 @@ export default function PipelinePage() {
   };
 
   return (
-    <div style={{ background: token.colorBgLayout }} className="p-7 h-full flex flex-col antialiased">
-        <div className="flex items-center justify-between mb-6">
+    <div className="p-8 h-full flex flex-col animate-in fade-in duration-500 bg-ans-bg-layout">
+        <div className="flex items-center justify-between mb-8">
             <Space size="middle">
                 <div 
-                  style={{ background: token.colorPrimary }} 
-                  className="p-2 rounded-xl text-white items-center justify-center flex shadow-lg shadow-primary/20"
+                  className="w-12 h-12 rounded-2xl text-white items-center justify-center flex shadow-ans-soft"
+                  style={{ background: 'var(--ans-primary)' }}
                 >
-                    <ProjectOutlined className="text-xl" />
+                    <ProjectOutlined className="text-2xl" />
                 </div>
                 <div>
-                    <Title level={4} style={{ margin: 0 }}>{t('pipeline.title')}</Title>
+                    <Title level={4} className="!m-0 !font-extrabold !tracking-tighter !text-ans-text-primary uppercase italic">{t('pipeline.title')}</Title>
+                    <Text className="text-xs text-ans-text-secondary opacity-60 font-medium">PIPELINE ORCHESTRATION CENTER</Text>
                 </div>
             </Space>
         </div>
@@ -296,41 +452,41 @@ export default function PipelinePage() {
             items={[
                 {
                     label: (
-                        <Space className="px-2">
+                        <Space className="px-4 font-bold tracking-tight text-xs uppercase">
                             <RocketOutlined /> {t('pipeline.templates')}
                         </Space>
                     ),
                     key: 'templates',
                     children: (
-                        <AntdCard variant={"borderless"} className="shadow-sm rounded-2xl h-full mt-2 border-none">
+                        <div className="ans-card p-6 h-full mt-4 bg-ans-bg-container overflow-hidden">
                             <TemplateList />
-                        </AntdCard>
+                        </div>
                     )
                 },
                 {
                     label: (
-                        <Space className="px-2">
+                        <Space className="px-4 font-bold tracking-tight text-xs uppercase">
                             <FieldTimeOutlined /> {t('pipeline.history')}
                         </Space>
                     ),
                     key: 'history',
                     children: (
-                        <AntdCard variant={"borderless"} className="shadow-sm rounded-2xl h-full mt-2 border-none">
+                        <div className="ans-card p-6 h-full mt-4 bg-ans-bg-container overflow-hidden">
                             <History />
-                        </AntdCard>
+                        </div>
                     )
                 },
                 {
                     label: (
-                        <Space className="px-2">
+                        <Space className="px-4 font-bold tracking-tight text-xs uppercase">
                             <ClockCircleOutlined /> {t('pipeline.schedule')}
                         </Space>
                     ),
                     key: 'schedule',
                     children: (
-                        <AntdCard variant={"borderless"} className="shadow-sm rounded-2xl h-full mt-2 border-none">
+                        <div className="ans-card p-6 h-full mt-4 bg-ans-bg-container overflow-hidden">
                             <ScheduleList />
-                        </AntdCard>
+                        </div>
                     )
                 }
             ]}

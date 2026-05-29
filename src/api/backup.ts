@@ -26,15 +26,24 @@ export interface CreateBackupResponse {
 export const getBackupList = (): Promise<BackupFile[]> =>
   request.get('/system/backup/index/') as any;
 
-export const createBackup = (): Promise<CreateBackupResponse> =>
-  request.get('/system/backup/generate/') as any;
+export const getBackupModules = (): Promise<any[]> =>
+  request.get('/system/backup/modules/') as any;
 
-export const restoreBackup = (filename: string): Promise<any> =>
-  request.post('/system/backup/restore/', { filename }) as any;
+export const createBackup = (modules?: string[], passphrase?: string): Promise<CreateBackupResponse> =>
+  request.post('/system/backup/generate/', { modules, passphrase }) as any;
 
-export const uploadAndRestoreBackup = (file: File): Promise<any> => {
+export const restoreBackup = (filename: string, modules?: string[], passphrase?: string): Promise<any> =>
+  request.post('/system/backup/restore/', { filename, modules, passphrase }) as any;
+
+export const uploadAndRestoreBackup = (file: File, modules?: string[], passphrase?: string): Promise<any> => {
   const formData = new FormData();
   formData.append('file', file);
+  if (modules && modules.length > 0) {
+    modules.forEach(m => formData.append('modules', m));
+  }
+  if (passphrase) {
+    formData.append('passphrase', passphrase);
+  }
   return request.post('/system/backup/upload/', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }) as any;

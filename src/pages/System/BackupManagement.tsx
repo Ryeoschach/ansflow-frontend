@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Card, Table, Button, Space, Modal, Upload, message, Typography, Popconfirm,
-  Statistic, Row, Col, Alert, Checkbox, theme
+  Statistic, Row, Col, Alert, Checkbox, theme, Input
 } from 'antd';
 import type { TablePaginationConfig } from 'antd';
 import {
@@ -10,7 +10,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { getBackupList, createBackup, restoreBackup, uploadAndRestoreBackup, downloadBackupFile, deleteBackupFiles, BackupFile } from '../../api/backup';
+import { getBackupList, createBackup, restoreBackup, uploadAndRestoreBackup, downloadBackupFile, deleteBackupFiles, getBackupModules, BackupFile } from '../../api/backup';
 
 const { Title, Text } = Typography;
 
@@ -19,8 +19,19 @@ const BackupManagement: React.FC = () => {
   const { token } = theme.useToken();
   const queryClient = useQueryClient();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [restoreModalOpen, setRestoreModalOpen] = useState(false);
+  const [currentFilename, setCurrentFilename] = useState<string>('');
+  const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [restoreLoading, setRestoreLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [passphrase, setPassphrase] = useState<string>('');
+
+  // 获取模块列表
+  const { data: modules = [] } = useQuery({
+    queryKey: ['backup_modules'],
+    queryFn: getBackupModules,
+  });
 
   // 获取备份列表
   const { data: backupList = [], isLoading } = useQuery({
@@ -33,10 +44,11 @@ const BackupManagement: React.FC = () => {
 
   // 创建备份
   const createMutation = useMutation({
-    mutationFn: createBackup,
+    mutationFn: ({ mods, pass }: { mods?: string[]; pass?: string }) => createBackup(mods, pass),
     onSuccess: (res: any) => {
       if (res.success) {
         message.success(t('backup.createSuccess'));
+        setCreateModalOpen(false);
         queryClient.invalidateQueries({ queryKey: ['system_backups'] });
       } else {
         message.error(res.error || t('backup.createFailed'));
@@ -47,9 +59,10 @@ const BackupManagement: React.FC = () => {
 
   // 恢复备份
   const restoreMutation = useMutation({
-    mutationFn: (filename: string) => restoreBackup(filename),
+    mutationFn: ({filename, mods, pass}: {filename: string, mods?: string[], pass?: string}) => restoreBackup(filename, mods, pass),
     onSuccess: (res: any) => {
       setRestoreLoading(false);
+      setRestoreModalOpen(false);
       if (res.success) {
         Modal.success({
           title: t('backup.restoreSuccess'),
@@ -75,6 +88,7 @@ const BackupManagement: React.FC = () => {
     },
     onError: () => {
       setRestoreLoading(false);
+      setRestoreModalOpen(false);
       message.error(t('backup.restoreFailed'));
     },
   });
@@ -96,7 +110,7 @@ const BackupManagement: React.FC = () => {
 
   // 上传并恢复
   const uploadMutation = useMutation({
-    mutationFn: (file: File) => uploadAndRestoreBackup(file),
+    mutationFn: ({ file, pass }: { file: File; pass?: string }) => uploadAndRestoreBackup(file, selectedModules, pass),
     onSuccess: (res: any) => {
       setRestoreLoading(false);
       setUploadModalOpen(false);
@@ -145,7 +159,7 @@ const BackupManagement: React.FC = () => {
 
   // 列表按时间倒序
   const sortedList = [...(Array.isArray(backupList) ? backupList : [])].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    (a, b) => dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf()
   );
 
   // 添加序号（ID）
@@ -195,20 +209,19 @@ const BackupManagement: React.FC = () => {
           <Button type="text" icon={<DownloadOutlined />} onClick={() => handleDownload(record.filename)}>
             {t('backup.download')}
           </Button>
-          <Popconfirm
-            title={t('backup.confirmRestore')}
-            description={t('backup.restoreWarning')}
-            onConfirm={() => {
-              setRestoreLoading(true);
-              restoreMutation.mutate(record.filename);
+          <Button
+            type="text"
+            icon={<FileZipOutlined />}
+            danger
+            onClick={() => {
+              setCurrentFilename(record.filename);
+              setSelectedModules(modules.map((m: any) => m.key)); // 默认全选
+              setPassphrase('');
+              setRestoreModalOpen(true);
             }}
-            okText={t('common.confirm')}
-            cancelText={t('common.cancel')}
           >
-            <Button type="text" icon={<FileZipOutlined />} danger>
-              {t('backup.restore')}
-            </Button>
-          </Popconfirm>
+            {t('backup.restore')}
+          </Button>
         </Space>
       ),
     },
@@ -270,10 +283,23 @@ const BackupManagement: React.FC = () => {
                 </Button>
               </Popconfirm>
             )}
-            <Button type="primary" icon={<DatabaseOutlined />} onClick={() => createMutation.mutate()} loading={createMutation.isPending}>
+            <Button
+              type="primary"
+              icon={<DatabaseOutlined />}
+              onClick={() => {
+                setSelectedModules(modules.map((m: any) => m.key));
+                setPassphrase('');
+                setCreateModalOpen(true);
+              }}
+              loading={createMutation.isPending}
+            >
               {t('backup.create')}
             </Button>
-            <Button icon={<UploadOutlined />} onClick={() => setUploadModalOpen(true)}>
+            <Button icon={<UploadOutlined />} onClick={() => {
+              setSelectedModules(modules.map((m: any) => m.key));
+              setPassphrase('');
+              setUploadModalOpen(true);
+            }}>
               {t('backup.upload')}
             </Button>
           </Space>
@@ -289,8 +315,127 @@ const BackupManagement: React.FC = () => {
         />
       </Card>
 
-      <Modal title={t('backup.upload')} open={uploadModalOpen} onCancel={() => setUploadModalOpen(false)} footer={null} width={500}>
+      <Modal
+        title={t('backup.selectBackupScope')}
+        open={createModalOpen}
+        onOk={() => createMutation.mutate({ mods: selectedModules, pass: passphrase })}
+        onCancel={() => setCreateModalOpen(false)}
+        confirmLoading={createMutation.isPending}
+      >
         <div className="py-4">
+          <Text type="secondary" className="mb-4 block">{t('backup.selectExportModules')}</Text>
+          <Checkbox.Group
+            style={{ width: '100%' }}
+            value={selectedModules}
+            onChange={(vals) => setSelectedModules(vals as string[])}
+          >
+            <Row gutter={[16, 12]}>
+              {modules.map((m: any) => (
+                <Col span={12} key={m.key}>
+                  <Checkbox value={m.key}>{m.label}</Checkbox>
+                </Col>
+              ))}
+            </Row>
+          </Checkbox.Group>
+          <div className="mt-4">
+            <Text className="mb-2 block">{t('backup.backupPasswordLabel')}</Text>
+            <Input.Password
+              placeholder={t('backup.backupPasswordPlaceholder')}
+              value={passphrase}
+              onChange={(e) => setPassphrase(e.target.value)}
+            />
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        title={t('backup.confirmRestoreData')}
+        open={restoreModalOpen}
+        onOk={() => {
+          setRestoreLoading(true);
+          restoreMutation.mutate({ filename: currentFilename, mods: selectedModules, pass: passphrase });
+        }}
+        onCancel={() => setRestoreModalOpen(false)}
+        confirmLoading={restoreLoading}
+      >
+        <div className="py-4">
+          <Alert
+            message={t('backup.highRiskOperation')}
+            description={t('backup.restoreOverwriteWarning')}
+            type="warning"
+            showIcon
+            className="mb-4"
+          />
+          <Text strong>{t('backup.selectRestoreModules')}</Text>
+          <div className="mt-4 p-4 bg-ans-bg-container border border-ans-border rounded-lg">
+            <Checkbox.Group
+              style={{ width: '100%' }}
+              value={selectedModules}
+              onChange={(vals) => setSelectedModules(vals as string[])}
+            >
+              <Row gutter={[16, 12]}>
+                {modules.map((m: any) => (
+                  <Col span={12} key={m.key}>
+                    <Checkbox value={m.key}>{m.label}</Checkbox>
+                  </Col>
+                ))}
+              </Row>
+            </Checkbox.Group>
+          </div>
+          <div className="mt-4">
+            <Text className="mb-2 block">{t('backup.decryptPasswordLabel')}</Text>
+            <Input.Password
+              placeholder={t('backup.decryptPasswordPlaceholder')}
+              value={passphrase}
+              onChange={(e) => setPassphrase(e.target.value)}
+            />
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        title={t('backup.upload')}
+        open={uploadModalOpen}
+        onCancel={() => setUploadModalOpen(false)}
+        footer={null}
+        width={600}
+      >
+        <div className="py-4">
+          <Alert
+            message={t('backup.uploadRestoreNote')}
+            description={t('backup.uploadRestoreDesc')}
+            type="info"
+            showIcon
+            className="mb-4"
+          />
+
+          <div className="mb-6 p-4 bg-ans-bg-container border border-ans-border rounded-lg border-dashed">
+            <Text strong className="mb-3 block">{t('backup.selectRestoreModulesShort')}</Text>
+            <Checkbox.Group
+              style={{ width: '100%' }}
+              value={selectedModules}
+              onChange={(vals) => setSelectedModules(vals as string[])}
+            >
+              <Row gutter={[16, 12]}>
+                {modules.map((m: any) => (
+                  <Col span={12} key={m.key}>
+                    <Checkbox value={m.key}>{m.label}</Checkbox>
+                  </Col>
+                ))}
+              </Row>
+            </Checkbox.Group>
+          </div>
+
+          <div className="mb-4">
+            <Text className="mb-2 block">{t('backup.decryptPasswordBeforeUploadLabel')}</Text>
+            <Input.Password
+              placeholder={t('backup.decryptPasswordPlaceholder')}
+              value={passphrase}
+              onChange={(e) => setPassphrase(e.target.value)}
+              disabled={restoreLoading}
+            />
+          </div>
+
           <Upload.Dragger
             accept=".json.gz"
             beforeUpload={(file) => {
@@ -299,7 +444,7 @@ const BackupManagement: React.FC = () => {
                 return false;
               }
               setRestoreLoading(true);
-              uploadMutation.mutate(file);
+              uploadMutation.mutate({ file, pass: passphrase });
               return false;
             }}
             showUploadList={false}

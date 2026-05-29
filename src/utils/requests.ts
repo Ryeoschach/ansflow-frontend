@@ -17,6 +17,11 @@ request.interceptors.request.use(
             config.headers.Authorization = `Bearer ${token}`;
         }
         
+        const currentProject = useAppStore.getState().currentProject;
+        if (currentProject?.id) {
+            config.headers['X-Project-ID'] = String(currentProject.id);
+        }
+        
         const state = useAppStore.getState();
         // 初始加载中且不是刷新请求，则不发送 Header 或直接拦截
         if (state.isInitializing && config.url !== '/auth/refresh/' && config.url !== '/account/me/') {
@@ -50,7 +55,7 @@ request.interceptors.response.use(
         const { config, response } = error;
         
         // 如果请求本身就是刷新 Token 请求且报错，直接清空状态并跳转登录
-        if (config.url === '/auth/refresh/' || config.url === '/api/v1/auth/refresh/') {
+        if (config?.url === '/auth/refresh/' || config?.url === '/api/v1/auth/refresh/') {
             isRefreshing = false;
             requestsQueue = [];
             useAppStore.getState().setToken(null);

@@ -40,11 +40,22 @@ const CredentialVault: React.FC = () => {
     // 局部 UI 状态
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [editingRecord, setEditingRecord] = useState<any>(null);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+
+    // 过滤条件变化时重置页码
+    React.useEffect(() => {
+        setPage(1);
+    }, [filterAuthType]);
 
     /** @description 获取凭据列表 */
     const { data: credData, isLoading } = useQuery({
-        queryKey: ['credentials', filterAuthType],
-        queryFn: () => getCredentials({ type: filterAuthType === 'all' ? undefined : filterAuthType }),
+        queryKey: ['credentials', filterAuthType, page, pageSize],
+        queryFn: () => getCredentials({ 
+            type: filterAuthType === 'all' ? undefined : filterAuthType,
+            page,
+            size: pageSize
+        }),
         enabled: !!authToken && hasPermission('system:credential:view'),
     });
 
@@ -228,10 +239,20 @@ const CredentialVault: React.FC = () => {
                     dataSource={credData?.data || []}
                     rowKey="id" 
                     loading={isLoading}
-                    pagination={{ showSizeChanger: true, className: "px-6 py-4" }}
+                    pagination={{ 
+                        current: page,
+                        pageSize: pageSize,
+                        total: credData?.total || 0,
+                        showSizeChanger: true, 
+                        className: "px-6 py-4",
+                        showTotal: (total) => t('common.total', { total }),
+                        onChange: (p, s) => {
+                            setPage(p);
+                            setPageSize(s);
+                        }
+                    }}
                     className="custom-table-modern"
                     scroll={{ x: 'max-content', y: 'calc(100vh - 380px)' }}
-                   
                 />
             </Card>
 

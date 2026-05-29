@@ -26,10 +26,10 @@ const BaseNode: React.FC<BaseNodeProps> = ({
 }) => {
   const { t } = useTranslation();
   const { token } = theme.useToken();
-  const isRunning = data.runStatus === 'running';
-  const isSuccess = data.runStatus === 'success';
-  const isFailed = data.runStatus === 'failed';
-  const isSkipped = data.runStatus === 'skipped';
+  const isRunning = data?.runStatus === 'running';
+  const isSuccess = data?.runStatus === 'success';
+  const isFailed = data?.runStatus === 'failed';
+  const isSkipped = data?.runStatus === 'skipped';
 
   // 颜色优先级：运行状态 > 品牌色 (defaultColor) > 默认主题色
   let primaryColor = defaultColor || token.colorPrimary;

@@ -12,9 +12,10 @@ import useBreakpoint from '../../utils/useBreakpoint';
  * 菜单管理页面
  */
 const MenuManagement: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const queryClient = useQueryClient();
     const { hasPermission, token } = useAppStore();
+    const isEn = i18n.language === 'en-US';
     const { isMobile } = useBreakpoint();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { message } = App.useApp();
@@ -90,7 +91,15 @@ const MenuManagement: React.FC = () => {
     };
 
     const columns = [
-        { title: t('menuManagement.columnName'), dataIndex: 'title', key: 'title', width: 180, ellipsis: true },
+        { 
+            title: t('menuManagement.columnName'), 
+            key: 'title', 
+            width: 180, 
+            ellipsis: true,
+            render: (_: any, record: any) => (
+                <span>{(isEn && record.title_en) ? record.title_en : record.title}</span>
+            )
+        },
         { title: t('menuManagement.columnIcon'), dataIndex: 'icon', key: 'icon', width: 80, render: (icon: string) => <IconMapper iconName={icon} /> },
         { title: t('menuManagement.columnKey'), dataIndex: 'key', key: 'key', width: 180, ellipsis: true },
         { title: t('menuManagement.columnPath'), dataIndex: 'path', key: 'path', width: 200, ellipsis: true },
@@ -143,7 +152,10 @@ const MenuManagement: React.FC = () => {
                             allowClear
                             options={flatMenus
                                 ?.filter((m: any) => m.id !== editingMenu?.id)
-                                ?.map((m: any) => ({ label: m.title, value: m.id }))}
+                                ?.map((m: any) => ({ 
+                                    label: (isEn && m.title_en) ? m.title_en : m.title, 
+                                    value: m.id 
+                                }))}
                         />
                     </Form.Item>
                     <Form.Item name="order" label={t('menuManagement.displayOrder')}><InputNumber min={0} style={{ width: '100%' }} /></Form.Item>

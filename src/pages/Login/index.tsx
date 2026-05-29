@@ -64,6 +64,8 @@ const LoginPage: React.FC = () => {
             navigate('/v1/dashboard');
         },
         onError: (error: any) => {
+            // 500 等服务器错误已在 axios 拦截器显示 systemError，避免重复
+            if (error.response?.status >= 500) return;
             const errorMsg = error.response?.data?.detail || error.response?.data?.non_field_errors?.[0] || t('auth.loginError');
             message.error(errorMsg);
         }
@@ -79,6 +81,8 @@ const LoginPage: React.FC = () => {
             navigate('/v1/dashboard');
         },
         onError: (error: any) => {
+            // 500 等服务器错误已在 axios 拦截器显示 systemError，避免重复
+            if (error.response?.status >= 500) return;
             const errorMsg = error.response?.data?.detail || error.response?.data?.non_field_errors?.[0] || t('auth.loginError');
             message.error(errorMsg);
         }
@@ -227,8 +231,8 @@ const LoginPage: React.FC = () => {
                         }}
                         size="small"
                         options={[
-                            { value: 'zh-CN', label: '中文' },
-                            { value: 'en-US', label: 'English' },
+                            { value: 'zh-CN', label: t('common.languageZh') },
+                            { value: 'en-US', label: t('common.languageEn') },
                         ]}
                         style={{ width: 80 }}
                     />
@@ -251,8 +255,12 @@ const LoginPage: React.FC = () => {
             <Card className="w-full max-w-md shadow-2xl glass-effect border-none"
                 styles={{ body: { padding: '40px 32px' } }}>
                 <div className="text-center mb-6">
-                    <Title level={2} className="mb-2">AnsFlow</Title>
-                    <Text type="secondary">{t('auth.subtitle')}</Text>
+                    <div className="flex items-center justify-center gap-4 mb-2">
+                        <div className="h-px flex-1" style={{ backgroundColor: antdToken.colorPrimary }} />
+                        <Title level={2} className="!mb-0" style={{ fontWeight: 900 }}>AnsBrain</Title>
+                        <div className="h-px flex-1" style={{ backgroundColor: antdToken.colorPrimary }} />
+                    </div>
+                    <Text type="secondary" className="text-xs">{t('auth.subtitle')}</Text>
                 </div>
 
                 <Tabs

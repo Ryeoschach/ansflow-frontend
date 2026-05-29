@@ -2,11 +2,13 @@ import React, { Suspense } from 'react';
 import { Layout, theme } from 'antd';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
+import AIChatbot from '../components/AIChatbot';
 import { Outlet } from 'react-router-dom';
 import { Footer } from 'antd/es/layout/layout';
 import { TableSkeleton } from '../components/Skeletons';
 import AppErrorBoundary from '../components/ErrorBoundary';
 import { useBreakpoint } from '@/utils/useBreakpoint';
+import { useTranslation } from 'react-i18next';
 const { Content } = Layout;
 
 /**
@@ -20,6 +22,7 @@ declare const __GIT_HASH__: string;
 const MainLayout: React.FC<{ isLoading?: boolean }> = ({ isLoading }) => {
     const { token } = theme.useToken();
     const { isMobile } = useBreakpoint();
+    const { t } = useTranslation();
 
     return (
         <Layout className="min-h-screen">
@@ -46,8 +49,8 @@ const MainLayout: React.FC<{ isLoading?: boolean }> = ({ isLoading }) => {
                     ) : (
                         /* 只在内容区加载，框架不动 */
                         <AppErrorBoundary
-                            title="功能模块加载异常"
-                            subTitle="当前模块在渲染时发生了运行时错误，请尝试重新刷新页面或跳转至其他页面。"
+                            title={t('errorBoundary.moduleTitle')}
+                            subTitle={t('errorBoundary.moduleSubtitle')}
                         >
                             <Suspense fallback={<TableSkeleton />}>
                                 <Outlet />
@@ -59,6 +62,7 @@ const MainLayout: React.FC<{ isLoading?: boolean }> = ({ isLoading }) => {
                     Ansflow ©{new Date().getFullYear()} Created by Creed · v{__APP_VERSION__} ({__GIT_HASH__})
                 </Footer>
             </Layout>
+            <AIChatbot />
         </Layout>
     );
 };

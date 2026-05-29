@@ -1,118 +1,36 @@
-# AnsFlow 前端
+# AnsFlow Frontend
 
-企业级 DevOps 流水线平台前端，基于 React 18 + TypeScript + Vite 构建。
+<p align="left">
+  <a href="https://ansflow.cyfee.com"><img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 18"></a>
+  <a href="https://ansflow.cyfee.com"><img src="https://img.shields.io/badge/TypeScript-Ready-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"></a>
+  <a href="https://ansflow.cyfee.com"><img src="https://img.shields.io/badge/Vite-Ready-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite"></a>
+  <a href="./README_ZH.md"><img src="https://img.shields.io/badge/Lang-中文说明-red?style=for-the-badge" alt="中文说明"></a>
+</p>
 
-**当前版本**：v1.8.0  
-**在线 Demo**：https://ansflow.cyfee.com:10443  
-**默认账号**：admin / ansflow
+English | [中文说明](./README_ZH.md)
 
----
+AnsFlow Frontend is the React application for the AnsFlow operations platform. It provides the workspace UI for pipelines, hosts, credentials, Kubernetes/GitOps, SRE alerts, AI assistants, approvals, reports, and system settings.
 
-## 技术栈
+- Product site and full documentation: [https://ansflow.cyfee.com](https://ansflow.cyfee.com)
+- Frontend repository: [Ryeoschach/ansflow-frontend](https://github.com/Ryeoschach/ansflow-frontend)
+- Backend repository: [Ryeoschach/ansflow-backend](https://github.com/Ryeoschach/ansflow-backend)
 
-| 类别 | 技术 | 说明 |
-|------|------|------|
-| 框架 | React 18 + TypeScript | 核心框架 |
-| 构建 | Vite 5 | 快速开发与生产构建 |
-| UI 组件 | Ant Design 6 | 企业级 UI 组件库 |
-| 样式 | Tailwind CSS v4 + @ant-design/cssinjs | 原子化 CSS + 组件库样式集成 |
-| 编辑器 | Monaco Editor | 企业级代码/YAML 编辑体验 |
-| 终端 | xterm.js | 基于 WebSocket 的交互式终端 |
-| 状态管理 | Zustand v5 | 轻量级状态管理，支持 localStorage 持久化 |
-| 数据请求 | Axios + TanStack Query v5 | HTTP 请求封装 + 服务端状态缓存 |
-| 路由 | React Router v6 | SPA 路由，支持嵌套路由 |
-| 流水线可视化 | ReactFlow | DAG 流程图编辑与展示 |
-| WebSocket | react-use-websocket | 实时日志推送 |
-| 图表 | ECharts + echarts-for-react | 数据可视化 |
-| 国际化 | i18next + react-i18next | 中文 / English 双语支持 |
-| 监控体系 | Celery Stats API | 分布式任务引擎健康状态追踪 |
-| 包管理 | pnpm | 高性能包管理器 |
+## Stack
 
----
+- React 18, TypeScript, Vite
+- Ant Design, Tailwind CSS
+- TanStack Query, Zustand
+- ReactFlow, xterm.js, Monaco Editor
 
-## 项目结构
+## Development
 
-```
-src/
-├── api/                          # API 请求封装（按模块划分）
-│   ├── ...
-│   ├── system.ts                 # 系统设置/备份/监控 API (新增 Celery Stats)
-│   └── ...
-├── components/                   # 公共组件
-│   ├── ErrorBoundary/            # 全局异常边界组件 (健壮性增强)
-│   └── ...
-├── pages/                        # 页面级组件
-│   ├── ...
-│   ├── System/                   # 系统管理
-│   │   ├── Monitor.tsx           # 系统监控面板 (全面重构：Worker/Beat/Queue)
-│   │   ├── ConfigCenter/          # 配置中心 (全面国际化支持)
-│   │   └── ...
-│   └── ...
+```bash
+pnpm install
+pnpm dev
+pnpm build
 ```
 
----
-
-## 功能模块详解（新增与增强）
-
-### 8.6 系统监控 (System Monitor) - v1.7.0 重大更新
-
-**页面**：`/v1/system/monitor`
-
-**功能**：
-
-- **统一监控面板**：将数据库、Redis、K8s 等组件统一为表格化展示，提升信息密度。
-- **Celery 分布式任务监控**：
-  - **Worker 详情**：实时展示所有活动 Worker 的并发度、正在执行任务数、预留任务数及系统资源占用。
-  - **Beat 调度器状态**：追踪任务调度器的在线状态及最后一次运行（Last Run）时间戳。
-  - **队列积压监控**：实时查看各消息队列的堆积长度。
-- **自动刷新**：支持每 30 秒自动同步集群健康数据。
-
----
-
-### 8.7 配置中心 (Config Center) - 体验优化
-
-**功能增强**：
-
-- **全量国际化**：所有统计项（分类总数/配置项总数）、通知选项（notify_on）及变更原因（Reason）均已支持中英文切换。
-- **稳定性增强**：针对 `notify_on` 等复杂配置项的解析逻辑进行了健壮性加固，防止非数组数据导致的渲染崩溃。
-
----
-
-### 8.8 K8S 运维增强 (v1.8.0) - 重磅更新
-
-**页面**：`/v1/k8s/center`
-
-**功能**：
-
-- **交互式 WebTTY**：集成 `xterm.js`，实现与 K8s Pod 的实时交互终端，支持颜色高亮、按键转发与窗口自适应。
-- **Helm 仓库管理 (Repo Manager)**：新增仓库管理界面，支持添加私有 Helm 仓库、连通性测试以及 Chart 搜索选择。
-- **实时日志流 (Follow Logs)**：支持 Pod 日志实时滚动输出，告别手动刷新。
-- **Monaco YAML 编辑器**：全面升级 Helm Values 与 K8s 资源编辑器，支持语法高亮、自动对齐及深浅色主题适配。
-- **资源利用率可视化 (Metrics)**：
-  - **Node 指标**：直观展示节点 CPU 与内存的实时利用率进度条。
-  - **Pod 负载**：在 Pod 列表中实时展示容器级的 CPU (Core) 与内存 (MiB) 消耗。
-- **事件中心 (Events)**：在集群详情中提供全局事件视图，快速定位镜像拉取失败、OOMKill 等隐蔽问题。
-
----
-
-### 11. 系统健壮性 (Robustness)
-
-- **异常边界拦截**：升级了 `AppErrorBoundary`，能够精确捕获并上报运行时 `TypeError` 或组件引用异常。
-- **防御性编程**：在全项目范围内的 `.includes()` 及数组操作逻辑中增加了 `Array.isArray()` 的防御性检查，有效避免由于后端 API 数据结构不符导致的页面白屏。
-
----
-
-## 权限控制详解
-
-(此处保留原有 SmartRBAC 内容...)
-
----
-
-## 开发指南
-
-(此处保留原有 pnpm 开发指南...)
-
----
+Configure API and WebSocket endpoints through the project environment files before connecting to a backend service. Detailed deployment and usage instructions are maintained in the AnsFlow Web documentation portal.
 
 ## License
 

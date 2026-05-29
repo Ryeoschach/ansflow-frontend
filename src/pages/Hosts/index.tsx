@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Table, Card, Button, Modal, Form, Input, Space, Tooltip, Popconfirm, Select, InputNumber, Tag, App } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, DesktopOutlined } from '@ant-design/icons';
+import { Table, Card, Button, Modal, Form, Input, Space, Tooltip, Popconfirm, Select, InputNumber, Tag, App, Alert } from 'antd';
+import { EditOutlined, DeleteOutlined, PlusOutlined, DesktopOutlined, CloudUploadOutlined, ShareAltOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {getHosts, createHost, updateHost, deleteHost, getEnvironments, getPlatforms, getCredentials} from '../../api/hosts.ts';
+import {getHosts, createHost, updateHost, deleteHost, getEnvironments, getPlatforms, getCredentials, bulkImportHost} from '../../api/hosts.ts';
 import useAppStore from '../../store/useAppStore';
 import {TableSkeleton} from "../../components/Skeletons";
+import ShareAssetModal from '../../components/ShareAssetModal';
 import { useBreakpoint } from '@/utils/useBreakpoint';
 import { useTranslation } from 'react-i18next';
 
@@ -12,12 +13,15 @@ const HostManagement: React.FC = () => {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
     const { message } = App.useApp();
-    const { hasPermission } = useAppStore();
+    const { hasPermission, currentProject } = useAppStore();
     const { token } = useAppStore.getState();
     const { isMobile } = useBreakpoint();
     const [form] = Form.useForm();
+    const [importForm] = Form.useForm();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [editingHost, setEditingHost] = useState<any>(null);
+    const [sharingHost, setSharingHost] = useState<any>(null);
 
     // 分页与筛选参数
     const [params, setParams] = useState({ page: 1, size: 10, search: '' });
@@ -72,6 +76,26 @@ const HostManagement: React.FC = () => {
         }
     });
 
+    const importMutation = useMutation({
+        mutationFn: bulkImportHost,
+        onSuccess: (res: any) => {
+            message.success(res.message);
+            if (res.errors && res.errors.length > 0) {
+                Modal.warning({
+                    title: t('host.importPartialSuccess'),
+                    content: (
+                        <div className="max-h-60 overflow-auto">
+                            {res.errors.map((err: string, i: number) => <div key={i} className="text-red-500 text-xs mb-1">{err}</div>)}
+                        </div>
+                    )
+                });
+            }
+            setIsImportModalOpen(false);
+            importForm.resetFields();
+            queryClient.invalidateQueries({ queryKey: ['Hosts'] });
+        }
+    });
+
     // 状态映射字典
     const statusMap: Record<number, { text: string; color: string }> = {
         0: { text: t('host.statusOffline'), color: 'default' },
@@ -90,12 +114,11 @@ const HostManagement: React.FC = () => {
         },
         {
             title: t('host.environment'),
-            dataIndex: 'env',
+            dataIndex: 'env_name',
             key: 'env',
-            render: (envId: number) => {
-                const env = environments.find((e: any) => e.id === envId);
-                return <Tag color="processing">{env?.name || `ID:${envId}`}</Tag>;
-            }
+            render: (name: string, record: any) => (
+                <Tag color={record.env_color || 'blue'}>{name || `ID:${record.env}`}</Tag>
+            )
         },
         {
             title: t('host.platform'),
@@ -151,6 +174,13 @@ const HostManagement: React.FC = () => {
             key: 'action',
             render: (_: any, record: any) => (
                 <Space size="middle">
+                    <Tooltip title={t('assetShare.crossProjectGrant')}>
+                        <Button
+                            type="text"
+                            icon={<ShareAltOutlined style={{ color: '#1677ff' }} />}
+                            onClick={() => setSharingHost(record)}
+                        />
+                    </Tooltip>
                     <Tooltip title={t('host.edit')}>
                         <Button type="text" icon={<EditOutlined />} onClick={() => {
                             setEditingHost(record);
@@ -170,20 +200,30 @@ const HostManagement: React.FC = () => {
 
     return (
         <Card title={t('host.title')} className="m-4 shadow-sm" extra={
-            (hasPermission('*') || hasPermission('resource:hosts:add')) && (
-            <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => {
-                    setEditingHost(null);
-                    form.resetFields();
-                    form.setFieldsValue({ status: 1, cpu: 2, memory: 4, disk: 50, os_type: 'Linux' });
-                    setIsModalOpen(true);
-                }}
-            >
-                {t('host.enterHost')}
-            </Button>
-            )
+            <Space>
+                {(hasPermission('*') || hasPermission('resource:hosts:add')) && (
+                    <Button
+                        icon={<CloudUploadOutlined />}
+                        onClick={() => setIsImportModalOpen(true)}
+                    >
+                        {t('host.bulkImport')}
+                    </Button>
+                )}
+                {(hasPermission('*') || hasPermission('resource:hosts:add')) && (
+                <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => {
+                        setEditingHost(null);
+                        form.resetFields();
+                        form.setFieldsValue({ status: 1, cpu: 2, memory: 4, disk: 50, os_type: 'Linux' });
+                        setIsModalOpen(true);
+                    }}
+                >
+                    {t('host.enterHost')}
+                </Button>
+                )}
+            </Space>
         }>
             {isLoading ? (
                 <TableSkeleton /> // 加载时显示骨架
@@ -200,6 +240,7 @@ const HostManagement: React.FC = () => {
                     current: params.page,
                     pageSize: params.size,
                     showSizeChanger: true,
+                    showTotal: (total) => t('common.total', { total }),
                     onChange: (p, s) => setParams({ ...params, page: p, size: s }),
                 }}
             />
@@ -280,6 +321,67 @@ const HostManagement: React.FC = () => {
                     </Form.Item>
                 </Form>
             </Modal>
+
+            <Modal
+                title={t('host.bulkImportHosts')}
+                open={isImportModalOpen}
+                onOk={() => importForm.submit()}
+                onCancel={() => setIsImportModalOpen(false)}
+                confirmLoading={importMutation.isPending}
+                width={600}
+            >
+                <Form
+                    form={importForm}
+                    layout="vertical"
+                    className="mt-4"
+                    onFinish={(values) => {
+                        try {
+                            const data = JSON.parse(values.json_data);
+                            importMutation.mutate(data);
+                        } catch (e) {
+                            message.error(t('host.jsonFormatError'));
+                        }
+                    }}
+                >
+                    <Alert 
+                        message={t('host.importGuide')} 
+                        description={
+                            <ul className="text-xs list-disc ml-4">
+                                <li>{t('host.importGuideArray')}</li>
+                                <li>{t('host.importGuideRequired')}</li>
+                                <li>{t('host.importGuideOptional')}</li>
+                                <li>{t('host.importGuideExample', { example: '[{"hostname":"web-01", "private_ip":"10.0.0.1", "env":1}]' })}</li>
+                            </ul>
+                        }
+                        type="info"
+                        showIcon
+                        className="mb-4"
+                    />
+                    <Form.Item 
+                        name="json_data" 
+                        label={t('host.jsonData')} 
+                        rules={[{ required: true, message: t('host.jsonListRequired') }]}
+                    >
+                        <Input.TextArea 
+                            rows={10} 
+                            placeholder='[{"hostname": "node-1", "private_ip": "192.168.1.10", "env": 1}]'
+                            className="font-mono text-xs"
+                        />
+                    </Form.Item>
+                </Form>
+            </Modal>
+
+            {/* 跨项目授权弹窗 */}
+            {sharingHost && currentProject && (
+                <ShareAssetModal
+                    open={!!sharingHost}
+                    onClose={() => setSharingHost(null)}
+                    assetType="host"
+                    assetId={sharingHost.id}
+                    assetName={sharingHost.hostname}
+                    fromProjectId={currentProject.id}
+                />
+            )}
         </Card>
     );
 };

@@ -13,6 +13,7 @@ import {
     Select,
     DatePicker,
     Tooltip,
+    Popover,
 } from 'antd';
 import {
     SyncOutlined,
@@ -25,6 +26,7 @@ import {
     StopOutlined,
     FilterOutlined,
     LeftOutlined,
+    RobotOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -46,23 +48,34 @@ const ExecutionHistory: React.FC = () => {
     const [logDrawerVisible, setLogDrawerVisible] = useState(false);
     const [activeExecutionId, setActiveExecutionId] = useState<number | null>(null);
     const [drawerWidth, setDrawerWidth] = useState(800);
+    const [hostFilter, setHostFilter] = useState<string | null>(null);
 
     // 筛选状态
     const [params, setParams] = useState<any>({ page: 1, size: 20 });
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [filterForm, setFilterForm] = useState<any>({});
     
-    // 处理从 dashboard 等页面跳转过来的 ID 参数
+    // 处理从 dashboard 等页面跳转过来的参数
     useEffect(() => {
         const jumpId = searchParams.get('id');
+        const jumpStatus = searchParams.get('status');
+
         if (jumpId && !activeExecutionId && !logDrawerVisible) {
             const numericId = Number(jumpId);
             if (!isNaN(numericId)) {
                 setActiveExecutionId(numericId);
                 setLogDrawerVisible(true);
+                // 标记处理完成，清理 URL 防止刷新干扰
+                searchParams.delete('id');
+                setSearchParams(searchParams);
             }
         }
-    }, [searchParams, activeExecutionId, logDrawerVisible]);
+
+        if (jumpStatus) {
+            setParams((prev: any) => ({ ...prev, status: jumpStatus }));
+            // 如果需要清理 status 参数也可以在这里加，但通常保留过滤状态在 URL 更符合习惯
+        }
+    }, [searchParams]);
 
     // 1. 获取执行记录
     const { data: executionData, isLoading: listLoading } = useQuery({
@@ -92,6 +105,21 @@ const ExecutionHistory: React.FC = () => {
             message.error(err.response?.data?.error || t('executionHistory.terminateFailed'));
         }
     });
+
+    const activeExecution = executionData?.data?.find((e: any) => e.id === activeExecutionId);
+
+    const filteredLogs = React.useMemo(() => {
+        if (!logs) return [];
+        if (!hostFilter) return logs;
+        return logs.filter((l: any) => l.host === hostFilter);
+    }, [logs, hostFilter]);
+
+    const availableHosts = React.useMemo(() => {
+        if (!logs) return [];
+        const hosts = new Set<string>();
+        logs.forEach((l: any) => { if (l.host) hosts.add(l.host); });
+        return Array.from(hosts);
+    }, [logs]);
 
     const statusMap: any = {
         'pending': { color: 'default', text: t('executionHistory.pending'), icon: <SyncOutlined spin /> },
@@ -231,6 +259,7 @@ const ExecutionHistory: React.FC = () => {
                     allowClear
                     placeholder={t('executionHistory.executionStatus')}
                     style={{ width: 120 }}
+                    value={params.status}
                     options={[
                         { label: t('executionHistory.success'), value: 'success' },
                         { label: t('executionHistory.failed'), value: 'failed' },
@@ -291,12 +320,13 @@ const ExecutionHistory: React.FC = () => {
                 rowKey="id"
                 loading={listLoading}
                 scroll={{ x: 'max-content' }}
-               
                 pagination={{
                     total: executionData?.total,
                     pageSize: params.size,
                     current: params.page,
-                    onChange: (page) => setParams({ ...params, page })
+                    showSizeChanger: true,
+                    showTotal: (total) => t('common.total', { total }),
+                    onChange: (page, size) => setParams({ ...params, page, size })
                 }}
             />
 
@@ -326,21 +356,63 @@ const ExecutionHistory: React.FC = () => {
                     }
                 }}
                 open={logDrawerVisible}
-                styles={{ body: { position: 'relative', padding: '12px' } }}
+                styles={{ body: { position: 'relative', padding: '12px', display: 'flex', flexDirection: 'column' } }}
             >
+                <div className="mb-3 flex justify-between items-center flex-wrap gap-2">
+                    <Space>
+                        <Select
+                            placeholder={t('executionHistory.hostFilterPlaceholder')}
+                            style={{ width: 150 }}
+                            allowClear
+                            onChange={setHostFilter}
+                            value={hostFilter}
+                            size="small"
+                        >
+                            {availableHosts.map(h => <Select.Option key={h} value={h}>{h}</Select.Option>)}
+                        </Select>
+                        {activeExecution?.extra_vars_snapshot && (
+                            <Popover 
+                                title={t('executionHistory.runtimeVars')}
+                                content={
+                                    <pre className="text-[10px] p-2 bg-gray-50 rounded max-w-md max-h-60 overflow-auto">
+                                        {JSON.stringify(activeExecution.extra_vars_snapshot, null, 2)}
+                                    </pre>
+                                }
+                            >
+                                <Button size="small" icon={<HistoryOutlined />}>{t('executionHistory.variableSnapshot')}</Button>
+                            </Popover>
+                        )}
+                    </Space>
+                    
+                    {activeExecution?.status === 'failed' && (
+                        <Button
+                            type="primary"
+                            danger
+                            ghost
+                            size="small"
+                            icon={<RobotOutlined />}
+                            onClick={() => {
+                                setLogDrawerVisible(false);
+                                useAppStore.getState().setAiDiagnosis({
+                                    target_type: 'task',
+                                    target_id: activeExecutionId!
+                                });
+                            }}
+                        >
+                            {t('executionHistory.aiDiagnosis')}
+                        </Button>
+                    )}
+                </div>
+                
                 <div
                     className="absolute left-0 top-0 bottom-0 w-1 cursor-w-resize hover:bg-blue-400 bg-transparent z-1001"
                     onMouseDown={handleMouseDown}
                 />
-                <div className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-auto h-full shadow-inner">
+                <div className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-auto flex-1 shadow-inner relative">
                     {logsLoading ? (
                         <LogSkeleton />
-                        // <div className="flex flex-col items-center justify-center h-full gap-2 text-slate-500">
-                        //     <LoadingOutlined style={{ fontSize: 24 }} />
-                        //     <span>正在拉取实时日志...</span>
-                        // </div>
-                    ) : logs && logs.length > 0 ? (
-                        logs.map((log: any, idx: number) => (
+                    ) : filteredLogs && filteredLogs.length > 0 ? (
+                        filteredLogs.map((log: any, idx: number) => (
                             <div key={idx} className="mb-4 border-b border-slate-700 pb-2 last:border-0">
                                 <div className="text-amber-400 mb-1 flex justify-between">
                                     <span>[HOST: {log.host}]</span>

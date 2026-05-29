@@ -90,13 +90,13 @@ const Artifacts: React.FC = () => {
     };
 
     const typeMap: Record<string, { text: string; color: string }> = {
-        docker_image: { text: 'Docker 镜像', color: 'processing' },
-        jar: { text: 'JAR 包', color: 'orange' },
-        npm_package: { text: 'npm 包', color: 'red' },
-        pypi_package: { text: 'PyPI 包', color: 'green' },
-        binary: { text: '二进制', color: 'processing' },
+        docker_image: { text: t('artifact.typeDockerImage'), color: 'processing' },
+        jar: { text: t('artifact.typeJar'), color: 'orange' },
+        npm_package: { text: t('artifact.typeNpm'), color: 'red' },
+        pypi_package: { text: t('artifact.typePypi'), color: 'green' },
+        binary: { text: t('artifact.typeBinary'), color: 'processing' },
         helm_chart: { text: 'Helm Chart', color: 'purple' },
-        other: { text: '其他', color: 'default' },
+        other: { text: t('artifact.typeOther'), color: 'default' },
     };
 
     const sourceMap: Record<string, { text: string; color: string }> = {
@@ -269,8 +269,8 @@ const Artifacts: React.FC = () => {
                     
                     <Form.Item label={t('artifact.sourceType')} name="source_type" initialValue="docker">
                         <Select options={[
-                            { value: 'docker', label: 'Docker 镜像 / Harbor' },
-                            { value: 'artifactory', label: 'Artifactory 制品库' },
+                            { value: 'docker', label: t('artifact.sourceDocker') },
+                            { value: 'artifactory', label: t('artifact.sourceArtifactory') },
                         ]} />
                     </Form.Item>
 
@@ -279,8 +279,8 @@ const Artifacts: React.FC = () => {
                             <Select options={[
                                 { value: 'docker_image', label: t('artifact.typeDockerImage') },
                                 { value: 'jar', label: t('artifact.typeJar') },
-                                { value: 'npm_package', label: 'npm 包' },
-                                { value: 'pypi_package', label: 'PyPI 包' },
+                                { value: 'npm_package', label: t('artifact.typeNpm') },
+                                { value: 'pypi_package', label: t('artifact.typePypi') },
                                 { value: 'binary', label: t('artifact.typeBinary') },
                                 { value: 'helm_chart', label: t('artifact.typeHelmChart') },
                                 { value: 'other', label: t('artifact.typeOther') },

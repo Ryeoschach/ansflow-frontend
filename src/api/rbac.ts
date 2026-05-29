@@ -45,4 +45,14 @@ export const updateRoleDataPolicies = (id: number, data: Record<string, any[]>) 
     return request.post(`/roles/${id}/update_data_policies/`, data);
 };
 
+// --- 项目 (Projects) ---
+export const getProjects = (params?: any): Promise<PaginatedResponse<any>> => request.get('/projects/', { params });
+export const createProject = (data: any) => request.post('/projects/', data);
+export const updateProject = (id: number, data: any) => request.patch(`/projects/${id}/`, data);
+export const deleteProject = (id: number) => request.delete(`/projects/${id}/`);
 
+// --- 项目成员 (Project Members) ---
+export const getProjectMembers = (params?: any): Promise<PaginatedResponse<any>> => request.get('/project-members/', { params });
+export const createProjectMember = (data: any) => request.post('/project-members/', data);
+export const updateProjectMember = (id: number, data: any) => request.patch(`/project-members/${id}/`, data);
+export const deleteProjectMember = (id: number) => request.delete(`/project-members/${id}/`);

@@ -25,6 +25,7 @@ import {
     DatabaseOutlined,
     ArrowRightOutlined,
     CloseCircleOutlined,
+    ShareAltOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -40,6 +41,7 @@ import useAppStore from '../../store/useAppStore';
 import useBreakpoint from '../../utils/useBreakpoint';
 import { TableSkeleton } from '../../components/Skeletons';
 import { useTranslation } from 'react-i18next';
+import ShareAssetModal from '../../components/ShareAssetModal';
 
 const { Text } = Typography;
 
@@ -47,18 +49,21 @@ const ResourcePoolManagement: React.FC = () => {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
     const { message } = App.useApp();
-    const { isDark, token: authToken, hasPermission } = useAppStore();
+    const { isDark, token: authToken, hasPermission, currentProject } = useAppStore();
     const { token: antdToken } = theme.useToken();
     const { isMobile } = useBreakpoint();
     const [form] = Form.useForm();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPool, setEditingPool] = useState<any>(null);
+    const [sharingPool, setSharingPool] = useState<any>(null);
 
     const [listFilters, setListFilters] = useState({
         name: '',
         code: '',
         env: undefined as number | undefined,
         platform: undefined as number | undefined,
+        page: 1,
+        size: 10,
     });
 
     const [selectedEnv, setSelectedEnv] = useState<number | null>(null);
@@ -67,11 +72,7 @@ const ResourcePoolManagement: React.FC = () => {
 
     const { data: poolData, isLoading: poolsLoading } = useQuery({
         queryKey: ['ResourcePools', listFilters],
-        queryFn: () => getResourcePools({
-            page: 1,
-            size: 100,
-            ...listFilters
-        }),
+        queryFn: () => getResourcePools(listFilters),
         enabled: !!authToken,
     });
 
@@ -220,6 +221,15 @@ const ResourcePoolManagement: React.FC = () => {
             key: 'action',
             render: (_: any, record: any) => (
                 <Space size="middle">
+                    {(hasPermission('*') || hasPermission('resource:resources:edit')) && (
+                        <Tooltip title={t('assetShare.crossProjectGrant')}>
+                            <Button
+                                type="text"
+                                icon={<ShareAltOutlined style={{ color: '#1677ff' }} />}
+                                onClick={() => setSharingPool(record)}
+                            />
+                        </Tooltip>
+                    )}
                     <Tooltip title={t('resourcePool.edit')}>
                         <Button type="text" icon={<EditOutlined />} onClick={() => showModal(record)} />
                     </Tooltip>
@@ -259,7 +269,7 @@ const ResourcePoolManagement: React.FC = () => {
                         className="w-40"
                         allowClear
                         value={listFilters.name}
-                        onChange={e => setListFilters({ ...listFilters, name: e.target.value })}
+                        onChange={e => setListFilters({ ...listFilters, name: e.target.value, page: 1 })}
                     />
                 </div>
                 <div>
@@ -269,7 +279,7 @@ const ResourcePoolManagement: React.FC = () => {
                         className="w-40"
                         allowClear
                         value={listFilters.code}
-                        onChange={e => setListFilters({ ...listFilters, code: e.target.value })}
+                        onChange={e => setListFilters({ ...listFilters, code: e.target.value, page: 1 })}
                     />
                 </div>
                 <div>
@@ -279,7 +289,7 @@ const ResourcePoolManagement: React.FC = () => {
                         className="w-40"
                         allowClear
                         value={listFilters.env}
-                        onChange={val => setListFilters({ ...listFilters, env: val })}
+                        onChange={val => setListFilters({ ...listFilters, env: val, page: 1 })}
                         options={environments.map((e: any) => ({ label: e.name, value: e.id }))}
                     />
                 </div>
@@ -290,12 +300,12 @@ const ResourcePoolManagement: React.FC = () => {
                         className="w-40"
                         allowClear
                         value={listFilters.platform}
-                        onChange={val => setListFilters({ ...listFilters, platform: val })}
+                        onChange={val => setListFilters({ ...listFilters, platform: val, page: 1 })}
                         options={platforms.map((p: any) => ({ label: p.name, value: p.id }))}
                     />
                 </div>
                 <Button
-                    onClick={() => setListFilters({ name: '', code: '', env: undefined, platform: undefined })}
+                    onClick={() => setListFilters({ ...listFilters, name: '', code: '', env: undefined, platform: undefined, page: 1 })}
                     type="text"
                     danger
                 >
@@ -312,7 +322,14 @@ const ResourcePoolManagement: React.FC = () => {
                 loading={poolsLoading}
                 rowKey="id"
                 scroll={{ x: 'max-content' }}
-               
+                pagination={{
+                    total: poolData?.total,
+                    current: listFilters.page,
+                    pageSize: listFilters.size,
+                    showSizeChanger: true,
+                    showTotal: (total) => t('common.total', { total }),
+                    onChange: (page, size) => setListFilters({ ...listFilters, page, size }),
+                }}
             />
                 )}
 
@@ -331,7 +348,14 @@ const ResourcePoolManagement: React.FC = () => {
                         <Form.Item label={t('resourcePool.nameLabel')} name="name" rules={[{ required: true, message: t('resourcePool.nameRequired') }]}>
                             <Input placeholder={t('resourcePool.namePlaceholder')} />
                         </Form.Item>
-                        <Form.Item label={t('resourcePool.codeLabel')} name="code" rules={[{ required: true, message: t('resourcePool.codeRequired') }]}>
+                        <Form.Item 
+                            label={t('resourcePool.codeLabel')} 
+                            name="code" 
+                            rules={[
+                                { required: true, message: t('resourcePool.codeRequired') },
+                                { pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/, message: t('resourcePool.codePattern') }
+                            ]}
+                        >
                             <Input placeholder={t('resourcePool.codePlaceholder')} />
                         </Form.Item>
                     </div>
@@ -379,10 +403,13 @@ const ResourcePoolManagement: React.FC = () => {
                                         {
                                             title: t('resourcePool.host'),
                                             render: (_, h) => (
-                                                <div className="flex justify-between items-center w-full group">
+                                                <div className="flex justify-between items-center w-full group py-1">
                                                     <div>
                                                         <div className="text-sm font-medium">{h.hostname}</div>
-                                                        <div className="text-xs text-gray-400">{h.private_ip}</div>
+                                                        <div className="flex gap-2 items-center">
+                                                            <span className="text-[10px] text-gray-400 font-mono">{h.private_ip}</span>
+                                                            <Tag color={h.env_color || 'blue'} className="px-1 text-[10px] leading-3 h-4 border-none opacity-80">{h.env_name}</Tag>
+                                                        </div>
                                                     </div>
                                                     <Button
                                                         type="link"
@@ -442,7 +469,10 @@ const ResourcePoolManagement: React.FC = () => {
                                                 >
                                                     <div>
                                                         <div className="text-sm font-medium">{h?.hostname || `Unknown (ID: ${id})`}</div>
-                                                        <div className="text-[10px] opacity-50 font-mono">{h?.private_ip || '-'}</div>
+                                                        <div className="flex gap-2 items-center">
+                                                            <span className="text-[10px] opacity-50 font-mono">{h?.private_ip || '-'}</span>
+                                                            {h?.env_name && <Tag color={h.env_color || 'blue'} className="px-1 text-[10px] leading-3 h-4 border-none opacity-60">{h.env_name}</Tag>}
+                                                        </div>
                                                     </div>
                                                     <Button
                                                         type="text"
@@ -470,6 +500,17 @@ const ResourcePoolManagement: React.FC = () => {
                     </Form.Item>
                 </Form>
             </Modal>
+
+            {sharingPool && currentProject && (
+                <ShareAssetModal
+                    open={!!sharingPool}
+                    onClose={() => setSharingPool(null)}
+                    assetType="resource_pool"
+                    assetId={sharingPool.id}
+                    assetName={sharingPool.name}
+                    fromProjectId={currentProject.id}
+                />
+            )}
         </Card>
     );
 };

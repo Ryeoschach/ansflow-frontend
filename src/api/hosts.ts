@@ -1,29 +1,30 @@
 import request from '../utils/requests';
-import { PaginatedResponse } from '../types';
+import { PaginatedResponse, Host, Environments, Platform, SshCredential as SshCredentialType } from '../types';
 
 // ========================
 // 主机 (Hosts) 接口
 // ========================
-export const getHosts = (params?: any): Promise<PaginatedResponse<any>> => request.get('/hosts/', { params });
-export const createHost = (data: any) => request.post('/hosts/', data);
-export const updateHost = (id: number, data: any) => request.patch(`/hosts/${id}/`, data);
+export const getHosts = (params?: Record<string, any>): Promise<PaginatedResponse<Host>> => request.get('/hosts/', { params });
+export const createHost = (data: Partial<Host>) => request.post('/hosts/', data);
+export const updateHost = (id: number, data: Partial<Host>) => request.patch(`/hosts/${id}/`, data);
 export const deleteHost = (id: number) => request.delete(`/hosts/${id}/`);
+export const bulkImportHost = (data: Partial<Host>[]) => request.post('/hosts/bulk_import/', data);
 
 // ========================
 // 环境 (Environments) 接口
 // ========================
-export const getEnvironments = (params?: any): Promise<PaginatedResponse<any>> => request.get('/environments/', { params });
-export const createEnvironment = (data: any) => request.post('/environments/', data);
-export const updateEnvironment = (id: number, data: any) => request.patch(`/environments/${id}/`, data);
+export const getEnvironments = (params?: Record<string, any>): Promise<PaginatedResponse<Environments>> => request.get('/environments/', { params });
+export const createEnvironment = (data: Partial<Environments>) => request.post('/environments/', data);
+export const updateEnvironment = (id: number, data: Partial<Environments>) => request.patch(`/environments/${id}/`, data);
 export const deleteEnvironment = (id: number) => request.delete(`/environments/${id}/`);
 
 
 // ========================
 // 平台 (Platforms) 接口
 // ========================
-export const getPlatforms = (params?: any): Promise<PaginatedResponse<any>> => request.get('/platforms/', { params });
-export const createPlatform = (data: any) => request.post('/platforms/', data);
-export const updatePlatform = (id: number, data: any) => request.patch(`/platforms/${id}/`, data);
+export const getPlatforms = (params?: Record<string, any>): Promise<PaginatedResponse<Platform>> => request.get('/platforms/', { params });
+export const createPlatform = (data: Partial<Platform>) => request.post('/platforms/', data);
+export const updatePlatform = (id: number, data: Partial<Platform>) => request.patch(`/platforms/${id}/`, data);
 export const deletePlatform = (id: number) => request.delete(`/platforms/${id}/`);
 export const verifyPlatform = (id: number) => request.post(`/platforms/${id}/verify_connectivity/`);
 export const syncPlatformAssets = (id: number) => request.post(`/platforms/${id}/sync_assets/`);
@@ -40,7 +41,7 @@ export const syncPlatformAssets = (id: number) => request.post(`/platforms/${id}
  */
 
 /** 将前端表单数据转换为后端 API 格式 */
-const toCredentialData = (data: any) => {
+const toCredentialData = (data: Record<string, any>) => {
     const { remark, ...rest } = data;
     return { ...rest, description: remark };
 };
@@ -51,7 +52,7 @@ const fromCredentialData = (item: any) => ({
     remark: item.description,
 });
 
-export const getCredentials = (params?: any) =>
+export const getCredentials = (params?: Record<string, any>): Promise<PaginatedResponse<SshCredentialType>> =>
     request.get('/ssh_credentials/', { params }).then((res: any) => ({
         ...res,
         data: res.data?.map(fromCredentialData),
@@ -71,7 +72,16 @@ export const verifyCredential = (id: number, data: { host: string; port?: number
 // ========================
 // 资源池 (Resource Pools) 接口
 // ========================
-export const getResourcePools = (params?: any): Promise<PaginatedResponse<any>> => request.get('/resource_pools/', { params });
+export const getResourcePools = (params?: Record<string, any>): Promise<PaginatedResponse<any>> => request.get('/resource_pools/', { params });
 export const createResourcePool = (data: any) => request.post('/resource_pools/', data);
 export const updateResourcePool = (id: number, data: any) => request.patch(`/resource_pools/${id}/`, data);
 export const deleteResourcePool = (id: number) => request.delete(`/resource_pools/${id}/`);
+
+// ========================
+// 主机基线 (Host Baseline) 接口
+// ========================
+export const getHostBaselines = (params?: Record<string, any>): Promise<PaginatedResponse<any>> => request.get('/host_baselines/', { params });
+export const createHostBaseline = (data: any) => request.post('/host_baselines/', data);
+export const updateHostBaseline = (id: number, data: any) => request.patch(`/host_baselines/${id}/`, data);
+export const deleteHostBaseline = (id: number) => request.delete(`/host_baselines/${id}/`);
+export const checkHostBaselineManual = (id: number) => request.post(`/host_baselines/${id}/check/`);

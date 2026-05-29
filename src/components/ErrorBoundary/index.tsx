@@ -1,6 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 import { Result, Button, Typography, Space } from 'antd';
 import { ReloadOutlined, BugOutlined } from '@ant-design/icons';
+import i18n from '../../locales/i18n';
 
 const { Paragraph, Text } = Typography;
 
@@ -77,8 +78,8 @@ class AppErrorBoundary extends Component<Props, State> {
         >
           <Result
             status="error"
-            title={this.props.title || "应用模块加载异常"}
-            subTitle={this.props.subTitle || "系统检测到运行时逻辑冲突或由于底层 API 异常导致的渲染中断。"}
+            title={this.props.title || i18n.t('errorBoundary.defaultTitle')}
+            subTitle={this.props.subTitle || i18n.t('errorBoundary.defaultSubtitle')}
             extra={[
               <Space key="actions" size="large">
                 <Button
@@ -87,14 +88,14 @@ class AppErrorBoundary extends Component<Props, State> {
                     onClick={this.handleReset}
                     className="rounded-lg shadow-lg"
                 >
-                  立即重置并重试
+                  {i18n.t('errorBoundary.resetAndRetry')}
                 </Button>
                 <Button
                     icon={<BugOutlined />}
                     onClick={() => console.dir(this.state.error)}
                     className="rounded-lg"
                 >
-                  查看错误控制台
+                  {i18n.t('errorBoundary.viewConsole')}
                 </Button>
               </Space>
             ]}
@@ -107,7 +108,7 @@ class AppErrorBoundary extends Component<Props, State> {
                  {this.state.error?.toString()}
               </Paragraph>
               <Text type="secondary" className="text-[10px]">
-                 (如果多次重试无效，请清除缓存或联系 AnsFlow 系统管理员)
+                 ({i18n.t('errorBoundary.retryTip')})
               </Text>
             </div>
           </Result>

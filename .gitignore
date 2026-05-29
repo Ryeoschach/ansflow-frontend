@@ -28,6 +28,12 @@ dist-ssr
 *.sln
 *.sw?
 
-# Claude Code
-.claude/settings.local.json
+# AI Tools (Claude & Gemini)
+.claude/
 memory/
+.gemini/
+*-skills/
+*.prompt
+CLAUDE.md
+GEMINI.md
+.gitignore

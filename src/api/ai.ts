@@ -1,0 +1,265 @@
+import request from '../utils/requests';
+import { PaginatedResponse } from '../types';
+
+export interface KnowledgeBase {
+  id: number;
+  name: string;
+  name_en?: string;
+  description: string;
+  description_en?: string;
+  collection_name: string;
+  reindex_status: 'idle' | 'processing' | 'success' | 'error';
+  last_reindex_at?: string;
+  reindex_error?: string;
+  create_time: string;
+  update_time: string;
+}
+
+export interface ChatHistory {
+  id: number;
+  user_id: string;
+  session_id: string;
+  title: string;
+  history_type: 'chat' | 'diagnose';
+  personality: string;
+  create_time: string;
+  update_time: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  history: number;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  is_exported?: boolean;
+  referenced_docs?: { id: number; title: string }[];
+  create_time: string;
+}
+
+export interface AIProvider {
+  id: number;
+  name: string;
+  provider_type: string;
+  base_url: string;
+  api_key?: string;
+  is_active: boolean;
+  create_time: string;
+}
+
+export interface AIModel {
+  id: number;
+  provider: number;
+  provider_name: string;
+  name: string;
+  display_name: string;
+  model_type: 'llm' | 'embedding' | 'rerank' | 'vision';
+  capabilities: ('llm' | 'embedding' | 'rerank' | 'vision')[];
+  num_ctx: number;
+  is_active: boolean;
+}
+
+export interface AIConfig {
+  id: number;
+  name: string;
+  default_llm: number | null;
+  default_embedding: number | null;
+  default_vision: number | null;
+  default_rerank: number | null;
+  default_kb: number | null;
+  rag_bm25_weight?: number;
+  rag_vector_weight?: number;
+  rag_top_k?: number;
+  rag_score_threshold?: number;
+}
+
+export interface KnowledgeDocument {
+  id: number;
+  kb: number;
+  title: string;
+  content: string;
+  source_type: 'manual' | 'file' | 'ai_export';
+  status: 'pending' | 'parsing' | 'cleaning' | 'chunking' | 'indexing' | 'ready' | 'error';
+  parser_type: 'auto' | 'native' | 'ocr' | 'hybrid';
+  parsing_prompt?: string;
+  chunk_count: number;
+  metadata: any;
+  create_time: string;
+}
+
+export interface DocumentChunk {
+  id: number;
+  document: number;
+  content: string;
+  index: number;
+  is_active: boolean;
+  metadata: any;
+  length?: number;
+}
+
+// 知识库
+export const getKnowledgeBases = (params?: Record<string, any>): Promise<PaginatedResponse<KnowledgeBase>> =>
+  request.get('/ai/knowledge-bases/', { params }) as any;
+
+export const createKnowledgeBase = (data: Partial<KnowledgeBase>): Promise<KnowledgeBase> =>
+  request.post('/ai/knowledge-bases/', data) as any;
+
+export const updateKnowledgeBase = (id: number, data: Partial<KnowledgeBase>): Promise<KnowledgeBase> =>
+  request.patch(`/ai/knowledge-bases/${id}/`, data) as any;
+
+export const reindexKnowledgeBase = (id: number): Promise<any> =>
+  request.post(`/ai/knowledge-bases/${id}/reindex/`);
+
+export const testSearchKnowledgeBase = (id: number, query: string): Promise<any[]> =>
+  request.post(`/ai/knowledge-bases/${id}/test_search/`, { query }, { timeout: 60000 }) as any;
+
+// 知识文档
+export const getKnowledgeDocuments = (params?: { kb?: number }): Promise<PaginatedResponse<KnowledgeDocument>> =>
+  request.get('/ai/documents/', { params }) as any;
+
+export const deleteKnowledgeDocument = (id: number): Promise<void> =>
+  request.delete(`/ai/documents/${id}/`) as any;
+
+export const uploadKnowledgeDocument = (
+  kbId: number, 
+  file: File, 
+  parserType: string = 'auto', 
+  parsingPrompt: string = ''
+): Promise<any> => {
+  const formData = new FormData();
+  formData.append('kb', kbId.toString());
+  formData.append('file', file);
+  formData.append('title', file.name);
+  formData.append('parser_type', parserType);
+  formData.append('parsing_prompt', parsingPrompt);
+  return request.post('/ai/documents/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }) as any;
+};
+
+export const getDocumentChunks = (id: number): Promise<DocumentChunk[]> =>
+  request.get(`/ai/documents/${id}/chunks/`) as any;
+
+export const updateKnowledgeChunk = (id: number, data: Partial<DocumentChunk>): Promise<DocumentChunk> =>
+  request.patch(`/ai/chunks/${id}/`, data) as any;
+
+export const deleteKnowledgeChunk = (id: number): Promise<void> =>
+  request.delete(`/ai/chunks/${id}/`) as any;
+
+// 对话历史
+export const getChatHistories = (params?: Record<string, any>): Promise<PaginatedResponse<ChatHistory>> =>
+  request.get('/ai/chat-histories/', { params }) as any;
+
+export const createChatHistory = (data: { 
+  user_id: string; 
+  session_id: string; 
+  title?: string; 
+  personality?: string;
+  history_type?: 'chat' | 'diagnose';
+}): Promise<ChatHistory> =>
+  request.post('/ai/chat-histories/', data) as any;
+
+export const getChatMessages = (historyId: number): Promise<ChatMessage[]> =>
+  request.get(`/ai/chat-histories/${historyId}/messages/`) as any;
+
+// 供应商管理
+export const getAIProviders = (): Promise<PaginatedResponse<AIProvider>> =>
+  request.get('/ai/providers/') as any;
+
+export const createAIProvider = (data: Partial<AIProvider>): Promise<AIProvider> =>
+  request.post('/ai/providers/', data) as any;
+
+export const updateAIProvider = (id: number, data: Partial<AIProvider>): Promise<AIProvider> =>
+  request.patch(`/ai/providers/${id}/`, data) as any;
+
+export const deleteAIProvider = (id: number): Promise<void> =>
+  request.delete(`/ai/providers/${id}/`) as any;
+
+export const syncAIProviderModels = (id: number): Promise<any> =>
+  request.post(`/ai/providers/${id}/sync_models/`);
+
+// 模型管理
+export const getAIModels = (params?: Record<string, any>): Promise<PaginatedResponse<AIModel>> =>
+  request.get('/ai/models/', { params }) as any;
+
+export const createAIModel = (data: Partial<AIModel>): Promise<AIModel> =>
+  request.post('/ai/models/', data) as any;
+
+export const updateAIModel = (id: number, data: Partial<AIModel>): Promise<AIModel> =>
+  request.patch(`/ai/models/${id}/`, data) as any;
+
+export const deleteAIModel = (id: number): Promise<void> =>
+  request.delete(`/ai/models/${id}/`) as any;
+
+// 配置管理
+export const getCurrentAIConfig = (): Promise<AIConfig> =>
+  request.get('/ai/configs/current/') as any;
+
+export const updateAIConfig = (id: number, data: Partial<AIConfig>): Promise<AIConfig> =>
+  request.patch(`/ai/configs/${id}/`, data) as any;
+
+// 将消息保存到知识库
+export const saveMessageToKnowledge = (historyId: number, messageId: number): Promise<any> =>
+  request.post(`/ai/chat-histories/${historyId}/save-to-knowledge/`, { message_id: messageId });
+
+// AIGC 生成流水线
+export const generatePipeline = (prompt: string, llmId?: number): Promise<any> =>
+  request.post('/ai/chat-histories/generate-pipeline/', { prompt, llm_id: llmId }, { timeout: 60000 }) as any;
+
+// AIGC 修正流水线
+export const refinePipeline = (data: { 
+  prompt: string; 
+  nodes: any[]; 
+  edges: any[]; 
+  llm_id?: number 
+}): Promise<any> =>
+  request.post('/ai/chat-histories/refine-pipeline/', data, { timeout: 60000 }) as any;
+
+// AIGC 建议节点参数
+export const suggestNodeParams = (data: {
+  type: string;
+  data: any;
+  context: any[];
+  llm_id?: number;
+}): Promise<any> =>
+  request.post('/ai/chat-histories/suggest-node-params/', data, { timeout: 60000 }) as any;
+
+// AI 模拟说明
+export const explainPipeline = (data: {
+  nodes: any[];
+  edges: any[];
+  llm_id?: number;
+}): Promise<{ explanation: string }> =>
+  request.post('/ai/chat-histories/explain-pipeline/', data, { timeout: 60000 }) as any;
+
+// 手动总结流水线运行经验
+export const summarizePipelineRun = (runId: number | string): Promise<any> =>
+  request.post(`/ai/chat-histories/manual-summarize-run/`, { run_id: runId });
+
+// 保存诊断结论到知识库
+export const saveDiagnosisToKnowledge = (historyId: number, messageId: number, title?: string, content?: string): Promise<any> =>
+  request.post(`/ai/chat-histories/${historyId}/save-to-knowledge/`, { message_id: messageId, title, content });
+
+// 诊断接口的 URL (主要用于 fetch 拼接)
+export const DIAGNOSE_URL = '/api/v1/ai/chat-histories/';
+export const CHAT_URL_PREFIX = '/api/v1/ai/chat-histories/';
+
+export interface AIPromptTemplate {
+  id: number;
+  name: string;
+  code: string;
+  template: string;
+  description?: string;
+  is_system: boolean;
+  create_time: string;
+  update_time: string;
+}
+
+// AI 提示词管理
+export const getAIPrompts = (params?: Record<string, any>): Promise<PaginatedResponse<AIPromptTemplate>> =>
+  request.get('/ai/prompts/', { params }) as any;
+
+export const updateAIPrompt = (id: number, data: Partial<AIPromptTemplate>): Promise<AIPromptTemplate> =>
+  request.patch(`/ai/prompts/${id}/`, data) as any;
+
+export const restoreAIPromptDefault = (id: number): Promise<AIPromptTemplate> =>
+  request.post(`/ai/prompts/${id}/restore_default/`) as any;
