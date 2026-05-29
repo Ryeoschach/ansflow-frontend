@@ -13,6 +13,10 @@ export interface ConfigCategory {
   label: string;
   description: string;
   item_count: number;
+  is_system?: boolean;
+  module?: string;
+  allow_custom_items?: boolean;
+  allow_delete?: boolean;
   create_time: string;
   update_time: string;
 }
@@ -49,8 +53,42 @@ export interface ConfigItem {
   is_active: boolean;
   description: string;
   value_display: string;
+  is_system?: boolean;
+  registered?: boolean;
+  default_value?: any;
+  module?: string;
+  readonly_key?: boolean;
+  allow_delete?: boolean;
+  config_scope?: 'system' | 'custom';
   create_time: string;
   update_time: string;
+}
+
+export interface ConfigRegistryCategory {
+  name: string;
+  label: string;
+  description: string;
+  module: string;
+  allow_custom_items: boolean;
+  allow_delete: boolean;
+}
+
+export interface ConfigRegistryItem {
+  category: string;
+  key: string;
+  default_value: any;
+  value_type: 'string' | 'int' | 'float' | 'bool' | 'json';
+  description: string;
+  module: string;
+  is_encrypted: boolean;
+  allow_delete: boolean;
+  exists: boolean;
+  item_id?: number | null;
+}
+
+export interface ConfigRegistryResponse {
+  categories: ConfigRegistryCategory[];
+  items: ConfigRegistryItem[];
 }
 
 export interface ConfigItemCreate {
@@ -82,6 +120,9 @@ export const getConfigItemsByCategory = (name: string): Promise<any> =>
 
 export const validateConfigItemValue = (id: number, value: any): Promise<{ valid: boolean; error?: string }> =>
   request.post(`/config/items/${id}/validate_value/`, { value }) as any;
+
+export const getConfigRegistry = (): Promise<ConfigRegistryResponse> =>
+  request.get('/config/items/registry/') as any;
 
 export const rollbackConfigItem = (id: number, data: { change_log_id: number; reason: string }): Promise<any> =>
   request.post(`/config/items/${id}/rollback/`, data) as any;
