@@ -1,195 +1,37 @@
-# AnsFlow 前端
+# AnsFlow Frontend
 
 <p align="left">
   <a href="https://ansflow.cyfee.com"><img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 18"></a>
   <a href="https://ansflow.cyfee.com"><img src="https://img.shields.io/badge/TypeScript-Ready-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"></a>
   <a href="https://ansflow.cyfee.com"><img src="https://img.shields.io/badge/Vite-Ready-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite"></a>
-  <a href="https://ansflow.cyfee.com"><img src="https://img.shields.io/badge/版本-v2.0.0-orange?style=for-the-badge" alt="版本"></a>
   <a href="./README.md"><img src="https://img.shields.io/badge/Lang-English-red?style=for-the-badge" alt="English"></a>
 </p>
 
-> **企业级 DevOps 流水线平台前端**，基于 React 18 + TypeScript + Vite 构建。集成了 **AI 智能助手**、**SRE 告警中心**与 **AIGC 编排**。
-
 [English](./README.md) | 中文说明
 
-### 🌟 核心能力
-* 🤖 **智能问答**：集成上下文感知与 Markdown 渲染的实时 AI 助手。
-* 🔍 **自动诊断**：一键生成自愈排障建议与详尽日志追踪。
-* ⚡ **告警自愈**：结合进度条与状态跟踪的 SRE 告警自愈中心。
-* ⛓️ **意图编排**：基于 ReactFlow 的可视化 DAG 拓扑编排。
+AnsFlow Frontend 是 AnsFlow 运维平台的 React 前端应用，提供流水线、主机、凭据、Kubernetes/GitOps、SRE 告警、AI 助手、审批、报表和系统设置等工作台界面。
 
----
+- 产品展示与完整文档：[https://ansflow.cyfee.com](https://ansflow.cyfee.com)
+- 前端仓库：[Ryeoschach/ansflow-frontend](https://github.com/Ryeoschach/ansflow-frontend)
+- 后端仓库：[Ryeoschach/ansflow-backend](https://github.com/Ryeoschach/ansflow-backend)
 
 ## 技术栈
 
-| 类别 | 技术 | 说明 |
-|------|------|------|
-| 框架 | React 18 + TypeScript | 核心框架 |
-| UI 组件 | Ant Design 6 | 企业级 UI 组件库 |
-| 样式 | Tailwind CSS v4 | 原子化 CSS 驱动 |
-| 状态管理 | Zustand v5 | 全局与持久化状态管理 |
-| 数据请求 | TanStack Query v5 | 服务端状态同步 |
-| 流水线 | ReactFlow | DAG 流程图交互与展示 |
-| AI 交互 | Fetch ReadableStream | 实现流式（Streaming）对话响应 |
-| 内容渲染 | ReactMarkdown | 渲染 AI 诊断报告与代码块 |
+- React 18、TypeScript、Vite
+- Ant Design、Tailwind CSS
+- TanStack Query、Zustand
+- ReactFlow、xterm.js、Monaco Editor
 
----
+## 开发命令
 
-## 智能运维模块详解
+```bash
+pnpm install
+pnpm dev
+pnpm build
+```
 
-### 1. AI 智能助手 (AIChatbot)
-- **全局入口**：右下角悬浮按钮，集成 **多状态角标**（分析中/完成/超时）与品牌色呼吸灯。
-- **知识闭环**：在 AI 回复与诊断报告中集成“存入知识库”功能，实现运维经验的实时固化。
-- **历史管理**：支持 **Tab 归类检索**（智能对话/故障诊断）与标题实时搜索。
-- **打字机动效**：灵动的三点跳动动画，提升 AI 思考时的感知互动。
-- **语义缓存**：基于高置信度向量检索，对已存入知识库的问题实现秒级响应。
-- **主题适配**：全面优化亮色模式对比度，支持深浅色模式无缝切换。
-
-### 2. SRE 智能告警中心 (Alert Center)
-- **页面**：`/v1/sre/alerts`
-- **全轨迹追踪**：在自愈流水线执行时，实时展示 **Progress 进度条**，并支持一键跳转运行详情。
-- **状态强同步**：基于后端 Signal 联动，告警状态与流水线执行结果秒级同步。
-- **自动/手动识别**：精准区分“自动策略触发”与“人工干预”状态，提供明确的视觉反馈。
-- **AI 分析**：实时展示告警的 AI 诊断报告，支持诊断结论一键存入 RAG 库。
-
-### 3. AIGC 流水线编排
-- **意图驱动**：在流水线设计器（Designer）顶部集成 AI 编排输入框。
-- **自动建模**：通过自然语言描述需求，AI 自动生成符合 ReactFlow 规范的 DAG 结构。
-- **执行记忆**：节点轨迹页面自动加载历史诊断记录，避免重复点击。
-
----
-
-## 功能模块详解（新增与增强）
-...
-### 8.6 系统监控 (System Monitor) - v1.7.0 重大更新
-
-**页面**：`/v1/system/monitor`
-
-**功能**：
-
-- **统一监控面板**：将数据库、Redis、K8s 等组件统一为表格化展示，提升信息密度。
-- **Celery 分布式任务监控**：
-  - **Worker 详情**：实时展示所有活动 Worker 的并发度、正在执行任务数、预留任务数及系统资源占用。
-  - **Beat 调度器状态**：追踪任务调度器的在线状态及最后一次运行（Last Run）时间戳。
-  - **队列积压监控**：实时查看各消息队列的堆积长度。
-- **自动刷新**：支持每 30 秒自动同步集群健康数据。
-
----
-
-### 8.7 配置中心 (Config Center) - 体验优化
-
-**功能增强**：
-
-- **全量国际化**：所有统计项（分类总数/配置项总数）、通知选项（notify_on）及变更原因（Reason）均已支持中英文切换。
-- **稳定性增强**：针对 `notify_on` 等复杂配置项的解析逻辑进行了健壮性加固，防止非数组数据导致的渲染崩溃。
-
----
-
-### 8.8 K8S 运维增强 (v1.8.0) - 重磅更新
-
-**页面**：`/v1/k8s/center`
-
-**功能**：
-
-- **交互式 WebTTY**：集成 `xterm.js`，实现与 K8s Pod 的实时交互终端，支持颜色高亮、按键转发与窗口自适应。
-- **Helm 仓库管理 (Repo Manager)**：新增仓库管理界面，支持添加私有 Helm 仓库、连通性测试以及 Chart 搜索选择。
-- **实时日志流 (Follow Logs)**：支持 Pod 日志实时滚动输出，告别手动刷新。
-- **Monaco YAML 编辑器**：全面升级 Helm Values 与 K8s 资源编辑器，支持语法高亮、自动对齐及深浅色主题适配。
-- **资源利用率可视化 (Metrics)**：
-  - **Node 指标**：直观展示节点 CPU 与内存的实时利用率进度条。
-  - **Pod 负载**：在 Pod 列表中实时展示容器级的 CPU (Core) 与内存 (MiB) 消耗。
-- **事件中心 (Events)**：在集群详情中提供全局事件视图，快速定位镜像拉取失败、OOMKill 等隐蔽问题。
-
----
-
-### 11. 系统健壮性 (Robustness)
-
-- **异常边界拦截**：升级了 `AppErrorBoundary`，能够精确捕获并上报运行时 `TypeError` 或组件引用异常。
-- **防御性编程**：在全项目范围内的 `.includes()` 及数组操作逻辑中增加了 `Array.isArray()` 的防御性检查，有效避免由于后端 API 数据结构不符导致的页面白屏。
-
----
-
-## 权限控制详解
-
-(此处保留原有 SmartRBAC 内容...)
-
----
-
-## 开发指南
-
-(此处保留原有 pnpm 开发指南...)
-
----
-
-### 12. AI 智能摄取与多模态增强 (v2.0.0) - 重磅更新
-
-**页面**：`/v1/ai-rag/config`
-
-**功能增强**：
-
-- **智能文档摄取交互**：
-  - **解析模式选择**：上传文档时可灵活选择“快速文本”、“视觉 OCR”或“混合增强”模式，针对不同格式文件采用最优解析策略。
-  - **指令化 OCR 引导**：支持在上传界面直接输入解析提示词（Prompt），精准干预 AI 提取非结构化图片内容的方式（如要求按 Markdown 表格输出）。
-  - **状态实时追踪**：引入自动轮询机制，前端实时展示文档“解析中 -> 清洗中 -> 切片中 -> 已就绪”的流水线状态，告别手动刷新。
-- **模型能力矩阵管理**：
-  - **多能力复合关联**：模型管理界面由单选“类型”升级为**多选“能力”**，允许一个模型同时胜任 LLM 问答、视觉解析、向量生成或重排序等多个角色。
-  - **全局视觉模型分发**：支持在全局配置中专门指定 OCR/视觉任务的默认调度模型。
-- **UI/UX 体验修复**：
-  - **悬浮组件加固**：解决了在文档管理 Portal 窗口中执行删除操作时，AI 聊天图标发生意外位移的问题。
-  - **能力标签化展示**：在模型列表中通过直观的彩色 Tag 展示模型具备的所有复合能力及上下文窗口（num_ctx）。
-
-- **主题配置适配**：在模型列表中展示的标签颜色和上下文窗口提示支持与全局深浅色主题完美无缝切换。
-
----
-
-### 13. 系统配置中心与安全合规 (v2.1.0) - 最新更新
-
-**页面**：`/v1/system/settings` 及 `/v1/host/baseline`
-
-**功能增强**：
-
-- **自定义 AI 提示词编辑器 (AIPrompt Settings)**：
-  - **可视化大文本编辑**：在 AI 设置页面内置等宽字体编辑器，支持对 RAG 问答、诊断、解释等 7 类场景模板的深度自定义编辑。
-  - **动态变量标签引导**：实时展示当前模板的系统内置变量，以色彩标识变量是否被使用（绿色表示已使用，红色表示未使用/必需），并在保存前通过正则阻断误删占位符。
-  - **一键重置出厂**：提供安全确认弹窗，调用 API 快速将模板内容还原为系统出厂预设。
-- **多渠道通知与白名单配置 (Notification Settings)**：
-  - **多通道图形化管理**：图形化开启/关闭飞书与钉钉通知渠道，录入 Webhook 机器人地址，并设置警报级别。
-  - **事件类型细粒度复选**：通过复选框直观编辑触发通知的事件类型列表（`notify_on`），并将清空列表正确绑定为全局关闭通知。
-  - **Webhook 鉴权令牌**：在通知配置中新增 `webhook_token` 字段，允许为 Prometheus 告警接收配置安全令牌（Bearer Header 或 URL 参数），不配置时保持向下兼容自动放行。
-- **等保 2.0 安全三级合规控制台 (MLPS Baseline Console)**：
-  - **等保指标雷达与打分**：直观展示纳管主机的安全检查报告，提供“身份鉴别、访问控制、安全审计、入侵防范”等维度的体检评分与漏洞细节。
-  - **漏洞一键自愈**：针对不合规项目一键调度级联修复 Playbook，全流程进度条跟踪。
-
----
-
-### 14. WebSocket 实时流式交互 (v2.2.0)
-- **对话流式推送**：AI Chat 悬浮聊天机器人升级为 WebSocket 连接，渲染层对接流式消息流，实现字级实时 typewriter 打字机输出。
-
-### 15. 多项目工作区与资产跨项目授权中心 (v2.3.0)
-- **全局项目选择器 (Project Selector)**：顶部 Header 引入全局项目下拉菜单与切换逻辑，切换后自动刷新当前页面相关的 React Query 数据，并在请求中注入 `X-Project-ID` 头。
-- **全端跨项目资产授权弹窗 (ShareAssetModal)**：
-  - 支持在主机管理、通用凭据、流水线中心、Ansible 任务模板、K8s 集群、资源池和自愈策略等 7 大模块的列表操作列中直接点击 🔗 分享图标。
-  - 授权弹窗内展示已有授权记录、支持选择目标项目并分配 `read` (只读), `use` (可引用执行) 与 `full` (完全控制) 权限，保障资产的灵活与安全共享。
-- **跨项目授权中心页面 (Asset Share Center)**：
-  - **页面**：`/v1/system/asset-shares`
-  - **功能**：以「我共享的」和「共享给我的」双 Tab 模式集中管理共享资产，支持按资产类型和项目进行快速检索过滤，并提供批量撤销（Revoke）与审计功能。
-
----
-
-### 16. 多维数据与运营报表 (v2.4.0)
-
-**页面**：`/v1/system/reports` 以及 `/v1/sre/report`
-
-**功能**：
-- **告警自愈看板**：多维度展示告警总数、已解决数，监控自愈执行量与成功率，并展示趋势曲线。
-- **流水线运行分析**：实时汇总 DAG 流水线执行成功率、耗时统计，自动按故障率排行，识别脆弱节点。
-- **Ansible 执行报表**：分析剧本执行性能、各模块调用频次、目标主机分布。
-- **等保基线合规趋势**：监控全局主机资产安全检查分数，展示等保 2.0 漏洞加固情况。
-- **异步报表导出**：支持一键提交异步导出任务，完成后自动将下载链接发送至通知中心。
-
----
+连接后端服务前，请根据部署环境配置 API 与 WebSocket 地址。详细部署与使用说明统一维护在 AnsFlow Web 文档门户中。
 
 ## License
 
 Private - All Rights Reserved
-
