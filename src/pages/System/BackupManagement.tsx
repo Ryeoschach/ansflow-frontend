@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Card, Table, Button, Space, Modal, Upload, message, Typography, Popconfirm,
-  Statistic, Row, Col, Alert, Checkbox, theme, Input
+  Statistic, Row, Col, Alert, Checkbox, theme, Input, Divider, Tag
 } from 'antd';
 import type { TablePaginationConfig } from 'antd';
 import {
@@ -10,7 +10,17 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { getBackupList, createBackup, restoreBackup, uploadAndRestoreBackup, downloadBackupFile, deleteBackupFiles, getBackupModules, BackupFile } from '../../api/backup';
+import {
+  getBackupList,
+  createBackup,
+  restoreBackup,
+  uploadAndRestoreBackup,
+  downloadBackupFile,
+  deleteBackupFiles,
+  getBackupModules,
+  BackupFile,
+  RestoreBackupResponse,
+} from '../../api/backup';
 
 const { Title, Text } = Typography;
 
@@ -26,6 +36,7 @@ const BackupManagement: React.FC = () => {
   const [restoreLoading, setRestoreLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [passphrase, setPassphrase] = useState<string>('');
+  const [includeHistory, setIncludeHistory] = useState(false);
 
   // 获取模块列表
   const { data: modules = [] } = useQuery({
@@ -59,28 +70,16 @@ const BackupManagement: React.FC = () => {
 
   // 恢复备份
   const restoreMutation = useMutation({
-    mutationFn: ({filename, mods, pass}: {filename: string, mods?: string[], pass?: string}) => restoreBackup(filename, mods, pass),
-    onSuccess: (res: any) => {
+    mutationFn: ({ filename, mods, pass, history }: { filename: string, mods?: string[], pass?: string, history?: boolean }) =>
+      restoreBackup(filename, mods, pass, history),
+    onSuccess: (res: RestoreBackupResponse) => {
       setRestoreLoading(false);
       setRestoreModalOpen(false);
       if (res.success) {
         Modal.success({
           title: t('backup.restoreSuccess'),
-          content: (
-            <div>
-              <p>{t('backup.restoreSuccessTip')}</p>
-              {res.errors?.length > 0 && (
-                <div className="mt-2">
-                  <Text type="warning">{t('backup.restoreErrors')}:</Text>
-                  <ul className="text-xs text-orange-500 mt-1">
-                    {res.errors.slice(0, 5).map((e: string, i: number) => (
-                      <li key={i}>{e}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          ),
+          width: 560,
+          content: renderRestoreResult(res),
         });
       } else {
         message.error(res.error || t('backup.restoreFailed'));
@@ -110,28 +109,16 @@ const BackupManagement: React.FC = () => {
 
   // 上传并恢复
   const uploadMutation = useMutation({
-    mutationFn: ({ file, pass }: { file: File; pass?: string }) => uploadAndRestoreBackup(file, selectedModules, pass),
-    onSuccess: (res: any) => {
+    mutationFn: ({ file, pass, history }: { file: File; pass?: string; history?: boolean }) =>
+      uploadAndRestoreBackup(file, selectedModules, pass, history),
+    onSuccess: (res: RestoreBackupResponse) => {
       setRestoreLoading(false);
       setUploadModalOpen(false);
       if (res.success) {
         Modal.success({
           title: t('backup.restoreSuccess'),
-          content: (
-            <div>
-              <p>{t('backup.restoreSuccessTip')}</p>
-              {res.errors?.length > 0 && (
-                <div className="mt-2">
-                  <Text type="warning">{t('backup.restoreErrors')}:</Text>
-                  <ul className="text-xs text-orange-500 mt-1">
-                    {res.errors.slice(0, 5).map((e: string, i: number) => (
-                      <li key={i}>{e}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          ),
+          width: 560,
+          content: renderRestoreResult(res),
         });
       } else {
         message.error(res.error || t('backup.restoreFailed'));
@@ -155,6 +142,55 @@ const BackupManagement: React.FC = () => {
     } catch {
       message.error(t('common.error'));
     }
+  };
+
+  const renderList = (title: string, items?: string[], color: string = 'orange') => {
+    if (!items?.length) return null;
+    return (
+      <div className="mt-3">
+        <Text type="secondary">{title}</Text>
+        <ul className={`text-xs mt-1 ${color === 'red' ? 'text-red-500' : 'text-orange-500'}`}>
+          {items.slice(0, 5).map((item, index) => (
+            <li key={`${title}-${index}`}>{item}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
+  const renderTags = (title: string, items?: string[]) => {
+    if (!items?.length) return null;
+    return (
+      <div className="mt-3">
+        <Text type="secondary" className="mr-2">{title}</Text>
+        {items.map((item) => (
+          <Tag key={item} color="blue">{item}</Tag>
+        ))}
+      </div>
+    );
+  };
+
+  const renderRestoreResult = (res: RestoreBackupResponse) => {
+    const remappedEntries = Object.entries(res.remapped_refs || {}).filter(([, count]) => count > 0);
+    return (
+      <div>
+        <p>{t('backup.restoreSuccessTip')}</p>
+        {renderTags(t('backup.autoAddedModules'), res.added_dependency_modules)}
+        {renderTags(t('backup.skippedHistoryModels'), res.skipped_history_models)}
+        {remappedEntries.length > 0 && (
+          <div className="mt-3">
+            <Text type="secondary" className="mr-2">{t('backup.remappedReferences')}</Text>
+            {remappedEntries.map(([key, count]) => (
+              <Tag key={key} color="green">{key}: {count}</Tag>
+            ))}
+          </div>
+        )}
+        {(res.warnings?.length || res.errors?.length || res.unresolved_refs?.length) ? <Divider className="my-3" /> : null}
+        {renderList(t('backup.restoreWarnings'), res.warnings)}
+        {renderList(t('backup.unresolvedReferences'), res.unresolved_refs)}
+        {renderList(t('backup.restoreErrors'), res.errors, 'red')}
+      </div>
+    );
   };
 
   // 列表按时间倒序
@@ -217,6 +253,7 @@ const BackupManagement: React.FC = () => {
               setCurrentFilename(record.filename);
               setSelectedModules(modules.map((m: any) => m.key)); // 默认全选
               setPassphrase('');
+              setIncludeHistory(false);
               setRestoreModalOpen(true);
             }}
           >
@@ -289,6 +326,7 @@ const BackupManagement: React.FC = () => {
               onClick={() => {
                 setSelectedModules(modules.map((m: any) => m.key));
                 setPassphrase('');
+                setIncludeHistory(false);
                 setCreateModalOpen(true);
               }}
               loading={createMutation.isPending}
@@ -298,6 +336,7 @@ const BackupManagement: React.FC = () => {
             <Button icon={<UploadOutlined />} onClick={() => {
               setSelectedModules(modules.map((m: any) => m.key));
               setPassphrase('');
+              setIncludeHistory(false);
               setUploadModalOpen(true);
             }}>
               {t('backup.upload')}
@@ -353,7 +392,7 @@ const BackupManagement: React.FC = () => {
         open={restoreModalOpen}
         onOk={() => {
           setRestoreLoading(true);
-          restoreMutation.mutate({ filename: currentFilename, mods: selectedModules, pass: passphrase });
+          restoreMutation.mutate({ filename: currentFilename, mods: selectedModules, pass: passphrase, history: includeHistory });
         }}
         onCancel={() => setRestoreModalOpen(false)}
         confirmLoading={restoreLoading}
@@ -389,6 +428,17 @@ const BackupManagement: React.FC = () => {
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
             />
+          </div>
+          <div className="mt-4">
+            <Checkbox
+              checked={includeHistory}
+              onChange={(e) => setIncludeHistory(e.target.checked)}
+            >
+              {t('backup.includeHistory')}
+            </Checkbox>
+            <div className="mt-1">
+              <Text type="secondary">{t('backup.includeHistoryDesc')}</Text>
+            </div>
           </div>
         </div>
       </Modal>
@@ -436,6 +486,19 @@ const BackupManagement: React.FC = () => {
             />
           </div>
 
+          <div className="mb-4">
+            <Checkbox
+              checked={includeHistory}
+              disabled={restoreLoading}
+              onChange={(e) => setIncludeHistory(e.target.checked)}
+            >
+              {t('backup.includeHistory')}
+            </Checkbox>
+            <div className="mt-1">
+              <Text type="secondary">{t('backup.includeHistoryDesc')}</Text>
+            </div>
+          </div>
+
           <Upload.Dragger
             accept=".json.gz"
             beforeUpload={(file) => {
@@ -444,7 +507,7 @@ const BackupManagement: React.FC = () => {
                 return false;
               }
               setRestoreLoading(true);
-              uploadMutation.mutate({ file, pass: passphrase });
+              uploadMutation.mutate({ file, pass: passphrase, history: includeHistory });
               return false;
             }}
             showUploadList={false}

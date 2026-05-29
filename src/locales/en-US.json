@@ -1991,6 +1991,13 @@
     "decryptPasswordLabel": "Decryption password (optional; enter it to restore sensitive credentials if the backup package is encrypted):",
     "decryptPasswordBeforeUploadLabel": "Decryption password (optional; enter it before upload if the backup package is encrypted):",
     "decryptPasswordPlaceholder": "Enter decryption password",
+    "includeHistory": "Include execution history",
+    "includeHistoryDesc": "By default, restore only runnable assets such as projects, pipelines, tasks, hosts, and credentials. Enable this to restore pipeline runs, node runs, Ansible executions, and other history.",
+    "autoAddedModules": "Auto-added dependency modules",
+    "skippedHistoryModels": "Skipped history models",
+    "remappedReferences": "Remapped internal references",
+    "restoreWarnings": "Restore warnings",
+    "unresolvedReferences": "Unresolved references",
     "uploadRestoreNote": "Upload Restore Note",
     "uploadRestoreDesc": "Restore will execute immediately after upload. Select modules below. By default, all data will be restored.",
     "selectRestoreModulesShort": "Select restore modules:"

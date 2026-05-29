@@ -32,12 +32,37 @@ export const getBackupModules = (): Promise<any[]> =>
 export const createBackup = (modules?: string[], passphrase?: string): Promise<CreateBackupResponse> =>
   request.post('/system/backup/generate/', { modules, passphrase }) as any;
 
-export const restoreBackup = (filename: string, modules?: string[], passphrase?: string): Promise<any> =>
-  request.post('/system/backup/restore/', { filename, modules, passphrase }) as any;
+export interface RestoreBackupResponse {
+  success: boolean;
+  imported?: Record<string, number>;
+  errors?: string[];
+  warnings?: string[];
+  requested_modules?: string[];
+  effective_modules?: string[];
+  added_dependency_modules?: string[];
+  skipped_history_models?: string[];
+  remapped_refs?: Record<string, number>;
+  unresolved_refs?: string[];
+  error?: string;
+}
 
-export const uploadAndRestoreBackup = (file: File, modules?: string[], passphrase?: string): Promise<any> => {
+export const restoreBackup = (
+  filename: string,
+  modules?: string[],
+  passphrase?: string,
+  includeHistory = false
+): Promise<RestoreBackupResponse> =>
+  request.post('/system/backup/restore/', { filename, modules, passphrase, include_history: includeHistory }) as any;
+
+export const uploadAndRestoreBackup = (
+  file: File,
+  modules?: string[],
+  passphrase?: string,
+  includeHistory = false
+): Promise<RestoreBackupResponse> => {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('include_history', includeHistory ? 'true' : 'false');
   if (modules && modules.length > 0) {
     modules.forEach(m => formData.append('modules', m));
   }

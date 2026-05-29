@@ -1768,6 +1768,13 @@
     "decryptPasswordLabel": "解密密码（可选，若备份包已加密，请输入密码以恢复敏感凭据）：",
     "decryptPasswordBeforeUploadLabel": "解密密码（可选，若备份包已加密，请先输入解密密码再上传）：",
     "decryptPasswordPlaceholder": "请输入解密密码",
+    "includeHistory": "包含执行历史",
+    "includeHistoryDesc": "默认只迁移项目、流水线、任务、主机、凭据等可运行资产；勾选后才恢复流水线运行、节点运行、Ansible 执行记录等历史数据。",
+    "autoAddedModules": "自动补齐依赖模块",
+    "skippedHistoryModels": "已跳过执行历史",
+    "remappedReferences": "已重写内部引用",
+    "restoreWarnings": "恢复提示",
+    "unresolvedReferences": "未解析引用",
     "uploadRestoreNote": "上传恢复说明",
     "uploadRestoreDesc": "上传文件后将立即执行恢复操作。请在下方勾选需要恢复的模块，默认将尝试恢复全部数据。",
     "selectRestoreModulesShort": "选择恢复模块："
