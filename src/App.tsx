@@ -78,6 +78,7 @@ const BackupManagement = lazy(() => import("./pages/System/BackupManagement"));
 const PeriodicTask = lazy(() => import("./pages/System/PeriodicTask"));
 const AISettings = lazy(() => import("./pages/System/AISettings"));
 const AlertCenter = lazy(() => import("./pages/SRE/AlertCenter"));
+const DiagnosisCenter = lazy(() => import("./pages/SRE/DiagnosisCenter"));
 const TaskPulse = lazy(() => import("./pages/SRE/TaskPulse"));
 const SreReport = lazy(() => import("./pages/SRE/Report"));
 const SystemReports = lazy(() => import("./pages/System/Reports"));
@@ -453,6 +454,7 @@ function App() {
                 <Route path="v1/system/audit-logs" element={<AuditLog />} />
                 <Route path="v1/system/approvals" element={<ApprovalCenter />} />
                 <Route path="v1/sre/alerts" element={<AlertCenter />} />
+                <Route path="v1/sre/diagnosis" element={<DiagnosisCenter />} />
                 <Route path="v1/sre/pulse" element={<TaskPulse />} />
                 <Route path="v1/sre/report" element={<SreReport />} />
                 <Route path="v1/system/reports" element={<SystemReports />} />

@@ -26,7 +26,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import useAppStore from '@/store/useAppStore';
 import ShareAssetModal from '@/components/ShareAssetModal';
 import { 
@@ -51,6 +51,7 @@ const AlertCenter: React.FC = () => {
     const { message, modal } = App.useApp();
     const setAiDiagnosis = useAppStore(state => state.setAiDiagnosis);
     const { hasPermission, currentProject } = useAppStore();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('alerts');
 
     // --- 告警事件相关状态 ---
@@ -662,6 +663,15 @@ const AlertCenter: React.FC = () => {
                                 {Object.entries(selectedAlert.labels).map(([k, v]: any) => (
                                     <Tag key={k} className="mb-1">{k}: {v}</Tag>
                                 ))}
+                            </Descriptions.Item>
+                            <Descriptions.Item label={t('alertCenter.detail.timepointDiagnosis')}>
+                                <Button
+                                    size="small"
+                                    icon={<ThunderboltOutlined />}
+                                    onClick={() => navigate(`/v1/sre/diagnosis?alert_id=${selectedAlert.id}&alert_name=${encodeURIComponent(selectedAlert.alert_name)}&time=${encodeURIComponent(selectedAlert.create_time)}`)}
+                                >
+                                    {t('alertCenter.detail.startTimepointDiagnosis')}
+                                </Button>
                             </Descriptions.Item>
                         </Descriptions>
 

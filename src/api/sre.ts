@@ -32,6 +32,80 @@ export interface SelfHealingPolicy {
   update_time: string;
 }
 
+export interface ObservabilityDataSource {
+  id: number;
+  name: string;
+  type: 'victoriametrics' | 'victorialogs';
+  base_url: string;
+  auth_type: 'none' | 'bearer' | 'basic';
+  username?: string | null;
+  has_password?: boolean;
+  has_token?: boolean;
+  is_default: boolean;
+  is_active: boolean;
+  timeout_seconds: number;
+  remark?: string | null;
+  create_time: string;
+  update_time: string;
+}
+
+export interface ObservedService {
+  id: number;
+  name: string;
+  code: string;
+  project: number;
+  project_name?: string;
+  environment?: number | null;
+  environment_name?: string;
+  resource_pool?: number | null;
+  resource_pool_name?: string;
+  hosts?: number[];
+  k8s_cluster?: number | null;
+  k8s_cluster_name?: string;
+  namespace?: string | null;
+  metric_datasource?: number | null;
+  metric_datasource_name?: string;
+  log_datasource?: number | null;
+  log_datasource_name?: string;
+  metric_label_selector: Record<string, string>;
+  log_label_selector: Record<string, string>;
+  metric_queries: any[];
+  log_query?: string | null;
+  is_active: boolean;
+  create_time: string;
+  update_time: string;
+}
+
+export interface DiagnosisRun {
+  id: number;
+  title: string;
+  project?: number | null;
+  project_name?: string;
+  service?: number | null;
+  service_name?: string;
+  alert?: number | null;
+  alert_name?: string;
+  trigger_type: 'manual' | 'alert' | 'retry';
+  status: 'pending' | 'running' | 'success' | 'failed';
+  diagnosis_time: string;
+  window_minutes: number;
+  query_params: Record<string, any>;
+  context_snapshot: Record<string, any>;
+  ai_result?: string | null;
+  error_message?: string | null;
+  created_by_username?: string;
+  create_time: string;
+  update_time: string;
+}
+
+export interface AlertRuleTemplate {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  variables: Record<string, string>;
+}
+
 // 获取告警列表
 export const getAlertEvents = (params?: any): Promise<PaginatedResponse<AlertEvent>> =>
   request.get('/sre/alerts/', { params }) as any;
@@ -93,3 +167,45 @@ export const getAlertReport = (params?: { start_time?: string; end_time?: string
 // 导出告警统计报表为 CSV (异步触发)
 export const exportAlertReport = (params?: { start_time?: string; end_time?: string }): Promise<{ message: string }> =>
   request.post('/sre/alerts/export-report/', params) as any;
+
+export const getObservabilityDataSources = (params?: any): Promise<PaginatedResponse<ObservabilityDataSource>> =>
+  request.get('/sre/observability-datasources/', { params }) as any;
+
+export const createObservabilityDataSource = (data: Partial<ObservabilityDataSource> & Record<string, any>): Promise<ObservabilityDataSource> =>
+  request.post('/sre/observability-datasources/', data) as any;
+
+export const updateObservabilityDataSource = (id: number, data: Partial<ObservabilityDataSource> & Record<string, any>): Promise<ObservabilityDataSource> =>
+  request.patch(`/sre/observability-datasources/${id}/`, data) as any;
+
+export const deleteObservabilityDataSource = (id: number): Promise<any> =>
+  request.delete(`/sre/observability-datasources/${id}/`);
+
+export const testObservabilityDataSource = (id: number): Promise<{ ok: boolean; status_code?: number; error?: string }> =>
+  request.post(`/sre/observability-datasources/${id}/test-connection/`) as any;
+
+export const getObservedServices = (params?: any): Promise<PaginatedResponse<ObservedService>> =>
+  request.get('/sre/observed-services/', { params }) as any;
+
+export const createObservedService = (data: Partial<ObservedService>): Promise<ObservedService> =>
+  request.post('/sre/observed-services/', data) as any;
+
+export const updateObservedService = (id: number, data: Partial<ObservedService>): Promise<ObservedService> =>
+  request.patch(`/sre/observed-services/${id}/`, data) as any;
+
+export const deleteObservedService = (id: number): Promise<any> =>
+  request.delete(`/sre/observed-services/${id}/`);
+
+export const getDiagnosisRuns = (params?: any): Promise<PaginatedResponse<DiagnosisRun>> =>
+  request.get('/sre/diagnosis-runs/', { params }) as any;
+
+export const createDiagnosisRun = (data: Partial<DiagnosisRun>): Promise<DiagnosisRun> =>
+  request.post('/sre/diagnosis-runs/', data) as any;
+
+export const retryDiagnosisRun = (id: number): Promise<any> =>
+  request.post(`/sre/diagnosis-runs/${id}/retry/`);
+
+export const getAlertRuleTemplates = (): Promise<AlertRuleTemplate[]> =>
+  request.get('/sre/alert-rule-templates/') as any;
+
+export const renderAlertRuleTemplate = (template_id: string, variables: Record<string, string>): Promise<any> =>
+  request.post('/sre/alert-rule-templates/render/', { template_id, variables }) as any;

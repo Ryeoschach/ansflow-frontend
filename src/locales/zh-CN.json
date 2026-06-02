@@ -2115,6 +2115,64 @@
       "customPromptDesc": "支持修改各 AI 场景下的提示词模板。大括号占位符为必需系统变量。如果需要在提示词中表达 JSON 或纯文本大括号，请使用双大括号 {{ 和 }} 进行转义。"
     }
   },
+  "diagnosis": {
+    "pageTitle": "时间点诊断中心",
+    "pageSubtitle": "基于项目、服务、日志、指标和 AnsFlow 内部事件生成指定时间窗口的诊断报告",
+    "tabs": {
+      "runs": "诊断任务",
+      "services": "服务映射",
+      "datasources": "观测数据源",
+      "rules": "规则模板"
+    },
+    "status": {
+      "label": "状态",
+      "pending": "待执行",
+      "running": "执行中",
+      "success": "成功",
+      "failed": "失败"
+    },
+    "messages": {
+      "submitted": "诊断任务已提交",
+      "connectionOk": "数据源连接成功"
+    },
+    "create": "创建诊断",
+    "retry": "重试",
+    "title": "标题",
+    "service": "服务",
+    "project": "项目",
+    "code": "标识",
+    "time": "诊断时间",
+    "window": "时间窗口",
+    "metricDatasource": "指标数据源",
+    "logDatasource": "日志数据源",
+    "datasourceName": "数据源名称",
+    "datasourceType": "数据源类型",
+    "baseUrl": "访问地址",
+    "authType": "认证方式",
+    "default": "默认",
+    "test": "测试连接",
+    "addService": "新增服务映射",
+    "editService": "编辑服务映射",
+    "addDatasource": "新增数据源",
+    "editDatasource": "编辑数据源",
+    "namespace": "命名空间",
+    "metricLabels": "指标标签选择器 JSON",
+    "logLabels": "日志标签选择器 JSON",
+    "metricQueries": "指标查询 JSON 数组",
+    "logQuery": "日志查询语句",
+    "username": "用户名",
+    "password": "密码",
+    "timeout": "超时时间",
+    "keepSecret": "留空则保持原密文",
+    "templateName": "模板名称",
+    "category": "分类",
+    "renderRule": "生成规则",
+    "vmalertYaml": "vmalert YAML",
+    "alertDiagnosisTitle": "告警时间点诊断",
+    "error": "错误信息",
+    "aiResult": "AI 诊断结果",
+    "contextSnapshot": "诊断上下文"
+  },
   "alertCenter": {
     "title": "告警中心",
     "alertTab": "告警事件",
@@ -2198,7 +2256,9 @@
       "aiDiagnosisTitle": "AI 智能诊断报告",
       "analyzing": "AI 正在分析历史知识库并生成报告...",
       "recommendedRemediation": "AI 推荐修复方案",
-      "executeNow": "立即执行"
+      "executeNow": "立即执行",
+      "timepointDiagnosis": "时间点诊断",
+      "startTimepointDiagnosis": "基于时间点诊断"
     },
     "ticketLink": "查看工单 #{{id}}",
     "runTooltip": "策略: {{policy}} | 运行 ID: #{{runId}} {{auto}}",
