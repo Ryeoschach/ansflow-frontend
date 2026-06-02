@@ -4,25 +4,33 @@
   <a href="https://ansflow.cyfee.com"><img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 18"></a>
   <a href="https://ansflow.cyfee.com"><img src="https://img.shields.io/badge/TypeScript-Ready-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"></a>
   <a href="https://ansflow.cyfee.com"><img src="https://img.shields.io/badge/Vite-Ready-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite"></a>
-  <a href="./README_ZH.md"><img src="https://img.shields.io/badge/Lang-中文说明-red?style=for-the-badge" alt="中文说明"></a>
+  <a href="./README_EN.md"><img src="https://img.shields.io/badge/Lang-English-red?style=for-the-badge" alt="English"></a>
 </p>
 
-English | [中文说明](./README_ZH.md)
+中文说明 | [English](./README_EN.md)
 
-AnsFlow Frontend is the React application for the AnsFlow operations platform. It provides the workspace UI for pipelines, hosts, credentials, Kubernetes/GitOps, SRE alerts, AI assistants, approvals, reports, and system settings.
+AnsFlow Frontend 是 AnsFlow 运维平台的 React 前端应用，提供流水线、主机、凭据、Kubernetes/GitOps、SRE 告警、AI 助手、审批、报表和系统设置等工作台界面。
 
-- Product site and full documentation: [https://ansflow.cyfee.com](https://ansflow.cyfee.com)
-- Frontend repository: [Ryeoschach/ansflow-frontend](https://github.com/Ryeoschach/ansflow-frontend)
-- Backend repository: [Ryeoschach/ansflow-backend](https://github.com/Ryeoschach/ansflow-backend)
+- 产品展示与完整文档：[https://ansflow.cyfee.com](https://ansflow.cyfee.com)
 
-## Stack
+### GitHub 仓库
+- 门户网站：[Ryeoschach/ansflow-web](https://github.com/Ryeoschach/ansflow-web)
+- 前端仓库：[Ryeoschach/ansflow-frontend](https://github.com/Ryeoschach/ansflow-frontend)
+- 后端仓库：[Ryeoschach/ansflow-backend](https://github.com/Ryeoschach/ansflow-backend)
 
-- React 18, TypeScript, Vite
-- Ant Design, Tailwind CSS
-- TanStack Query, Zustand
-- ReactFlow, xterm.js, Monaco Editor
+### Gitee 镜像仓库
+- 门户网站：[cyfee/ansflow-web](https://gitee.com/cyfee/ansflow-web)
+- 前端仓库：[cyfee/ansflow-frontend](https://gitee.com/cyfee/ansflow-frontend)
+- 后端仓库：[cyfee/ansflow-backend](https://gitee.com/cyfee/ansflow-backend)
 
-## Development
+## 技术栈
+
+- React 18、TypeScript、Vite
+- Ant Design、Tailwind CSS
+- TanStack Query、Zustand
+- ReactFlow、xterm.js、Monaco Editor
+
+## 开发命令
 
 ```bash
 pnpm install
@@ -30,7 +38,7 @@ pnpm dev
 pnpm build
 ```
 
-Configure API and WebSocket endpoints through the project environment files before connecting to a backend service. Detailed deployment and usage instructions are maintained in the AnsFlow Web documentation portal.
+连接后端服务前，请根据部署环境配置 API 与 WebSocket 地址。详细部署与使用说明统一维护在 AnsFlow Web 文档门户中。
 
 ## License
 
