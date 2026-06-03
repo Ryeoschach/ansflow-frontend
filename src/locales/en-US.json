@@ -2133,12 +2133,15 @@
     },
     "messages": {
       "submitted": "Diagnosis run submitted",
-      "connectionOk": "Data source connected"
+      "connectionOk": "Data source connected",
+      "serviceMatched": "Matched service automatically: {{service}}",
+      "serviceMatchFailed": "Service auto-match failed"
     },
     "create": "Create Diagnosis",
     "retry": "Retry",
     "title": "Title",
     "service": "Service",
+    "serviceMatch": "Alert Service Match",
     "project": "Project",
     "code": "Code",
     "time": "Diagnosis Time",
@@ -2180,14 +2183,21 @@
     "vmalertYaml": "vmalert YAML",
     "alertDiagnosisTitle": "Alert Timepoint Diagnosis",
     "error": "Error",
+    "level": "Level",
+    "instance": "Instance",
+    "score": "Score",
+    "matchedKeywords": "Matched Keywords",
+    "logMessage": "Log Message",
     "aiResult": "AI Diagnosis Result",
     "collectionSummary": "Context Collection Summary",
+    "logHighlights": "Log Highlights",
     "contextType": "Context Type",
     "collectedCount": "Collected Count",
     "warnings": "Collection Warnings",
     "contextTypes": {
       "metrics": "Metrics",
       "logs": "Logs",
+      "log_highlights": "Log Highlights",
       "ansflow_events": "AnsFlow Events"
     },
     "collectionStatus": {

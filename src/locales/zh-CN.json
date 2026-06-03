@@ -2133,12 +2133,15 @@
     },
     "messages": {
       "submitted": "诊断任务已提交",
-      "connectionOk": "数据源连接成功"
+      "connectionOk": "数据源连接成功",
+      "serviceMatched": "已自动匹配服务：{{service}}",
+      "serviceMatchFailed": "服务自动匹配失败"
     },
     "create": "创建诊断",
     "retry": "重试",
     "title": "标题",
     "service": "服务",
+    "serviceMatch": "告警服务匹配",
     "project": "项目",
     "code": "标识",
     "time": "诊断时间",
@@ -2180,14 +2183,21 @@
     "vmalertYaml": "vmalert YAML",
     "alertDiagnosisTitle": "告警时间点诊断",
     "error": "错误信息",
+    "level": "级别",
+    "instance": "实例",
+    "score": "分数",
+    "matchedKeywords": "命中关键词",
+    "logMessage": "日志内容",
     "aiResult": "AI 诊断结果",
     "collectionSummary": "上下文采集摘要",
+    "logHighlights": "日志重点片段",
     "contextType": "上下文类型",
     "collectedCount": "采集数量",
     "warnings": "采集提示",
     "contextTypes": {
       "metrics": "指标",
       "logs": "日志",
+      "log_highlights": "日志重点片段",
       "ansflow_events": "AnsFlow 事件"
     },
     "collectionStatus": {

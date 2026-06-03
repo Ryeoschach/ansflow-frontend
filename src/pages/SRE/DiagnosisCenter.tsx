@@ -27,6 +27,7 @@ import {
   getDiagnosisRuns,
   getObservabilityDataSources,
   getObservedServices,
+  matchObservedServiceForAlert,
   ObservabilityDataSource,
   ObservedService,
   renderAlertRuleTemplate,
@@ -84,6 +85,8 @@ const DiagnosisCenter: React.FC = () => {
   const [selectedRun, setSelectedRun] = useState<DiagnosisRun | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<AlertRuleTemplate | null>(null);
   const [renderedRule, setRenderedRule] = useState<any>(null);
+  const [serviceMatchCandidates, setServiceMatchCandidates] = useState<any[]>([]);
+  const [serviceMatchWarnings, setServiceMatchWarnings] = useState<string[]>([]);
 
   const [diagnosisForm] = Form.useForm();
   const [serviceForm] = Form.useForm();
@@ -129,6 +132,8 @@ const DiagnosisCenter: React.FC = () => {
   useEffect(() => {
     const alertId = searchParams.get('alert_id');
     if (!alertId) return;
+    setServiceMatchCandidates([]);
+    setServiceMatchWarnings([]);
     diagnosisForm.setFieldsValue({
       alert: Number(alertId),
       trigger_type: 'alert',
@@ -138,8 +143,20 @@ const DiagnosisCenter: React.FC = () => {
       window_minutes: 10,
     });
     setDiagnosisModalOpen(true);
+    matchObservedServiceForAlert({ alert_id: Number(alertId), project: currentProject?.id })
+      .then((result) => {
+        setServiceMatchCandidates(result.candidates || []);
+        setServiceMatchWarnings(result.warnings || []);
+        if (result.best_match) {
+          diagnosisForm.setFieldsValue({ service: result.best_match.id });
+          message.success(t('diagnosis.messages.serviceMatched', { service: result.best_match.name }));
+        }
+      })
+      .catch((err) => {
+        setServiceMatchWarnings([err?.message || t('diagnosis.messages.serviceMatchFailed')]);
+      });
     setSearchParams({});
-  }, [searchParams, setSearchParams, diagnosisForm, currentProject?.id, t]);
+  }, [searchParams, setSearchParams, diagnosisForm, currentProject?.id, t, message]);
 
   const createDiagnosisMutation = useMutation({
     mutationFn: (values: any) => createDiagnosisRun(values),
@@ -301,7 +318,7 @@ const DiagnosisCenter: React.FC = () => {
   const renderCollectionSummary = (run: DiagnosisRun) => {
     const summary = run.context_snapshot?.collection_summary || {};
     const warnings = run.context_snapshot?.warnings || [];
-    const rows = ['metrics', 'logs', 'ansflow_events'].map(key => {
+    const rows = ['metrics', 'logs', 'log_highlights', 'ansflow_events'].map(key => {
       const item = summary[key] || {};
       return {
         key,
@@ -345,6 +362,28 @@ const DiagnosisCenter: React.FC = () => {
           />
         )}
       </Space>
+    );
+  };
+  const renderLogHighlights = (run: DiagnosisRun) => {
+    const highlights = run.context_snapshot?.log_highlights || [];
+    if (!highlights.length) {
+      return <Text type="secondary">{t('common.noData')}</Text>;
+    }
+    return (
+      <Table
+        rowKey={(record: any) => `${record.timestamp || ''}-${record.message || ''}-${record.score || ''}`}
+        size="small"
+        pagination={false}
+        columns={[
+          { title: t('diagnosis.time'), dataIndex: 'timestamp', width: 170, render: (value: string) => value || '-' },
+          { title: t('diagnosis.level'), dataIndex: 'level', width: 90, render: (value: string) => value ? <Tag color={String(value).toLowerCase().includes('error') ? 'error' : 'warning'}>{value}</Tag> : '-' },
+          { title: t('diagnosis.service'), dataIndex: 'service', width: 140, render: (value: string) => value || '-' },
+          { title: t('diagnosis.instance'), dataIndex: 'instance', width: 140, render: (value: string) => value || '-' },
+          { title: t('diagnosis.matchedKeywords'), dataIndex: 'matched_keywords', width: 180, render: (items: string[]) => (items || []).map(item => <Tag key={item}>{item}</Tag>) },
+          { title: t('diagnosis.logMessage'), dataIndex: 'message', render: (value: string) => <Text>{value}</Text> },
+        ] as any}
+        dataSource={highlights}
+      />
     );
   };
 
@@ -417,9 +456,26 @@ const DiagnosisCenter: React.FC = () => {
           <Form.Item name="project" label={t('diagnosis.project')}>
             <Select options={projectOptions} allowClear />
           </Form.Item>
-          <Form.Item name="service" label={t('diagnosis.service')} rules={[{ required: true }]}>
+          <Form.Item name="service" label={t('diagnosis.service')}>
             <Select options={serviceList.map(item => ({ value: item.id, label: `${item.name} (${item.code})` }))} />
           </Form.Item>
+          {(serviceMatchCandidates.length > 0 || serviceMatchWarnings.length > 0) && (
+            <Alert
+              type={serviceMatchCandidates.length > 0 ? 'info' : 'warning'}
+              showIcon
+              message={t('diagnosis.serviceMatch')}
+              description={
+                <Space direction="vertical">
+                  {serviceMatchCandidates.slice(0, 3).map(item => (
+                    <Text key={item.id}>
+                      {item.name} ({item.code}) · {t('diagnosis.score')}: {item.score}
+                    </Text>
+                  ))}
+                  {serviceMatchWarnings.map((item, index) => <Text key={`warning-${index}`} type="secondary">{item}</Text>)}
+                </Space>
+              }
+            />
+          )}
           <Form.Item name="diagnosis_time" label={t('diagnosis.time')} rules={[{ required: true }]}>
             <DatePicker showTime className="w-full" />
           </Form.Item>
@@ -572,6 +628,9 @@ const DiagnosisCenter: React.FC = () => {
             </Card>
             <Card title={t('diagnosis.collectionSummary')}>
               {renderCollectionSummary(selectedRun)}
+            </Card>
+            <Card title={t('diagnosis.logHighlights')}>
+              {renderLogHighlights(selectedRun)}
             </Card>
             <Card title={t('diagnosis.contextSnapshot')}>
               <TextArea rows={12} readOnly value={JSON.stringify(selectedRun.context_snapshot || {}, null, 2)} />

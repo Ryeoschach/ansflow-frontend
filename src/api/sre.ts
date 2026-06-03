@@ -83,6 +83,23 @@ export interface ObservedService {
   update_time: string;
 }
 
+export interface AlertServiceMatchCandidate {
+  id: number;
+  name: string;
+  code: string;
+  project: number;
+  project_name?: string;
+  score: number;
+  reasons: string[];
+}
+
+export interface AlertServiceMatchResult {
+  best_match: AlertServiceMatchCandidate | null;
+  candidates: AlertServiceMatchCandidate[];
+  threshold: number;
+  warnings: string[];
+}
+
 export interface DiagnosisRun {
   id: number;
   title: string;
@@ -201,6 +218,9 @@ export const updateObservedService = (id: number, data: Partial<ObservedService>
 
 export const deleteObservedService = (id: number): Promise<any> =>
   request.delete(`/sre/observed-services/${id}/`);
+
+export const matchObservedServiceForAlert = (params: { alert_id: number; project?: number | null }): Promise<AlertServiceMatchResult> =>
+  request.get('/sre/observed-services/match-alert/', { params }) as any;
 
 export const getDiagnosisRuns = (params?: any): Promise<PaginatedResponse<DiagnosisRun>> =>
   request.get('/sre/diagnosis-runs/', { params }) as any;
