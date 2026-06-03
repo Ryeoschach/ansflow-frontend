@@ -386,6 +386,90 @@ const DiagnosisCenter: React.FC = () => {
       />
     );
   };
+  const renderRefTags = (refs?: string[]) => (
+    <Space wrap>
+      {(refs || []).map(ref => <Tag key={ref} color="blue">{ref}</Tag>)}
+    </Space>
+  );
+  const renderStructuredReport = (run: DiagnosisRun) => {
+    const report = run.context_snapshot?.structured_report;
+    if (!report || !report.summary) {
+      return <Text type="secondary">{t('diagnosis.noStructuredReport')}</Text>;
+    }
+    return (
+      <Space direction="vertical" className="w-full">
+        <Descriptions bordered size="small" column={1}>
+          <Descriptions.Item label={t('diagnosis.report.summary')}>{report.summary || '-'}</Descriptions.Item>
+          <Descriptions.Item label={t('diagnosis.report.impactScope')}>
+            {(report.impact_scope || []).length ? (report.impact_scope || []).map((item: string) => <Tag key={item}>{item}</Tag>) : '-'}
+          </Descriptions.Item>
+        </Descriptions>
+        <Table
+          rowKey={(record: any, index) => `${record.ref || record.title || record.action || index}`}
+          size="small"
+          pagination={false}
+          title={() => t('diagnosis.report.evidence')}
+          columns={[
+            { title: t('diagnosis.ref'), dataIndex: 'ref', width: 110, render: (value: string) => value ? <Tag color="blue">{value}</Tag> : '-' },
+            { title: t('diagnosis.finding'), dataIndex: 'finding' },
+          ] as any}
+          dataSource={report.evidence || []}
+        />
+        <Table
+          rowKey={(record: any, index) => `${record.title || index}`}
+          size="small"
+          pagination={false}
+          title={() => t('diagnosis.report.possibleCauses')}
+          columns={[
+            { title: t('diagnosis.title'), dataIndex: 'title' },
+            { title: t('diagnosis.confidence'), dataIndex: 'confidence', width: 110, render: (value: string) => <Tag>{value}</Tag> },
+            { title: t('diagnosis.evidenceRefs'), dataIndex: 'evidence_refs', render: renderRefTags },
+          ] as any}
+          dataSource={report.possible_causes || []}
+        />
+        <Table
+          rowKey={(record: any, index) => `${record.action || index}`}
+          size="small"
+          pagination={false}
+          title={() => t('diagnosis.report.recommendedActions')}
+          columns={[
+            { title: t('diagnosis.action'), dataIndex: 'action' },
+            { title: t('diagnosis.priority'), dataIndex: 'priority', width: 110, render: (value: string) => <Tag>{value}</Tag> },
+            { title: t('diagnosis.evidenceRefs'), dataIndex: 'evidence_refs', render: renderRefTags },
+          ] as any}
+          dataSource={report.recommended_actions || []}
+        />
+        <Descriptions bordered size="small" column={1}>
+          <Descriptions.Item label={t('diagnosis.report.risks')}>
+            {(report.risks || []).length ? report.risks.join('\n') : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('diagnosis.report.nextChecks')}>
+            {(report.next_checks || []).length ? report.next_checks.join('\n') : '-'}
+          </Descriptions.Item>
+        </Descriptions>
+      </Space>
+    );
+  };
+  const renderEvidenceIndex = (run: DiagnosisRun) => {
+    const evidence = run.context_snapshot?.evidence_index || [];
+    if (!evidence.length) {
+      return <Text type="secondary">{t('common.noData')}</Text>;
+    }
+    return (
+      <Table
+        rowKey="ref"
+        size="small"
+        pagination={false}
+        columns={[
+          { title: t('diagnosis.ref'), dataIndex: 'ref', width: 110, render: (value: string) => <Tag color="blue">{value}</Tag> },
+          { title: t('diagnosis.type'), dataIndex: 'type', width: 140, render: (value: string) => <Tag>{value}</Tag> },
+          { title: t('diagnosis.title'), dataIndex: 'title' },
+          { title: t('diagnosis.summary'), dataIndex: 'summary' },
+        ] as any}
+        dataSource={evidence}
+      />
+    );
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -623,6 +707,9 @@ const DiagnosisCenter: React.FC = () => {
               <Descriptions.Item label={t('diagnosis.time')}>{dayjs(selectedRun.diagnosis_time).format('YYYY-MM-DD HH:mm:ss')}</Descriptions.Item>
               <Descriptions.Item label={t('diagnosis.error')}>{selectedRun.error_message || '-'}</Descriptions.Item>
             </Descriptions>
+            <Card title={t('diagnosis.structuredReport')}>
+              {renderStructuredReport(selectedRun)}
+            </Card>
             <Card title={t('diagnosis.aiResult')}>
               {selectedRun.ai_result ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedRun.ai_result}</ReactMarkdown> : <Text type="secondary">{t('common.noData')}</Text>}
             </Card>
@@ -631,6 +718,9 @@ const DiagnosisCenter: React.FC = () => {
             </Card>
             <Card title={t('diagnosis.logHighlights')}>
               {renderLogHighlights(selectedRun)}
+            </Card>
+            <Card title={t('diagnosis.evidenceIndex')}>
+              {renderEvidenceIndex(selectedRun)}
             </Card>
             <Card title={t('diagnosis.contextSnapshot')}>
               <TextArea rows={12} readOnly value={JSON.stringify(selectedRun.context_snapshot || {}, null, 2)} />

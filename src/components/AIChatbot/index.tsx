@@ -115,6 +115,27 @@ const AIChatbot: React.FC = () => {
         { key: 'humorous', label: t('ai.personality.humorous'), icon: <CoffeeOutlined /> },
     ];
 
+    const getReferenceLabel = (doc: { id?: number; title?: string }, index: number) => {
+        const title = doc.title?.trim();
+        if (title && title !== t('ai.referenceDocument')) return title;
+        return doc.id ? `${t('ai.referenceDocument')} #${doc.id}` : `${t('ai.referenceDocument')} ${index + 1}`;
+    };
+
+    const handleReferenceClick = (doc: { id?: number; title?: string }, index: number) => {
+        modal.confirm({
+            title: getReferenceLabel(doc, index),
+            content: (
+                <div className="text-sm leading-relaxed">
+                    <div>{t('ai.referenceDetailTip')}</div>
+                    {doc.id && <div className="mt-2 opacity-70">ID: {doc.id}</div>}
+                </div>
+            ),
+            okText: t('ai.openKnowledgeBase'),
+            cancelText: t('common.cancel'),
+            onOk: () => navigate('/v1/ai-rag/config'),
+        });
+    };
+
     // 点击外部自动收起
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -239,7 +260,8 @@ const AIChatbot: React.FC = () => {
                     id: m.id, 
                     role: m.role, 
                     content: content,
-                    is_exported: m.is_exported
+                    is_exported: m.is_exported,
+                    referenced_docs: m.referenced_docs || []
                 };
             });
             
@@ -749,6 +771,40 @@ const AIChatbot: React.FC = () => {
                     .dark .ai-assistant-bubble {
                         background-color: ${token.colorFillAlter};
                     }
+                    .ai-reference-label {
+                        color: ${token.colorTextSecondary};
+                    }
+                    .ai-reference-tag.ant-tag {
+                        margin: 0;
+                        padding: 1px 8px;
+                        max-width: 96px;
+                        border-radius: 8px;
+                        border: 1px solid ${token.colorPrimaryBorder};
+                        background-color: ${token.colorPrimaryBg};
+                        color: ${token.colorPrimaryText};
+                        font-size: 10px;
+                        line-height: 18px;
+                        cursor: pointer;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                        transition: all 0.2s ease;
+                    }
+                    .ai-reference-tag.ant-tag:hover {
+                        border-color: ${token.colorPrimary};
+                        background-color: ${token.colorPrimaryBgHover};
+                        color: ${token.colorPrimary};
+                    }
+                    .dark .ai-reference-tag.ant-tag {
+                        border-color: ${token.colorBorder};
+                        background-color: ${token.colorFillSecondary};
+                        color: ${token.colorText};
+                    }
+                    .dark .ai-reference-tag.ant-tag:hover {
+                        border-color: ${token.colorPrimary};
+                        background-color: ${token.colorFillTertiary};
+                        color: ${token.colorPrimaryTextHover};
+                    }
                 `}
             </style>
             <FloatButton
@@ -986,14 +1042,14 @@ const AIChatbot: React.FC = () => {
                                         </div>
                                         {msg.role === 'assistant' && msg.referenced_docs && msg.referenced_docs.length > 0 && (
                                             <div className="mt-1 flex flex-wrap gap-1 mb-1">
-                                                <span className="text-[10px] opacity-40 mr-1 flex items-center"><BookOutlined className="mr-0.5" /> {t('ai.reference')}</span>
+                                                <span className="ai-reference-label text-[10px] mr-1 flex items-center"><BookOutlined className="mr-0.5" /> {t('ai.reference')}</span>
                                                 {msg.referenced_docs.map((doc: any, i: number) => (
                                                     <Tooltip key={i} title={t('ai.referenceTooltip')}>
                                                         <Tag 
-                                                            className="text-[9px] m-0 px-1 border-none bg-gray-100 hover:bg-gray-200 cursor-pointer transition-colors"
-                                                            onClick={() => window.open(`/v1/ai-rag/config?doc_id=${doc.id}`)}
+                                                            className="ai-reference-tag"
+                                                            onClick={() => handleReferenceClick(doc, i)}
                                                         >
-                                                            {doc.title}
+                                                            {getReferenceLabel(doc, i)}
                                                         </Tag>
                                                     </Tooltip>
                                                 ))}
