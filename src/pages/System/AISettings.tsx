@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Card, Tabs, Table, Button, Space, Modal, Form,
   Input, Select, Switch, message, Tag, Typography, Alert, Drawer, Divider, List, Badge, Upload, UploadProps, Popconfirm, Tooltip, Empty,
-  Slider, Row, Col, Checkbox} from 'antd';
+  Slider, Row, Col, Checkbox, theme} from 'antd';
 import { 
   PlusOutlined, EditOutlined, DeleteOutlined, 
   ApiOutlined, RocketOutlined, SettingOutlined,
@@ -32,6 +32,7 @@ const { Dragger } = Upload;
 const AISettings: React.FC = () => {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
+  const { token } = theme.useToken();
   const [activeTab, setActiveTab] = useState('config');
 
   // -- Prompts State --
@@ -593,6 +594,7 @@ const AISettings: React.FC = () => {
     "rag_chat": ["prefix", "kb_catalog", "context", "chat_history", "question"],
     "log_diagnosis": ["prefix", "kb_catalog", "target_type", "target_name", "error_summary", "log_content", "context"],
     "alert_diagnosis": ["prefix", "context", "query"],
+    "timepoint_diagnosis": ["prefix", "diagnosis_context"],
     "dag_generation": ["prompt_text"],
     "dag_refine": ["current_pipeline", "prompt_text"],
     "pipeline_explain": ["pipeline"],
@@ -847,11 +849,33 @@ const AISettings: React.FC = () => {
             
             <div>
               <Text type="secondary">{t('ai.settings.promptDesc')}: </Text>
-              <Paragraph className="mt-1 bg-gray-50 p-2 rounded">{editingPrompt.description || t('ai.settings.noDescription')}</Paragraph>
+              <Paragraph
+                className="mt-1 p-2 rounded"
+                style={{
+                  background: token.colorFillAlter,
+                  color: token.colorText,
+                  border: `1px solid ${token.colorBorderSecondary}`,
+                }}
+              >
+                {editingPrompt.description || t('ai.settings.noDescription')}
+              </Paragraph>
             </div>
 
             {REQUIRED_PLACEHOLDERS[editingPrompt.code] && REQUIRED_PLACEHOLDERS[editingPrompt.code].length > 0 && (
-              <Card size="small" type="inner" title={t('ai.settings.variablesGuide')} headStyle={{ background: '#f5f5f5' }}>
+              <Card
+                size="small"
+                type="inner"
+                title={t('ai.settings.variablesGuide')}
+                headStyle={{
+                  background: token.colorFillAlter,
+                  color: token.colorText,
+                  borderColor: token.colorBorderSecondary,
+                }}
+                bodyStyle={{
+                  background: token.colorBgContainer,
+                  borderColor: token.colorBorderSecondary,
+                }}
+              >
                 <Text type="secondary">{t('ai.settings.variablesGuideTip')}</Text>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {REQUIRED_PLACEHOLDERS[editingPrompt.code].map(v => (
@@ -894,7 +918,14 @@ const AISettings: React.FC = () => {
                 value={promptTemplateText}
                 onChange={(e) => setPromptTemplateText(e.target.value)}
                 autoSize={{ minRows: 15, maxRows: 25 }}
-                style={{ fontFamily: 'monospace', fontSize: '13px' }}
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: '13px',
+                  background: token.colorBgContainer,
+                  color: token.colorText,
+                  borderColor: token.colorBorder,
+                  caretColor: token.colorPrimary,
+                }}
                 placeholder={t('ai.settings.promptTemplatePlaceholder')}
               />
             </div>
