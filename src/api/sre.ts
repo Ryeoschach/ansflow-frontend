@@ -32,15 +32,22 @@ export interface SelfHealingPolicy {
   update_time: string;
 }
 
+export type ObservabilityDataSourceProvider = 'victoriametrics' | 'victorialogs' | 'elasticsearch' | 'loki' | 'aliyun_sls' | 'tencent_cls' | 'generic_http';
+
 export interface ObservabilityDataSource {
   id: number;
   name: string;
-  type: 'victoriametrics' | 'victorialogs';
+  kind: 'metric' | 'log' | 'trace';
+  provider: ObservabilityDataSourceProvider;
+  type: ObservabilityDataSourceProvider;
   base_url: string;
-  auth_type: 'none' | 'bearer' | 'basic';
+  auth_type: 'none' | 'bearer' | 'basic' | 'header' | 'query' | 'cloud_signature';
   username?: string | null;
   has_password?: boolean;
   has_token?: boolean;
+  query_config?: Record<string, any>;
+  field_mapping?: Record<string, any>;
+  response_mapping?: Record<string, any>;
   is_default: boolean;
   is_active: boolean;
   timeout_seconds: number;

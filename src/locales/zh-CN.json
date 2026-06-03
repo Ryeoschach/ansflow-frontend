@@ -2147,6 +2147,13 @@
     "logDatasource": "日志数据源",
     "datasourceName": "数据源名称",
     "datasourceType": "数据源类型",
+    "kind": "数据类别",
+    "provider": "提供方",
+    "kinds": {
+      "metric": "指标",
+      "log": "日志",
+      "trace": "链路"
+    },
     "baseUrl": "访问地址",
     "authType": "认证方式",
     "default": "默认",
@@ -2162,6 +2169,9 @@
     "logQuery": "日志查询语句",
     "username": "用户名",
     "password": "密码",
+    "queryConfig": "查询配置 JSON",
+    "fieldMapping": "字段映射 JSON",
+    "responseMapping": "响应映射 JSON",
     "timeout": "超时时间",
     "keepSecret": "留空则保持原密文",
     "templateName": "模板名称",
@@ -2171,6 +2181,21 @@
     "alertDiagnosisTitle": "告警时间点诊断",
     "error": "错误信息",
     "aiResult": "AI 诊断结果",
+    "collectionSummary": "上下文采集摘要",
+    "contextType": "上下文类型",
+    "collectedCount": "采集数量",
+    "warnings": "采集提示",
+    "contextTypes": {
+      "metrics": "指标",
+      "logs": "日志",
+      "ansflow_events": "AnsFlow 事件"
+    },
+    "collectionStatus": {
+      "success": "成功",
+      "failed": "失败",
+      "skipped": "跳过",
+      "pending": "等待"
+    },
     "contextSnapshot": "诊断上下文"
   },
   "alertCenter": {

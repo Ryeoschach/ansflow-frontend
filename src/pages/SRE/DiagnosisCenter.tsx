@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  App, Button, Card, DatePicker, Descriptions, Drawer, Form, Input, InputNumber,
+  Alert, App, Button, Card, DatePicker, Descriptions, Drawer, Form, Input, InputNumber,
   Modal, Popconfirm, Select, Space, Switch, Table, Tabs, Tag, Typography
 } from 'antd';
 import {
@@ -41,6 +41,16 @@ import useAppStore from '@/store/useAppStore';
 const { Text, Title } = Typography;
 const { TextArea } = Input;
 
+const datasourceProviderOptions = [
+  { value: 'victoriametrics', label: 'VictoriaMetrics', kind: 'metric' },
+  { value: 'victorialogs', label: 'VictoriaLogs', kind: 'log' },
+  { value: 'elasticsearch', label: 'Elasticsearch', kind: 'log' },
+  { value: 'loki', label: 'Loki', kind: 'log' },
+  { value: 'generic_http', label: 'Generic HTTP', kind: 'log' },
+  { value: 'aliyun_sls', label: 'Aliyun SLS', kind: 'log' },
+  { value: 'tencent_cls', label: 'Tencent CLS', kind: 'log' },
+];
+
 const parseJsonObject = (value?: string) => {
   if (!value?.trim()) return {};
   const parsed = JSON.parse(value);
@@ -79,6 +89,7 @@ const DiagnosisCenter: React.FC = () => {
   const [serviceForm] = Form.useForm();
   const [datasourceForm] = Form.useForm();
   const [ruleForm] = Form.useForm();
+  const datasourceKind = Form.useWatch('kind', datasourceForm);
 
   const { data: runs, isLoading: runsLoading } = useQuery({
     queryKey: ['sre-diagnosis-runs'],
@@ -104,8 +115,9 @@ const DiagnosisCenter: React.FC = () => {
 
   const datasourceList = datasources?.data || [];
   const serviceList = services?.data || [];
-  const metricDatasources = datasourceList.filter(item => item.type === 'victoriametrics');
-  const logDatasources = datasourceList.filter(item => item.type === 'victorialogs');
+  const metricDatasources = datasourceList.filter(item => item.kind === 'metric' || item.type === 'victoriametrics');
+  const logDatasources = datasourceList.filter(item => item.kind === 'log' || item.type === 'victorialogs');
+  const filteredProviderOptions = datasourceProviderOptions.filter(item => !datasourceKind || item.kind === datasourceKind);
 
   const statusMap: Record<string, { color: string; text: string }> = {
     pending: { color: 'default', text: t('diagnosis.status.pending') },
@@ -185,8 +197,18 @@ const DiagnosisCenter: React.FC = () => {
 
   const openDatasourceModal = (record?: ObservabilityDataSource) => {
     setEditingDatasource(record || null);
-    datasourceForm.setFieldsValue(record || {
+    datasourceForm.setFieldsValue(record ? {
+      ...record,
+      query_config: JSON.stringify(record.query_config || {}, null, 2),
+      field_mapping: JSON.stringify(record.field_mapping || {}, null, 2),
+      response_mapping: JSON.stringify(record.response_mapping || {}, null, 2),
+    } : {
+      kind: 'metric',
+      provider: 'victoriametrics',
       type: 'victoriametrics',
+      query_config: JSON.stringify({}, null, 2),
+      field_mapping: JSON.stringify({}, null, 2),
+      response_mapping: JSON.stringify({}, null, 2),
       auth_type: 'none',
       timeout_seconds: 10,
       is_active: true,
@@ -234,7 +256,8 @@ const DiagnosisCenter: React.FC = () => {
 
   const datasourceColumns = [
     { title: t('diagnosis.datasourceName'), dataIndex: 'name' },
-    { title: t('diagnosis.datasourceType'), dataIndex: 'type', render: (value: string) => <Tag color={value === 'victoriametrics' ? 'blue' : 'green'}>{value}</Tag> },
+    { title: t('diagnosis.kind'), dataIndex: 'kind', render: (value: string) => <Tag color={value === 'metric' ? 'blue' : 'green'}>{t(`diagnosis.kinds.${value}`)}</Tag> },
+    { title: t('diagnosis.provider'), dataIndex: 'provider', render: (value: string, record: ObservabilityDataSource) => <Tag>{value || record.type}</Tag> },
     { title: t('diagnosis.baseUrl'), dataIndex: 'base_url' },
     { title: t('diagnosis.authType'), dataIndex: 'auth_type' },
     { title: t('diagnosis.default'), dataIndex: 'is_default', render: (value: boolean) => value ? <CheckCircleOutlined className="text-green-500" /> : '-' },
@@ -275,6 +298,55 @@ const DiagnosisCenter: React.FC = () => {
   ];
 
   const projectOptions = useMemo(() => (projects?.data || []).map((item: any) => ({ value: item.id, label: `${item.name} (${item.code})` })), [projects]);
+  const renderCollectionSummary = (run: DiagnosisRun) => {
+    const summary = run.context_snapshot?.collection_summary || {};
+    const warnings = run.context_snapshot?.warnings || [];
+    const rows = ['metrics', 'logs', 'ansflow_events'].map(key => {
+      const item = summary[key] || {};
+      return {
+        key,
+        name: t(`diagnosis.contextTypes.${key}`),
+        status: item.status || 'skipped',
+        datasource: item.datasource?.name || '-',
+        provider: item.datasource?.provider || '-',
+        count: item.count ?? 0,
+        error: item.error,
+      };
+    });
+    const statusColor: Record<string, string> = {
+      success: 'success',
+      failed: 'error',
+      skipped: 'default',
+      pending: 'processing',
+    };
+
+    return (
+      <Space direction="vertical" className="w-full">
+        <Table
+          rowKey="key"
+          size="small"
+          pagination={false}
+          columns={[
+            { title: t('diagnosis.contextType'), dataIndex: 'name' },
+            { title: t('diagnosis.status.label'), dataIndex: 'status', render: (value: string) => <Tag color={statusColor[value]}>{t(`diagnosis.collectionStatus.${value}`)}</Tag> },
+            { title: t('diagnosis.datasourceName'), dataIndex: 'datasource' },
+            { title: t('diagnosis.provider'), dataIndex: 'provider' },
+            { title: t('diagnosis.collectedCount'), dataIndex: 'count' },
+            { title: t('diagnosis.error'), dataIndex: 'error', render: (value: string) => value || '-' },
+          ] as any}
+          dataSource={rows}
+        />
+        {warnings.length > 0 && (
+          <Alert
+            type="warning"
+            showIcon
+            message={t('diagnosis.warnings')}
+            description={<Space direction="vertical">{warnings.slice(0, 5).map((item: string, index: number) => <Text key={index}>{item}</Text>)}</Space>}
+          />
+        )}
+      </Space>
+    );
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -404,16 +476,46 @@ const DiagnosisCenter: React.FC = () => {
         onOk={() => datasourceForm.submit()}
         confirmLoading={datasourceMutation.isPending}
       >
-        <Form form={datasourceForm} layout="vertical" onFinish={datasourceMutation.mutate}>
+        <Form form={datasourceForm} layout="vertical" onFinish={(values) => {
+          try {
+            datasourceMutation.mutate({
+              ...values,
+              type: values.provider,
+              query_config: parseJsonObject(values.query_config),
+              field_mapping: parseJsonObject(values.field_mapping),
+              response_mapping: parseJsonObject(values.response_mapping),
+            });
+          } catch (err: any) {
+            message.error(err.message);
+          }
+        }}>
           <Form.Item name="name" label={t('diagnosis.datasourceName')} rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="type" label={t('diagnosis.datasourceType')} rules={[{ required: true }]}>
-            <Select options={[{ value: 'victoriametrics', label: 'VictoriaMetrics' }, { value: 'victorialogs', label: 'VictoriaLogs' }]} />
-          </Form.Item>
+          <Space className="w-full" align="start">
+            <Form.Item name="kind" label={t('diagnosis.kind')} rules={[{ required: true }]} className="flex-1">
+              <Select
+                options={[
+                  { value: 'metric', label: t('diagnosis.kinds.metric') },
+                  { value: 'log', label: t('diagnosis.kinds.log') },
+                ]}
+                onChange={(value) => {
+                  const provider = value === 'metric' ? 'victoriametrics' : 'victorialogs';
+                  datasourceForm.setFieldsValue({ provider, type: provider });
+                }}
+              />
+            </Form.Item>
+            <Form.Item name="provider" label={t('diagnosis.provider')} rules={[{ required: true }]} className="flex-1">
+              <Select options={filteredProviderOptions} onChange={(value) => datasourceForm.setFieldsValue({ type: value })} />
+            </Form.Item>
+          </Space>
+          <Form.Item name="type" hidden><Input /></Form.Item>
           <Form.Item name="base_url" label={t('diagnosis.baseUrl')} rules={[{ required: true }]}><Input placeholder="http://victoriametrics:8428" /></Form.Item>
-          <Form.Item name="auth_type" label={t('diagnosis.authType')}><Select options={[{ value: 'none', label: 'None' }, { value: 'bearer', label: 'Bearer Token' }, { value: 'basic', label: 'Basic Auth' }]} /></Form.Item>
+          <Form.Item name="auth_type" label={t('diagnosis.authType')}><Select options={[{ value: 'none', label: 'None' }, { value: 'bearer', label: 'Bearer Token' }, { value: 'basic', label: 'Basic Auth' }, { value: 'header', label: 'Custom Header' }, { value: 'query', label: 'Query Param' }, { value: 'cloud_signature', label: 'Cloud Signature' }]} /></Form.Item>
           <Form.Item name="username" label={t('diagnosis.username')}><Input /></Form.Item>
           <Form.Item name="password" label={t('diagnosis.password')}><Input.Password placeholder={editingDatasource?.has_password ? t('diagnosis.keepSecret') : undefined} /></Form.Item>
           <Form.Item name="token" label="Token"><TextArea rows={3} placeholder={editingDatasource?.has_token ? t('diagnosis.keepSecret') : undefined} /></Form.Item>
+          <Form.Item name="query_config" label={t('diagnosis.queryConfig')}><TextArea rows={4} /></Form.Item>
+          <Form.Item name="field_mapping" label={t('diagnosis.fieldMapping')}><TextArea rows={4} /></Form.Item>
+          <Form.Item name="response_mapping" label={t('diagnosis.responseMapping')}><TextArea rows={3} /></Form.Item>
           <Form.Item name="timeout_seconds" label={t('diagnosis.timeout')}><InputNumber min={1} max={120} className="w-full" /></Form.Item>
           <Form.Item name="is_default" valuePropName="checked"><Switch /> {t('diagnosis.default')}</Form.Item>
           <Form.Item name="is_active" valuePropName="checked"><Switch /> {t('common.enabled')}</Form.Item>
@@ -467,6 +569,9 @@ const DiagnosisCenter: React.FC = () => {
             </Descriptions>
             <Card title={t('diagnosis.aiResult')}>
               {selectedRun.ai_result ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedRun.ai_result}</ReactMarkdown> : <Text type="secondary">{t('common.noData')}</Text>}
+            </Card>
+            <Card title={t('diagnosis.collectionSummary')}>
+              {renderCollectionSummary(selectedRun)}
             </Card>
             <Card title={t('diagnosis.contextSnapshot')}>
               <TextArea rows={12} readOnly value={JSON.stringify(selectedRun.context_snapshot || {}, null, 2)} />

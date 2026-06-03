@@ -2147,6 +2147,13 @@
     "logDatasource": "Log Data Source",
     "datasourceName": "Data Source Name",
     "datasourceType": "Data Source Type",
+    "kind": "Data Kind",
+    "provider": "Provider",
+    "kinds": {
+      "metric": "Metric",
+      "log": "Log",
+      "trace": "Trace"
+    },
     "baseUrl": "Base URL",
     "authType": "Auth Type",
     "default": "Default",
@@ -2162,6 +2169,9 @@
     "logQuery": "Log Query",
     "username": "Username",
     "password": "Password",
+    "queryConfig": "Query Config JSON",
+    "fieldMapping": "Field Mapping JSON",
+    "responseMapping": "Response Mapping JSON",
     "timeout": "Timeout",
     "keepSecret": "Leave blank to keep current secret",
     "templateName": "Template Name",
@@ -2171,6 +2181,21 @@
     "alertDiagnosisTitle": "Alert Timepoint Diagnosis",
     "error": "Error",
     "aiResult": "AI Diagnosis Result",
+    "collectionSummary": "Context Collection Summary",
+    "contextType": "Context Type",
+    "collectedCount": "Collected Count",
+    "warnings": "Collection Warnings",
+    "contextTypes": {
+      "metrics": "Metrics",
+      "logs": "Logs",
+      "ansflow_events": "AnsFlow Events"
+    },
+    "collectionStatus": {
+      "success": "Success",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "pending": "Pending"
+    },
     "contextSnapshot": "Diagnosis Context"
   },
   "alertCenter": {
