@@ -12,6 +12,7 @@
 AnsFlow Frontend 是 AnsFlow 运维平台的 React 前端应用，提供流水线、主机、凭据、Kubernetes/GitOps、SRE 告警、AI 助手、审批、报表和系统设置等工作台界面。
 
 - 产品展示与完整文档：[https://ansflow.cyfee.com](https://ansflow.cyfee.com)
+- SRE 诊断中心提供观测数据源配置、服务映射、日志/指标查询预览和时间点诊断结果查看。
 
 ### GitHub 仓库
 - 门户网站：[Ryeoschach/ansflow-web](https://github.com/Ryeoschach/ansflow-web)
@@ -39,6 +40,12 @@ pnpm build
 ```
 
 连接后端服务前，请根据部署环境配置 API 与 WebSocket 地址。详细部署与使用说明统一维护在 AnsFlow Web 文档门户中。
+
+## SRE 诊断中心
+
+入口：`/v1/sre/diagnosis`
+
+在“服务映射”页签中可以使用“日志预览”和“指标预览”验证数据源、标签选择器、字段映射和响应映射是否正确。
 
 ## License
 

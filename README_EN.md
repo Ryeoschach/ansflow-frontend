@@ -12,6 +12,7 @@ English | [中文说明](./README.md)
 AnsFlow Frontend is the React application for the AnsFlow operations platform. It provides the workspace UI for pipelines, hosts, credentials, Kubernetes/GitOps, SRE alerts, AI assistants, approvals, reports, and system settings.
 
 - Product site and full documentation: [https://ansflow.cyfee.com](https://ansflow.cyfee.com)
+- SRE Diagnosis Center provides observability datasource configuration, service mapping, log/metric query preview, and timepoint diagnosis result views.
 
 ### GitHub Repositories
 - Portal Web: [Ryeoschach/ansflow-web](https://github.com/Ryeoschach/ansflow-web)
@@ -39,6 +40,12 @@ pnpm build
 ```
 
 Configure API and WebSocket endpoints through the project environment files before connecting to a backend service. Detailed deployment and usage instructions are maintained in the AnsFlow Web documentation portal.
+
+## SRE Diagnosis Center
+
+Route: `/v1/sre/diagnosis`
+
+Use "Preview Logs" and "Preview Metrics" in the Service Mapping tab to verify datasources, label selectors, field mappings, and response mappings before running a diagnosis.
 
 ## License
 
