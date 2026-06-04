@@ -122,6 +122,9 @@ export interface DiagnosisRun {
   service_name?: string;
   alert?: number | null;
   alert_name?: string;
+  template?: number | null;
+  template_name?: string;
+  template_code?: string;
   trigger_type: 'manual' | 'alert' | 'retry';
   status: 'pending' | 'running' | 'success' | 'failed';
   diagnosis_time: string;
@@ -131,6 +134,22 @@ export interface DiagnosisRun {
   ai_result?: string | null;
   error_message?: string | null;
   created_by_username?: string;
+  create_time: string;
+  update_time: string;
+}
+
+export interface DiagnosisTemplate {
+  id: number;
+  scope: 'global' | 'project';
+  project?: number | null;
+  project_name?: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  category: 'ci_cd';
+  content: Record<string, any>;
+  is_builtin: boolean;
+  is_active: boolean;
   create_time: string;
   update_time: string;
 }
@@ -252,6 +271,21 @@ export const createDiagnosisRun = (data: Partial<DiagnosisRun>): Promise<Diagnos
 
 export const retryDiagnosisRun = (id: number): Promise<any> =>
   request.post(`/sre/diagnosis-runs/${id}/retry/`);
+
+export const getDiagnosisTemplates = (params?: any): Promise<PaginatedResponse<DiagnosisTemplate>> =>
+  request.get('/sre/diagnosis-templates/', { params }) as any;
+
+export const createDiagnosisTemplate = (data: Partial<DiagnosisTemplate>): Promise<DiagnosisTemplate> =>
+  request.post('/sre/diagnosis-templates/', data) as any;
+
+export const updateDiagnosisTemplate = (id: number, data: Partial<DiagnosisTemplate>): Promise<DiagnosisTemplate> =>
+  request.patch(`/sre/diagnosis-templates/${id}/`, data) as any;
+
+export const deleteDiagnosisTemplate = (id: number): Promise<any> =>
+  request.delete(`/sre/diagnosis-templates/${id}/`);
+
+export const copyDiagnosisTemplate = (id: number, data: Partial<DiagnosisTemplate>): Promise<DiagnosisTemplate> =>
+  request.post(`/sre/diagnosis-templates/${id}/copy/`, data) as any;
 
 export const getAlertRuleTemplates = (): Promise<AlertRuleTemplate[]> =>
   request.get('/sre/alert-rule-templates/') as any;

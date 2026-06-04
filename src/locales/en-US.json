@@ -2125,6 +2125,7 @@
       "runs": "Diagnosis Runs",
       "services": "Service Mapping",
       "datasources": "Observability Data Sources",
+      "templates": "Diagnosis Templates",
       "rules": "Rule Templates"
     },
     "status": {
@@ -2192,6 +2193,25 @@
     "timeout": "Timeout",
     "keepSecret": "Leave blank to keep current secret",
     "templateName": "Template Name",
+    "diagnosisTemplate": "Diagnosis Template",
+    "templateSnapshot": "Template Snapshot",
+    "templateContent": "Template Content JSON",
+    "templateCiCdTip": "After selecting a CI/CD template, specify a pipeline run, failed node, or Ansible execution as the diagnosis target.",
+    "addTemplate": "Add Diagnosis Template",
+    "editTemplate": "Edit Diagnosis Template",
+    "scope": "Scope",
+    "targetType": "Target Type",
+    "builtin": "Built-in",
+    "pipelineRunId": "Pipeline Run ID",
+    "pipelineNodeRunId": "Pipeline Node Run ID",
+    "ansibleExecutionId": "Ansible Execution ID",
+    "scopes": {
+      "global": "Global",
+      "project": "Project"
+    },
+    "categories": {
+      "ci_cd": "CI/CD Release Diagnosis"
+    },
     "category": "Category",
     "renderRule": "Render Rule",
     "vmalertYaml": "vmalert YAML",
@@ -2233,7 +2253,8 @@
       "metrics": "Metrics",
       "logs": "Logs",
       "log_highlights": "Log Highlights",
-      "ansflow_events": "AnsFlow Events"
+      "ansflow_events": "AnsFlow Events",
+      "ci_cd_context": "CI/CD Context"
     },
     "collectionStatus": {
       "success": "Success",

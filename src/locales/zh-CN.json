@@ -2125,6 +2125,7 @@
       "runs": "诊断任务",
       "services": "服务映射",
       "datasources": "观测数据源",
+      "templates": "诊断模板",
       "rules": "规则模板"
     },
     "status": {
@@ -2192,6 +2193,25 @@
     "timeout": "超时时间",
     "keepSecret": "留空则保持原密文",
     "templateName": "模板名称",
+    "diagnosisTemplate": "诊断模板",
+    "templateSnapshot": "模板快照",
+    "templateContent": "模板内容 JSON",
+    "templateCiCdTip": "选择 CI/CD 模板后，可指定流水线运行、失败节点或 Ansible 执行作为诊断目标。",
+    "addTemplate": "新增诊断模板",
+    "editTemplate": "编辑诊断模板",
+    "scope": "范围",
+    "targetType": "目标类型",
+    "builtin": "内置",
+    "pipelineRunId": "流水线运行 ID",
+    "pipelineNodeRunId": "流水线节点运行 ID",
+    "ansibleExecutionId": "Ansible 执行 ID",
+    "scopes": {
+      "global": "全局",
+      "project": "项目"
+    },
+    "categories": {
+      "ci_cd": "CI/CD 发布诊断"
+    },
     "category": "分类",
     "renderRule": "生成规则",
     "vmalertYaml": "vmalert YAML",
@@ -2233,7 +2253,8 @@
       "metrics": "指标",
       "logs": "日志",
       "log_highlights": "日志重点片段",
-      "ansflow_events": "AnsFlow 事件"
+      "ansflow_events": "AnsFlow 事件",
+      "ci_cd_context": "CI/CD 上下文"
     },
     "collectionStatus": {
       "success": "成功",

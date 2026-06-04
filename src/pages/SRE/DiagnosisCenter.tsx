@@ -17,12 +17,17 @@ import remarkGfm from 'remark-gfm';
 
 import {
   AlertRuleTemplate,
+  copyDiagnosisTemplate,
   createDiagnosisRun,
+  createDiagnosisTemplate,
   createObservabilityDataSource,
   createObservedService,
+  deleteDiagnosisTemplate,
   deleteObservabilityDataSource,
   deleteObservedService,
   DiagnosisRun,
+  DiagnosisTemplate,
+  getDiagnosisTemplates,
   getAlertRuleTemplates,
   getDiagnosisRuns,
   getObservabilityDataSourceCapabilities,
@@ -36,6 +41,7 @@ import {
   renderAlertRuleTemplate,
   retryDiagnosisRun,
   testObservabilityDataSource,
+  updateDiagnosisTemplate,
   updateObservabilityDataSource,
   updateObservedService,
 } from '@/api/sre';
@@ -83,8 +89,10 @@ const DiagnosisCenter: React.FC = () => {
   const [diagnosisModalOpen, setDiagnosisModalOpen] = useState(false);
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
   const [datasourceModalOpen, setDatasourceModalOpen] = useState(false);
+  const [diagnosisTemplateModalOpen, setDiagnosisTemplateModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<ObservedService | null>(null);
   const [editingDatasource, setEditingDatasource] = useState<ObservabilityDataSource | null>(null);
+  const [editingDiagnosisTemplate, setEditingDiagnosisTemplate] = useState<DiagnosisTemplate | null>(null);
   const [selectedRun, setSelectedRun] = useState<DiagnosisRun | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<AlertRuleTemplate | null>(null);
   const [renderedRule, setRenderedRule] = useState<any>(null);
@@ -95,7 +103,9 @@ const DiagnosisCenter: React.FC = () => {
   const [diagnosisForm] = Form.useForm();
   const [serviceForm] = Form.useForm();
   const [datasourceForm] = Form.useForm();
+  const [diagnosisTemplateForm] = Form.useForm();
   const [ruleForm] = Form.useForm();
+  const selectedDiagnosisTemplateId = Form.useWatch('template', diagnosisForm);
   const datasourceKind = Form.useWatch('kind', datasourceForm);
   const datasourceProvider = Form.useWatch('provider', datasourceForm);
 
@@ -124,9 +134,16 @@ const DiagnosisCenter: React.FC = () => {
     queryKey: ['sre-alert-rule-templates'],
     queryFn: getAlertRuleTemplates,
   });
+  const { data: diagnosisTemplates, isLoading: diagnosisTemplatesLoading } = useQuery({
+    queryKey: ['sre-diagnosis-templates', currentProject?.id],
+    queryFn: () => getDiagnosisTemplates({ page_size: 1000, project: currentProject?.id, include_inactive: true }),
+  });
 
   const datasourceList = datasources?.data || [];
   const serviceList = services?.data || [];
+  const diagnosisTemplateList = diagnosisTemplates?.data || [];
+  const selectedDiagnosisTemplate = diagnosisTemplateList.find(item => item.id === selectedDiagnosisTemplateId);
+  const selectedTemplateTargetType = selectedDiagnosisTemplate?.content?.target_type;
   const metricDatasources = datasourceList.filter(item => item.kind === 'metric' || item.type === 'victoriametrics');
   const logDatasources = datasourceList.filter(item => item.kind === 'log' || item.type === 'victorialogs');
   const providerOptions = datasourceCapabilities
@@ -203,6 +220,19 @@ const DiagnosisCenter: React.FC = () => {
     },
   });
 
+  const diagnosisTemplateMutation = useMutation({
+    mutationFn: (values: any) => editingDiagnosisTemplate
+      ? updateDiagnosisTemplate(editingDiagnosisTemplate.id, values)
+      : createDiagnosisTemplate(values),
+    onSuccess: () => {
+      message.success(editingDiagnosisTemplate ? t('common.updateSuccess') : t('common.createSuccess'));
+      setDiagnosisTemplateModalOpen(false);
+      setEditingDiagnosisTemplate(null);
+      diagnosisTemplateForm.resetFields();
+      queryClient.invalidateQueries({ queryKey: ['sre-diagnosis-templates'] });
+    },
+  });
+
   const previewLogsMutation = useMutation({
     mutationFn: (serviceId: number) => previewObservedServiceLogs(serviceId, { window_minutes: 10, limit: 5 }),
     onSuccess: setPreviewResult,
@@ -259,6 +289,36 @@ const DiagnosisCenter: React.FC = () => {
     setDatasourceModalOpen(true);
   };
 
+  const openDiagnosisTemplateModal = (record?: DiagnosisTemplate) => {
+    setEditingDiagnosisTemplate(record || null);
+    diagnosisTemplateForm.setFieldsValue(record ? {
+      ...record,
+      content: JSON.stringify(record.content || {}, null, 2),
+    } : {
+      scope: currentProject?.id ? 'project' : 'global',
+      project: currentProject?.id,
+      category: 'ci_cd',
+      content: JSON.stringify({
+        target_type: 'pipeline_run',
+        context_collection: {
+          pipeline_run: true,
+          failed_nodes: true,
+          node_logs: true,
+          approval_records: true,
+          related_alerts: true,
+          service_logs: false,
+          metrics: false,
+          ansible_execution: false,
+        },
+        log_keywords: ['error', 'failed', 'exception', 'timeout'],
+        prompt_template: '{prefix}\n请基于以下 CI/CD 诊断上下文输出诊断结论、证据引用和处置建议：\n{diagnosis_context}',
+        report_schema: { evidence_required: true },
+      }, null, 2),
+      is_active: true,
+    });
+    setDiagnosisTemplateModalOpen(true);
+  };
+
   const applyDatasourceCapability = (provider?: string) => {
     const capability = provider ? datasourceCapabilities?.[provider as keyof typeof datasourceCapabilities] : undefined;
     if (!capability) return;
@@ -275,6 +335,7 @@ const DiagnosisCenter: React.FC = () => {
 
   const runColumns = [
     { title: t('diagnosis.title'), dataIndex: 'title', render: (text: string, record: DiagnosisRun) => <Button type="link" onClick={() => setSelectedRun(record)}>{text}</Button> },
+    { title: t('diagnosis.diagnosisTemplate'), dataIndex: 'template_name', render: (text: string) => text || '-' },
     { title: t('diagnosis.service'), dataIndex: 'service_name', render: (text: string) => text || '-' },
     { title: t('diagnosis.time'), dataIndex: 'diagnosis_time', render: (value: string) => dayjs(value).format('YYYY-MM-DD HH:mm:ss') },
     { title: t('diagnosis.window'), dataIndex: 'window_minutes', render: (value: number) => `±${value}m` },
@@ -369,11 +430,46 @@ const DiagnosisCenter: React.FC = () => {
     },
   ];
 
+  const diagnosisTemplateColumns = [
+    { title: t('diagnosis.templateName'), dataIndex: 'name' },
+    { title: t('diagnosis.code'), dataIndex: 'code' },
+    { title: t('diagnosis.scope'), dataIndex: 'scope', render: (value: string, record: DiagnosisTemplate) => <Tag color={value === 'global' ? 'blue' : 'purple'}>{record.project_name || t(`diagnosis.scopes.${value}`)}</Tag> },
+    { title: t('diagnosis.targetType'), dataIndex: ['content', 'target_type'], render: (value: string) => value || '-' },
+    { title: t('common.status'), dataIndex: 'is_active', render: (value: boolean) => <Tag color={value ? 'success' : 'default'}>{value ? t('common.enabled') : t('common.disabled')}</Tag> },
+    { title: t('diagnosis.builtin'), dataIndex: 'is_builtin', render: (value: boolean) => value ? <Tag color="gold">{t('diagnosis.builtin')}</Tag> : '-' },
+    {
+      title: t('common.action'),
+      render: (_: any, record: DiagnosisTemplate) => (
+        <Space>
+          <Button size="small" icon={<EditOutlined />} disabled={record.is_builtin} onClick={() => openDiagnosisTemplateModal(record)}>{t('common.edit')}</Button>
+          <Button
+            size="small"
+            icon={<CopyOutlined />}
+            onClick={() => copyDiagnosisTemplate(record.id, { project: currentProject?.id, scope: currentProject?.id ? 'project' : 'global' }).then(() => queryClient.invalidateQueries({ queryKey: ['sre-diagnosis-templates'] }))}
+          >
+            {t('common.copy')}
+          </Button>
+          <Button
+            size="small"
+            onClick={() => updateDiagnosisTemplate(record.id, { is_active: !record.is_active }).then(() => queryClient.invalidateQueries({ queryKey: ['sre-diagnosis-templates'] }))}
+          >
+            {record.is_active ? t('common.inactive') : t('common.active')}
+          </Button>
+          {!record.is_builtin && (
+            <Popconfirm title={t('common.confirmDelete')} onConfirm={() => deleteDiagnosisTemplate(record.id).then(() => queryClient.invalidateQueries({ queryKey: ['sre-diagnosis-templates'] }))}>
+              <Button size="small" danger icon={<DeleteOutlined />}>{t('common.delete')}</Button>
+            </Popconfirm>
+          )}
+        </Space>
+      ),
+    },
+  ];
+
   const projectOptions = useMemo(() => (projects?.data || []).map((item: any) => ({ value: item.id, label: `${item.name} (${item.code})` })), [projects]);
   const renderCollectionSummary = (run: DiagnosisRun) => {
     const summary = run.context_snapshot?.collection_summary || {};
     const warnings = run.context_snapshot?.warnings || [];
-    const rows = ['metrics', 'logs', 'log_highlights', 'ansflow_events'].map(key => {
+    const rows = ['metrics', 'logs', 'log_highlights', 'ansflow_events', 'ci_cd_context'].map(key => {
       const item = summary[key] || {};
       return {
         key,
@@ -568,6 +664,16 @@ const DiagnosisCenter: React.FC = () => {
               ),
             },
             {
+              key: 'diagnosis-templates',
+              label: <Space><FileSearchOutlined />{t('diagnosis.tabs.templates')}</Space>,
+              children: (
+                <Space direction="vertical" className="w-full">
+                  <Button icon={<PlusOutlined />} onClick={() => openDiagnosisTemplateModal()}>{t('diagnosis.addTemplate')}</Button>
+                  <Table rowKey="id" loading={diagnosisTemplatesLoading} columns={diagnosisTemplateColumns as any} dataSource={diagnosisTemplateList} />
+                </Space>
+              ),
+            },
+            {
               key: 'rules',
               label: <Space><CodeOutlined />{t('diagnosis.tabs.rules')}</Space>,
               children: <Table rowKey="id" columns={templateColumns as any} dataSource={templates || []} />,
@@ -595,6 +701,40 @@ const DiagnosisCenter: React.FC = () => {
           <Form.Item name="project" label={t('diagnosis.project')}>
             <Select options={projectOptions} allowClear />
           </Form.Item>
+          <Form.Item name="template" label={t('diagnosis.diagnosisTemplate')}>
+            <Select
+              allowClear
+              options={diagnosisTemplateList.filter(item => item.is_active).map(item => ({ value: item.id, label: `${item.name} (${item.code})` }))}
+            />
+          </Form.Item>
+          {selectedDiagnosisTemplate && (
+            <Alert
+              className="mb-4"
+              type="info"
+              showIcon
+              message={selectedDiagnosisTemplate.name}
+              description={selectedDiagnosisTemplate.description || t('diagnosis.templateCiCdTip')}
+            />
+          )}
+          {selectedTemplateTargetType && (
+            <Space className="w-full" align="start">
+              {['pipeline_run', 'service_regression'].includes(selectedTemplateTargetType) && (
+                <Form.Item name="pipeline_run_id" label={t('diagnosis.pipelineRunId')} className="flex-1">
+                  <InputNumber min={1} className="w-full" />
+                </Form.Item>
+              )}
+              {['pipeline_run', 'ansible_execution'].includes(selectedTemplateTargetType) && (
+                <Form.Item name="pipeline_node_run_id" label={t('diagnosis.pipelineNodeRunId')} className="flex-1">
+                  <InputNumber min={1} className="w-full" />
+                </Form.Item>
+              )}
+              {selectedTemplateTargetType === 'ansible_execution' && (
+                <Form.Item name="ansible_execution_id" label={t('diagnosis.ansibleExecutionId')} className="flex-1">
+                  <InputNumber min={1} className="w-full" />
+                </Form.Item>
+              )}
+            </Space>
+          )}
           <Form.Item name="service" label={t('diagnosis.service')}>
             <Select options={serviceList.map(item => ({ value: item.id, label: `${item.name} (${item.code})` }))} />
           </Form.Item>
@@ -817,6 +957,54 @@ const DiagnosisCenter: React.FC = () => {
       </Modal>
 
       <Modal
+        title={editingDiagnosisTemplate ? t('diagnosis.editTemplate') : t('diagnosis.addTemplate')}
+        open={diagnosisTemplateModalOpen}
+        onCancel={() => setDiagnosisTemplateModalOpen(false)}
+        onOk={() => diagnosisTemplateForm.submit()}
+        confirmLoading={diagnosisTemplateMutation.isPending}
+        width={820}
+      >
+        <Form form={diagnosisTemplateForm} layout="vertical" onFinish={(values) => {
+          try {
+            diagnosisTemplateMutation.mutate({
+              ...values,
+              project: values.scope === 'project' ? values.project : null,
+              content: parseJsonObject(values.content),
+            });
+          } catch (err: any) {
+            message.error(err.message);
+          }
+        }}>
+          <Space className="w-full" align="start">
+            <Form.Item name="name" label={t('diagnosis.templateName')} rules={[{ required: true }]} className="flex-1"><Input /></Form.Item>
+            <Form.Item name="code" label={t('diagnosis.code')} rules={[{ required: true }]} className="flex-1"><Input disabled={editingDiagnosisTemplate?.is_builtin} /></Form.Item>
+          </Space>
+          <Space className="w-full" align="start">
+            <Form.Item name="scope" label={t('diagnosis.scope')} rules={[{ required: true }]} className="flex-1">
+              <Select
+                disabled={editingDiagnosisTemplate?.is_builtin}
+                options={[
+                  { value: 'global', label: t('diagnosis.scopes.global') },
+                  { value: 'project', label: t('diagnosis.scopes.project') },
+                ]}
+              />
+            </Form.Item>
+            <Form.Item name="project" label={t('diagnosis.project')} className="flex-1">
+              <Select options={projectOptions} allowClear disabled={editingDiagnosisTemplate?.is_builtin} />
+            </Form.Item>
+          </Space>
+          <Form.Item name="category" label={t('diagnosis.category')} rules={[{ required: true }]}>
+            <Select options={[{ value: 'ci_cd', label: t('diagnosis.categories.ci_cd') }]} />
+          </Form.Item>
+          <Form.Item name="description" label={t('common.description')}><TextArea rows={2} /></Form.Item>
+          <Form.Item name="content" label={t('diagnosis.templateContent')} rules={[{ required: true }]}>
+            <TextArea rows={14} />
+          </Form.Item>
+          <Form.Item name="is_active" valuePropName="checked"><Switch /> {t('common.enabled')}</Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
         title={selectedTemplate?.name}
         open={!!selectedTemplate}
         onCancel={() => setSelectedTemplate(null)}
@@ -857,6 +1045,8 @@ const DiagnosisCenter: React.FC = () => {
           <Space direction="vertical" className="w-full">
             <Descriptions bordered size="small" column={1}>
               <Descriptions.Item label={t('diagnosis.status.label')}><Tag color={statusMap[selectedRun.status]?.color}>{statusMap[selectedRun.status]?.text}</Tag></Descriptions.Item>
+              <Descriptions.Item label={t('diagnosis.diagnosisTemplate')}>{selectedRun.template_name || selectedRun.context_snapshot?.template?.name || '-'}</Descriptions.Item>
+              <Descriptions.Item label={t('diagnosis.templateSnapshot')}>{selectedRun.context_snapshot?.template?.code || selectedRun.query_params?.template_snapshot?.code || '-'}</Descriptions.Item>
               <Descriptions.Item label={t('diagnosis.service')}>{selectedRun.service_name || '-'}</Descriptions.Item>
               <Descriptions.Item label={t('diagnosis.time')}>{dayjs(selectedRun.diagnosis_time).format('YYYY-MM-DD HH:mm:ss')}</Descriptions.Item>
               <Descriptions.Item label={t('diagnosis.error')}>{selectedRun.error_message || '-'}</Descriptions.Item>
