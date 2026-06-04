@@ -25,6 +25,7 @@ import {
   DiagnosisRun,
   getAlertRuleTemplates,
   getDiagnosisRuns,
+  getObservabilityDataSourceCapabilities,
   getObservabilityDataSources,
   getObservedServices,
   matchObservedServiceForAlert,
@@ -93,6 +94,7 @@ const DiagnosisCenter: React.FC = () => {
   const [datasourceForm] = Form.useForm();
   const [ruleForm] = Form.useForm();
   const datasourceKind = Form.useWatch('kind', datasourceForm);
+  const datasourceProvider = Form.useWatch('provider', datasourceForm);
 
   const { data: runs, isLoading: runsLoading } = useQuery({
     queryKey: ['sre-diagnosis-runs'],
@@ -107,6 +109,10 @@ const DiagnosisCenter: React.FC = () => {
     queryKey: ['sre-observability-datasources'],
     queryFn: () => getObservabilityDataSources({ page_size: 1000 }),
   });
+  const { data: datasourceCapabilities } = useQuery({
+    queryKey: ['sre-observability-datasource-capabilities'],
+    queryFn: getObservabilityDataSourceCapabilities,
+  });
   const { data: projects } = useQuery({
     queryKey: ['projects-for-diagnosis'],
     queryFn: () => getProjects({ page_size: 1000 }),
@@ -120,7 +126,11 @@ const DiagnosisCenter: React.FC = () => {
   const serviceList = services?.data || [];
   const metricDatasources = datasourceList.filter(item => item.kind === 'metric' || item.type === 'victoriametrics');
   const logDatasources = datasourceList.filter(item => item.kind === 'log' || item.type === 'victorialogs');
-  const filteredProviderOptions = datasourceProviderOptions.filter(item => !datasourceKind || item.kind === datasourceKind);
+  const providerOptions = datasourceCapabilities
+    ? Object.entries(datasourceCapabilities).map(([value, item]) => ({ value, label: item.label || value, kind: item.kind }))
+    : datasourceProviderOptions;
+  const filteredProviderOptions = providerOptions.filter(item => !datasourceKind || item.kind === datasourceKind);
+  const selectedDatasourceCapability = datasourceProvider && datasourceCapabilities?.[datasourceProvider as keyof typeof datasourceCapabilities];
 
   const statusMap: Record<string, { color: string; text: string }> = {
     pending: { color: 'default', text: t('diagnosis.status.pending') },
@@ -232,6 +242,20 @@ const DiagnosisCenter: React.FC = () => {
       is_default: false,
     });
     setDatasourceModalOpen(true);
+  };
+
+  const applyDatasourceCapability = (provider?: string) => {
+    const capability = provider ? datasourceCapabilities?.[provider as keyof typeof datasourceCapabilities] : undefined;
+    if (!capability) return;
+    datasourceForm.setFieldsValue({
+      kind: capability.kind,
+      provider,
+      type: provider,
+      base_url: datasourceForm.getFieldValue('base_url') || capability.default_base_url,
+      query_config: JSON.stringify(capability.query_config || {}, null, 2),
+      field_mapping: JSON.stringify(capability.field_mapping || {}, null, 2),
+      response_mapping: JSON.stringify(capability.response_mapping || {}, null, 2),
+    });
   };
 
   const runColumns = [
@@ -644,11 +668,45 @@ const DiagnosisCenter: React.FC = () => {
               />
             </Form.Item>
             <Form.Item name="provider" label={t('diagnosis.provider')} rules={[{ required: true }]} className="flex-1">
-              <Select options={filteredProviderOptions} onChange={(value) => datasourceForm.setFieldsValue({ type: value })} />
+              <Select
+                options={filteredProviderOptions}
+                onChange={(value) => {
+                  const capability = datasourceCapabilities?.[value as keyof typeof datasourceCapabilities];
+                  datasourceForm.setFieldsValue({
+                    type: value,
+                    kind: capability?.kind || datasourceForm.getFieldValue('kind'),
+                  });
+                }}
+              />
             </Form.Item>
           </Space>
+          {selectedDatasourceCapability && (
+            <Alert
+              className="mb-4"
+              type="info"
+              showIcon
+              message={selectedDatasourceCapability.label}
+              description={
+                <Space direction="vertical" size={4}>
+                  <Text type="secondary">{selectedDatasourceCapability.notes}</Text>
+                  <Space wrap>
+                    <Tag color={selectedDatasourceCapability.supports_metrics ? 'blue' : 'default'}>{t('diagnosis.kinds.metric')}</Tag>
+                    <Tag color={selectedDatasourceCapability.supports_logs ? 'green' : 'default'}>{t('diagnosis.kinds.log')}</Tag>
+                    <Text type="secondary">
+                      {t('diagnosis.supportedAuthTypes')}: {selectedDatasourceCapability.auth_types?.join(', ') || '-'}
+                    </Text>
+                  </Space>
+                  <Button size="small" onClick={() => applyDatasourceCapability(datasourceProvider)}>
+                    {t('diagnosis.applyProviderTemplate')}
+                  </Button>
+                </Space>
+              }
+            />
+          )}
           <Form.Item name="type" hidden><Input /></Form.Item>
-          <Form.Item name="base_url" label={t('diagnosis.baseUrl')} rules={[{ required: true }]}><Input placeholder="http://victoriametrics:8428" /></Form.Item>
+          <Form.Item name="base_url" label={t('diagnosis.baseUrl')} rules={[{ required: true }]}>
+            <Input placeholder={selectedDatasourceCapability?.default_base_url || 'http://victoriametrics:8428'} />
+          </Form.Item>
           <Form.Item name="auth_type" label={t('diagnosis.authType')}><Select options={[{ value: 'none', label: 'None' }, { value: 'bearer', label: 'Bearer Token' }, { value: 'basic', label: 'Basic Auth' }, { value: 'header', label: 'Custom Header' }, { value: 'query', label: 'Query Param' }, { value: 'cloud_signature', label: 'Cloud Signature' }]} /></Form.Item>
           <Form.Item name="username" label={t('diagnosis.username')}><Input /></Form.Item>
           <Form.Item name="password" label={t('diagnosis.password')}><Input.Password placeholder={editingDatasource?.has_password ? t('diagnosis.keepSecret') : undefined} /></Form.Item>

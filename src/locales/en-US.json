@@ -2178,6 +2178,8 @@
     "queryConfig": "Query Config JSON",
     "fieldMapping": "Field Mapping JSON",
     "responseMapping": "Response Mapping JSON",
+    "supportedAuthTypes": "Supported Auth",
+    "applyProviderTemplate": "Apply Recommended Config",
     "timeout": "Timeout",
     "keepSecret": "Leave blank to keep current secret",
     "templateName": "Template Name",

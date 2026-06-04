@@ -56,6 +56,19 @@ export interface ObservabilityDataSource {
   update_time: string;
 }
 
+export interface ObservabilityDataSourceCapability {
+  label: string;
+  kind: 'metric' | 'log' | 'trace';
+  supports_metrics: boolean;
+  supports_logs: boolean;
+  auth_types: string[];
+  default_base_url?: string;
+  query_config: Record<string, any>;
+  field_mapping: Record<string, any>;
+  response_mapping: Record<string, any>;
+  notes?: string;
+}
+
 export interface ObservedService {
   id: number;
   name: string;
@@ -194,6 +207,9 @@ export const exportAlertReport = (params?: { start_time?: string; end_time?: str
 
 export const getObservabilityDataSources = (params?: any): Promise<PaginatedResponse<ObservabilityDataSource>> =>
   request.get('/sre/observability-datasources/', { params }) as any;
+
+export const getObservabilityDataSourceCapabilities = (): Promise<Record<ObservabilityDataSourceProvider, ObservabilityDataSourceCapability>> =>
+  request.get('/sre/observability-datasources/capabilities/') as any;
 
 export const createObservabilityDataSource = (data: Partial<ObservabilityDataSource> & Record<string, any>): Promise<ObservabilityDataSource> =>
   request.post('/sre/observability-datasources/', data) as any;
