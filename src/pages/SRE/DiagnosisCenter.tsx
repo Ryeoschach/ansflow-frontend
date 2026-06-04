@@ -31,6 +31,8 @@ import {
   matchObservedServiceForAlert,
   ObservabilityDataSource,
   ObservedService,
+  previewObservedServiceLogs,
+  previewObservedServiceMetrics,
   renderAlertRuleTemplate,
   retryDiagnosisRun,
   testObservabilityDataSource,
@@ -86,6 +88,7 @@ const DiagnosisCenter: React.FC = () => {
   const [selectedRun, setSelectedRun] = useState<DiagnosisRun | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<AlertRuleTemplate | null>(null);
   const [renderedRule, setRenderedRule] = useState<any>(null);
+  const [previewResult, setPreviewResult] = useState<any>(null);
   const [serviceMatchCandidates, setServiceMatchCandidates] = useState<any[]>([]);
   const [serviceMatchWarnings, setServiceMatchWarnings] = useState<string[]>([]);
 
@@ -200,6 +203,18 @@ const DiagnosisCenter: React.FC = () => {
     },
   });
 
+  const previewLogsMutation = useMutation({
+    mutationFn: (serviceId: number) => previewObservedServiceLogs(serviceId, { window_minutes: 10, limit: 5 }),
+    onSuccess: setPreviewResult,
+    onError: (err: any) => message.error(err?.message || t('diagnosis.messages.previewFailed')),
+  });
+
+  const previewMetricsMutation = useMutation({
+    mutationFn: (serviceId: number) => previewObservedServiceMetrics(serviceId, { window_minutes: 10, step: '60s' }),
+    onSuccess: setPreviewResult,
+    onError: (err: any) => message.error(err?.message || t('diagnosis.messages.previewFailed')),
+  });
+
   const ruleRenderMutation = useMutation({
     mutationFn: (values: any) => renderAlertRuleTemplate(selectedTemplate!.id, values),
     onSuccess: setRenderedRule,
@@ -287,6 +302,22 @@ const DiagnosisCenter: React.FC = () => {
       render: (_: any, record: ObservedService) => (
         <Space>
           <Button size="small" icon={<EditOutlined />} onClick={() => openServiceModal(record)}>{t('common.edit')}</Button>
+          <Button
+            size="small"
+            icon={<FileSearchOutlined />}
+            loading={previewLogsMutation.isPending && previewLogsMutation.variables === record.id}
+            onClick={() => previewLogsMutation.mutate(record.id)}
+          >
+            {t('diagnosis.previewLogs')}
+          </Button>
+          <Button
+            size="small"
+            icon={<ExperimentOutlined />}
+            loading={previewMetricsMutation.isPending && previewMetricsMutation.variables === record.id}
+            onClick={() => previewMetricsMutation.mutate(record.id)}
+          >
+            {t('diagnosis.previewMetrics')}
+          </Button>
           <Popconfirm title={t('common.confirmDelete')} onConfirm={() => deleteObservedService(record.id).then(() => queryClient.invalidateQueries({ queryKey: ['sre-observed-services'] }))}>
             <Button size="small" danger icon={<DeleteOutlined />}>{t('common.delete')}</Button>
           </Popconfirm>
@@ -631,6 +662,71 @@ const DiagnosisCenter: React.FC = () => {
           <Form.Item name="log_query" label={t('diagnosis.logQuery')}><TextArea rows={3} /></Form.Item>
           <Form.Item name="is_active" valuePropName="checked"><Switch /> {t('common.enabled')}</Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title={previewResult?.type === 'metrics' ? t('diagnosis.metricPreview') : t('diagnosis.logPreview')}
+        open={!!previewResult}
+        onCancel={() => setPreviewResult(null)}
+        footer={null}
+        width={900}
+      >
+        {previewResult && (
+          <Space direction="vertical" className="w-full" size="middle">
+            {!previewResult.ok && (
+              <Alert type="error" showIcon message={t('diagnosis.messages.previewFailed')} description={previewResult.error} />
+            )}
+            <Descriptions size="small" bordered column={2}>
+              <Descriptions.Item label={t('diagnosis.service')}>{previewResult.service?.name} ({previewResult.service?.code})</Descriptions.Item>
+              <Descriptions.Item label={t('diagnosis.datasourceName')}>{previewResult.datasource?.name} / {previewResult.datasource?.provider}</Descriptions.Item>
+              <Descriptions.Item label={t('diagnosis.time')} span={2}>
+                {previewResult.time_range?.start} ~ {previewResult.time_range?.end}
+              </Descriptions.Item>
+              {previewResult.query && (
+                <Descriptions.Item label={t('diagnosis.finalQuery')} span={2}>
+                  <code>{previewResult.query}</code>
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+
+            {previewResult.type === 'logs' && (
+              <Table
+                size="small"
+                rowKey={(_, index) => String(index)}
+                pagination={false}
+                dataSource={previewResult.items || []}
+                columns={[
+                  { title: t('diagnosis.time'), dataIndex: 'timestamp', width: 180 },
+                  { title: t('diagnosis.level'), dataIndex: 'level', width: 90, render: (value: string) => value ? <Tag>{value}</Tag> : '-' },
+                  { title: t('diagnosis.service'), dataIndex: 'service', width: 120 },
+                  { title: t('diagnosis.instance'), dataIndex: 'instance', width: 140 },
+                  { title: t('diagnosis.message'), dataIndex: 'message', render: (value: string) => <Text>{value || '-'}</Text> },
+                ]}
+              />
+            )}
+
+            {previewResult.type === 'metrics' && (
+              <Table
+                size="small"
+                rowKey={(record: any) => record.name || record.query}
+                pagination={false}
+                dataSource={previewResult.metrics || []}
+                columns={[
+                  { title: t('diagnosis.name'), dataIndex: 'name', width: 160 },
+                  { title: t('diagnosis.finalQuery'), dataIndex: 'query' },
+                  { title: t('diagnosis.resultCount'), dataIndex: 'result', width: 120, render: (value: any[]) => value?.length || 0 },
+                ]}
+              />
+            )}
+
+            <div>
+              <Text strong>{t('diagnosis.rawPreview')}</Text>
+              <pre className="mt-2 max-h-80 overflow-auto rounded bg-black/5 p-3 text-xs">
+                {JSON.stringify(previewResult, null, 2)}
+              </pre>
+            </div>
+          </Space>
+        )}
       </Modal>
 
       <Modal

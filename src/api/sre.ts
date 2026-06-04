@@ -238,6 +238,12 @@ export const deleteObservedService = (id: number): Promise<any> =>
 export const matchObservedServiceForAlert = (params: { alert_id: number; project?: number | null }): Promise<AlertServiceMatchResult> =>
   request.get('/sre/observed-services/match-alert/', { params }) as any;
 
+export const previewObservedServiceLogs = (id: number, data?: Record<string, any>): Promise<any> =>
+  request.post(`/sre/observed-services/${id}/preview-logs/`, data || {}) as any;
+
+export const previewObservedServiceMetrics = (id: number, data?: Record<string, any>): Promise<any> =>
+  request.post(`/sre/observed-services/${id}/preview-metrics/`, data || {}) as any;
+
 export const getDiagnosisRuns = (params?: any): Promise<PaginatedResponse<DiagnosisRun>> =>
   request.get('/sre/diagnosis-runs/', { params }) as any;
 
