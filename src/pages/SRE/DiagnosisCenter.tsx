@@ -711,6 +711,99 @@ const DiagnosisCenter: React.FC = () => {
       </Space>
     );
   };
+  const renderCollectionPlanComparison = (run: DiagnosisRun) => {
+    const plan = run.query_params?.collection_plan;
+    const summary = run.context_snapshot?.collection_summary || {};
+    if (!plan) {
+      return <Text type="secondary">{t('common.noData')}</Text>;
+    }
+    const rows = [
+      {
+        key: 'metrics',
+        name: t('diagnosis.contextTypes.metrics'),
+        planned: plan.collection?.metrics?.enabled ? (plan.collection?.metrics?.datasources || []).length : 0,
+        plannedSources: (plan.collection?.metrics?.datasources || []).map((item: any) => item.name).join(', ') || plan.collection?.metrics?.skipped_reason || '-',
+        actualStatus: summary.metrics?.status || 'skipped',
+        actualCount: summary.metrics?.count ?? 0,
+        actualSources: summary.metrics?.datasources?.length ? summary.metrics.datasources.map((item: any) => item.name).join(', ') : (summary.metrics?.datasource?.name || '-'),
+        error: summary.metrics?.error,
+      },
+      {
+        key: 'logs',
+        name: t('diagnosis.contextTypes.logs'),
+        planned: plan.collection?.logs?.enabled ? (plan.collection?.logs?.datasources || []).length : 0,
+        plannedSources: (plan.collection?.logs?.datasources || []).map((item: any) => item.name).join(', ') || plan.collection?.logs?.skipped_reason || '-',
+        actualStatus: summary.logs?.status || 'skipped',
+        actualCount: summary.logs?.count ?? 0,
+        actualSources: summary.logs?.datasources?.length ? summary.logs.datasources.map((item: any) => item.name).join(', ') : (summary.logs?.datasource?.name || '-'),
+        error: summary.logs?.error,
+      },
+      {
+        key: 'ci_cd_context',
+        name: t('diagnosis.contextTypes.ci_cd_context'),
+        planned: (plan.collection?.ci_cd_context || []).filter((item: any) => item.enabled).length,
+        plannedSources: (plan.collection?.ci_cd_context || []).filter((item: any) => item.enabled).map((item: any) => item.label).join(', ') || '-',
+        actualStatus: summary.ci_cd_context?.status || 'skipped',
+        actualCount: summary.ci_cd_context?.count ?? 0,
+        actualSources: '-',
+        error: summary.ci_cd_context?.error,
+      },
+      {
+        key: 'ansflow_events',
+        name: t('diagnosis.contextTypes.ansflow_events'),
+        planned: plan.collection?.ansflow_events?.enabled ? (plan.collection?.ansflow_events?.items || []).length : 0,
+        plannedSources: (plan.collection?.ansflow_events?.items || []).join(', ') || '-',
+        actualStatus: summary.ansflow_events?.status || 'skipped',
+        actualCount: summary.ansflow_events?.count ?? 0,
+        actualSources: '-',
+        error: summary.ansflow_events?.error,
+      },
+    ];
+    const statusColor: Record<string, string> = {
+      success: 'success',
+      failed: 'error',
+      skipped: 'default',
+      pending: 'processing',
+      partial: 'warning',
+    };
+    return (
+      <Space direction="vertical" className="w-full">
+        <Descriptions bordered size="small" column={1}>
+          <Descriptions.Item label={t('diagnosis.timeRange')}>
+            {formatTime(plan.time_range?.start)} - {formatTime(plan.time_range?.end)}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('diagnosis.diagnosisTemplate')}>
+            {plan.template ? `${plan.template.name} (${plan.template.code})` : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label={t('diagnosis.service')}>
+            {plan.service ? `${plan.service.name} (${plan.service.code})` : '-'}
+          </Descriptions.Item>
+        </Descriptions>
+        <Table
+          rowKey="key"
+          size="small"
+          pagination={false}
+          columns={[
+            { title: t('diagnosis.contextType'), dataIndex: 'name' },
+            { title: t('diagnosis.plannedSources'), dataIndex: 'plannedSources' },
+            { title: t('diagnosis.actualSources'), dataIndex: 'actualSources' },
+            { title: t('diagnosis.status.label'), dataIndex: 'actualStatus', width: 120, render: (value: string) => <Tag color={statusColor[value]}>{t(`diagnosis.collectionStatus.${value}`)}</Tag> },
+            { title: t('diagnosis.collectedCount'), dataIndex: 'actualCount', width: 110 },
+            { title: t('diagnosis.error'), dataIndex: 'error', render: (value: string) => value || '-' },
+          ] as any}
+          dataSource={rows}
+        />
+        {(plan.warnings || []).length > 0 && (
+          <Alert
+            type="warning"
+            showIcon
+            message={t('diagnosis.warnings')}
+            description={<Space direction="vertical">{plan.warnings.map((item: string, index: number) => <Text key={index}>{item}</Text>)}</Space>}
+          />
+        )}
+      </Space>
+    );
+  };
   const renderLogHighlights = (run: DiagnosisRun) => {
     const highlights = run.context_snapshot?.log_highlights || [];
     if (!highlights.length) {
@@ -1644,6 +1737,9 @@ const DiagnosisCenter: React.FC = () => {
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedRun.ai_result}</ReactMarkdown>
                 </>
               ) : <Text type="secondary">{t('common.noData')}</Text>}
+            </Card>
+            <Card title={t('diagnosis.collectionPlanComparison')}>
+              {renderCollectionPlanComparison(selectedRun)}
             </Card>
             <Card title={t('diagnosis.collectionSummary')}>
               {renderCollectionSummary(selectedRun)}
