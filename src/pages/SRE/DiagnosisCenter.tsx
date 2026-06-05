@@ -38,6 +38,7 @@ import {
   ObservedService,
   previewObservedServiceLogs,
   previewObservedServiceMetrics,
+  previewDiagnosisRun,
   renderAlertRuleTemplate,
   retryDiagnosisRun,
   testObservabilityDataSource,
@@ -153,6 +154,11 @@ const buildDiagnosisTemplateContent = (values: any) => {
   };
 };
 
+const buildDiagnosisRunPayload = (values: any) => ({
+  ...values,
+  diagnosis_time: values.diagnosis_time?.toISOString ? values.diagnosis_time.toISOString() : values.diagnosis_time,
+});
+
 const DiagnosisCenter: React.FC = () => {
   const { t } = useTranslation();
   const { message } = App.useApp();
@@ -171,6 +177,7 @@ const DiagnosisCenter: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<AlertRuleTemplate | null>(null);
   const [renderedRule, setRenderedRule] = useState<any>(null);
   const [previewResult, setPreviewResult] = useState<any>(null);
+  const [diagnosisPreview, setDiagnosisPreview] = useState<any>(null);
   const [serviceMatchCandidates, setServiceMatchCandidates] = useState<any[]>([]);
   const [serviceMatchWarnings, setServiceMatchWarnings] = useState<string[]>([]);
   const [handledPrefillQuery, setHandledPrefillQuery] = useState<string | null>(null);
@@ -182,6 +189,14 @@ const DiagnosisCenter: React.FC = () => {
   const [diagnosisTemplateForm] = Form.useForm();
   const [ruleForm] = Form.useForm();
   const selectedDiagnosisTemplateId = Form.useWatch('template', diagnosisForm);
+  const watchedDiagnosisProject = Form.useWatch('project', diagnosisForm);
+  const watchedDiagnosisService = Form.useWatch('service', diagnosisForm);
+  const watchedDiagnosisAlert = Form.useWatch('alert', diagnosisForm);
+  const watchedDiagnosisTime = Form.useWatch('diagnosis_time', diagnosisForm);
+  const watchedDiagnosisWindow = Form.useWatch('window_minutes', diagnosisForm);
+  const watchedPipelineRunId = Form.useWatch('pipeline_run_id', diagnosisForm);
+  const watchedPipelineNodeRunId = Form.useWatch('pipeline_node_run_id', diagnosisForm);
+  const watchedAnsibleExecutionId = Form.useWatch('ansible_execution_id', diagnosisForm);
   const datasourceKind = Form.useWatch('kind', datasourceForm);
   const datasourceProvider = Form.useWatch('provider', datasourceForm);
 
@@ -300,6 +315,7 @@ const DiagnosisCenter: React.FC = () => {
 
   const closeDiagnosisModal = () => {
     setDiagnosisModalOpen(false);
+    setDiagnosisPreview(null);
     if (hasActivePrefillQuery) {
       setSearchParams({});
       setHasActivePrefillQuery(false);
@@ -316,6 +332,41 @@ const DiagnosisCenter: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['sre-diagnosis-runs'] });
     },
   });
+
+  const diagnosisPreviewMutation = useMutation({
+    mutationFn: (values: any) => previewDiagnosisRun(values),
+    onSuccess: setDiagnosisPreview,
+    onError: (err: any) => {
+      setDiagnosisPreview(null);
+      message.error(err?.message || t('diagnosis.messages.previewFailed'));
+    },
+  });
+
+  useEffect(() => {
+    if (!diagnosisModalOpen || !watchedDiagnosisTime || !watchedDiagnosisWindow) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      diagnosisPreviewMutation.mutate(
+        buildDiagnosisRunPayload(diagnosisForm.getFieldsValue()),
+        {
+          onError: () => setDiagnosisPreview(null),
+        },
+      );
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [
+    diagnosisModalOpen,
+    selectedDiagnosisTemplateId,
+    watchedDiagnosisProject,
+    watchedDiagnosisService,
+    watchedDiagnosisAlert,
+    watchedDiagnosisTime,
+    watchedDiagnosisWindow,
+    watchedPipelineRunId,
+    watchedPipelineNodeRunId,
+    watchedAnsibleExecutionId,
+  ]);
 
   const serviceMutation = useMutation({
     mutationFn: (values: any) => editingService ? updateObservedService(editingService.id, values) : createObservedService(values),
@@ -972,6 +1023,64 @@ const DiagnosisCenter: React.FC = () => {
       />
     );
   };
+  const renderDiagnosisPreview = () => {
+    if (!diagnosisPreview) {
+      return null;
+    }
+    const metricSources = diagnosisPreview.collection?.metrics?.datasources || [];
+    const logSources = diagnosisPreview.collection?.logs?.datasources || [];
+    const metricSkippedReason = diagnosisPreview.collection?.metrics?.skipped_reason;
+    const logSkippedReason = diagnosisPreview.collection?.logs?.skipped_reason;
+    const ciCdItems = diagnosisPreview.collection?.ci_cd_context || [];
+    const warnings = diagnosisPreview.warnings || [];
+    return (
+      <Card size="small" title={t('diagnosis.collectionPreview')} className="mb-4">
+        <Space direction="vertical" className="w-full">
+          <Descriptions bordered size="small" column={1}>
+            <Descriptions.Item label={t('diagnosis.diagnosisTemplate')}>
+              {diagnosisPreview.template ? `${diagnosisPreview.template.name} (${diagnosisPreview.template.code})` : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('diagnosis.service')}>
+              {diagnosisPreview.service ? `${diagnosisPreview.service.name} (${diagnosisPreview.service.code})` : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('diagnosis.timeRange')}>
+              {formatTime(diagnosisPreview.time_range?.start)} - {formatTime(diagnosisPreview.time_range?.end)}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('diagnosis.target')}>
+              <Space wrap>
+                {diagnosisPreview.target?.pipeline_run_id && <Tag>pipeline_run_id={diagnosisPreview.target.pipeline_run_id}</Tag>}
+                {diagnosisPreview.target?.pipeline_node_run_id && <Tag>pipeline_node_run_id={diagnosisPreview.target.pipeline_node_run_id}</Tag>}
+                {diagnosisPreview.target?.ansible_execution_id && <Tag>ansible_execution_id={diagnosisPreview.target.ansible_execution_id}</Tag>}
+                {!diagnosisPreview.target?.pipeline_run_id && !diagnosisPreview.target?.pipeline_node_run_id && !diagnosisPreview.target?.ansible_execution_id && '-'}
+              </Space>
+            </Descriptions.Item>
+          </Descriptions>
+          <Descriptions bordered size="small" column={1}>
+            <Descriptions.Item label={t('diagnosis.metricDatasources')}>
+              {metricSources.length ? metricSources.map((item: any) => <Tag key={item.id} color="blue">{item.name} ({item.provider})</Tag>) : <Text type="secondary">{metricSkippedReason || t('common.noData')}</Text>}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('diagnosis.logDatasources')}>
+              {logSources.length ? logSources.map((item: any) => <Tag key={item.id} color="green">{item.name} ({item.provider})</Tag>) : <Text type="secondary">{logSkippedReason || t('common.noData')}</Text>}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('diagnosis.ciCdContext')}>
+              {ciCdItems.length ? ciCdItems.map((item: any) => <Tag key={item.key} color={item.enabled ? 'processing' : 'default'}>{item.label}</Tag>) : <Text type="secondary">{t('common.noData')}</Text>}
+            </Descriptions.Item>
+            <Descriptions.Item label={t('diagnosis.ansflowEvents')}>
+              {(diagnosisPreview.collection?.ansflow_events?.items || []).map((item: string) => <Tag key={item}>{item}</Tag>)}
+            </Descriptions.Item>
+          </Descriptions>
+          {warnings.length > 0 && (
+            <Alert
+              type="warning"
+              showIcon
+              message={t('diagnosis.warnings')}
+              description={<Space direction="vertical">{warnings.map((item: string, index: number) => <Text key={index}>{item}</Text>)}</Space>}
+            />
+          )}
+        </Space>
+      </Card>
+    );
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -1040,11 +1149,8 @@ const DiagnosisCenter: React.FC = () => {
         onOk={() => diagnosisForm.submit()}
         confirmLoading={createDiagnosisMutation.isPending}
       >
-        <Form form={diagnosisForm} layout="vertical" onFinish={(values) => {
-          createDiagnosisMutation.mutate({
-            ...values,
-            diagnosis_time: values.diagnosis_time?.toISOString(),
-          });
+        <Form form={diagnosisForm} layout="vertical" onValuesChange={() => setDiagnosisPreview(null)} onFinish={(values) => {
+          createDiagnosisMutation.mutate(buildDiagnosisRunPayload(values));
         }}>
           <Form.Item name="title" label={t('diagnosis.title')} rules={[{ required: true }]}>
             <Input />
@@ -1112,6 +1218,16 @@ const DiagnosisCenter: React.FC = () => {
           <Form.Item name="window_minutes" label={t('diagnosis.window')} rules={[{ required: true }]}>
             <InputNumber min={1} max={120} className="w-full" />
           </Form.Item>
+          <Space className="mb-4">
+            <Button
+              icon={<ReloadOutlined />}
+              loading={diagnosisPreviewMutation.isPending}
+              onClick={() => diagnosisPreviewMutation.mutate(buildDiagnosisRunPayload(diagnosisForm.getFieldsValue()))}
+            >
+              {t('diagnosis.previewCollection')}
+            </Button>
+          </Space>
+          {renderDiagnosisPreview()}
           <Form.Item name="alert" hidden><InputNumber /></Form.Item>
           <Form.Item name="trigger_type" hidden><Input /></Form.Item>
         </Form>

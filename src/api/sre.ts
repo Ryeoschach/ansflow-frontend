@@ -269,6 +269,9 @@ export const getDiagnosisRuns = (params?: any): Promise<PaginatedResponse<Diagno
 export const createDiagnosisRun = (data: Partial<DiagnosisRun>): Promise<DiagnosisRun> =>
   request.post('/sre/diagnosis-runs/', data) as any;
 
+export const previewDiagnosisRun = (data: Partial<DiagnosisRun> & Record<string, any>): Promise<any> =>
+  request.post('/sre/diagnosis-runs/preview/', data) as any;
+
 export const retryDiagnosisRun = (id: number): Promise<any> =>
   request.post(`/sre/diagnosis-runs/${id}/retry/`);
 
