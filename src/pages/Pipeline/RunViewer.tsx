@@ -22,10 +22,12 @@ import {
   ForkOutlined,
   DownOutlined,
   MinusCircleOutlined,
-  RobotOutlined
+  RobotOutlined,
+  FileSearchOutlined
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getPipelineRunDetail, stopPipelineRun, retryPipelineRun, approvePipelineNode } from '../../api/pipeline';
+import { createDiagnosisRun } from '../../api/sre';
 import { summarizePipelineRun } from '../../api/ai';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import useWebSocket from 'react-use-websocket';
@@ -216,6 +218,43 @@ const ViewerCore = () => {
     }
   });
 
+  const getSreDiagnosisTemplateCode = (nodeType?: string) => (
+    ['ansible', 'host_deploy'].includes(nodeType || '') ? 'ci_ansible_failure' : 'ci_pipeline_failure'
+  );
+
+  const extractAnsibleExecutionId = (outputData?: Record<string, any>) => {
+    if (!outputData || typeof outputData !== 'object') return undefined;
+    return outputData.ansible_execution_id || outputData.ansibleExecutionId || outputData.execution_id;
+  };
+
+  const buildSreDiagnosisPayload = () => {
+    const templateCode = getSreDiagnosisTemplateCode(selectedNodeData?.nodeType);
+    const ansibleExecutionId = extractAnsibleExecutionId(selectedNodeData?.outputData);
+    return {
+      title: t('runViewer.sreDiagnosisTitle', {
+        pipeline: payload?.pipeline_name || runId,
+        node: selectedNodeData?.label || selectedNodeData?.id,
+      }),
+      template_code: templateCode,
+      pipeline_run_id: Number(runId),
+      pipeline_node_run_id: selectedNodeData?.nodeRunId,
+      ansible_execution_id: ansibleExecutionId,
+      diagnosis_time: new Date().toISOString(),
+      window_minutes: 10,
+      trigger_type: 'manual',
+    };
+  };
+
+  const createSreDiagnosisMutation = useMutation({
+    mutationFn: () => createDiagnosisRun(buildSreDiagnosisPayload() as any),
+    onSuccess: (res: any) => {
+      message.success(t('runViewer.sreDiagnosisSubmitted'));
+      setDrawerVisible(false);
+      navigate(`/v1/sre/diagnosis?run_id=${res.id}`);
+    },
+    onError: (err: any) => message.error(`${t('runViewer.sreDiagnosisFailed')}: ${err.message}`),
+  });
+
   /**
    * @description 获取 nodeId 的所有前置节点（通过边反向遍历）
    */
@@ -272,10 +311,13 @@ const ViewerCore = () => {
         const runInfo = (payload.nodes || []).find((r: any) => r.node_id === n.id);
         const newData = {
           ...n.data,
+          nodeRunId: runInfo?.id,
+          nodeType: runInfo?.node_type || n.type,
           runStatus: runInfo?.status,
           logs: runInfo?.logs,
           runStart: runInfo?.start_time,
-          runEnd: runInfo?.end_time
+          runEnd: runInfo?.end_time,
+          outputData: runInfo?.output_data,
         };
 
         // 如果 Drawer 正开着，实时同步当前节点的日志
@@ -529,58 +571,92 @@ const ViewerCore = () => {
                     </div>
                 </div>
                 {selectedNodeData?.runStatus === 'failed' && (
-                  <div className="mt-4 pt-4 border-t flex gap-2" style={{ borderColor: token.colorBorderSecondary }}>
-                    {payload?.diagnosis_history_id ? (
-                      <>
-                        <Button
-                          type="primary"
-                          icon={<RobotOutlined />}
-                          className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl"
-                          onClick={() => {
-                            setDrawerVisible(false);
-                            useAppStore.getState().setAiDiagnosis({
-                              target_type: 'pipeline',
-                              target_id: runId!,
-                              target_name: payload?.pipeline_name,
-                              history_id: payload.diagnosis_history_id
-                            });
-                          }}
-                        >
-                          {t('runViewer.viewAiDiagnosis')}
-                        </Button>
-                        <Tooltip title={t('runViewer.reanalyze')}>
+                  <div className="mt-4 pt-4 border-t flex flex-col gap-3" style={{ borderColor: token.colorBorderSecondary }}>
+                    <div className="flex gap-2">
+                      {payload?.diagnosis_history_id ? (
+                        <>
                           <Button
-                            icon={<SyncOutlined />}
-                            className="h-10 w-10 flex items-center justify-center rounded-xl"
+                            type="primary"
+                            icon={<RobotOutlined />}
+                            className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl"
                             onClick={() => {
                               setDrawerVisible(false);
                               useAppStore.getState().setAiDiagnosis({
                                 target_type: 'pipeline',
                                 target_id: runId!,
-                                target_name: payload?.pipeline_name
+                                target_name: payload?.pipeline_name,
+                                history_id: payload.diagnosis_history_id
                               });
                             }}
-                          />
-                        </Tooltip>
-                      </>
-                    ) : (
+                          >
+                            {t('runViewer.viewAiDiagnosis')}
+                          </Button>
+                          <Tooltip title={t('runViewer.reanalyze')}>
+                            <Button
+                              icon={<SyncOutlined />}
+                              className="h-10 w-10 flex items-center justify-center rounded-xl"
+                              onClick={() => {
+                                setDrawerVisible(false);
+                                useAppStore.getState().setAiDiagnosis({
+                                  target_type: 'pipeline',
+                                  target_id: runId!,
+                                  target_name: payload?.pipeline_name
+                                });
+                              }}
+                            />
+                          </Tooltip>
+                        </>
+                      ) : (
+                        <Button
+                          type="primary"
+                          danger
+                          icon={<RobotOutlined />}
+                          className="w-full flex items-center justify-center gap-2 h-10 rounded-xl"
+                          onClick={() => {
+                            setDrawerVisible(false);
+                            useAppStore.getState().setAiDiagnosis({
+                              target_type: 'pipeline',
+                              target_id: runId!,
+                              target_name: payload?.pipeline_name
+                            });
+                          }}
+                        >
+                          {t('runViewer.aiDiagnosis')}
+                        </Button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <Button
                         type="primary"
-                        danger
-                        icon={<RobotOutlined />}
-                        className="w-full flex items-center justify-center gap-2 h-10 rounded-xl"
+                        icon={<FileSearchOutlined />}
+                        className="h-10 rounded-xl"
+                        loading={createSreDiagnosisMutation.isPending}
+                        disabled={!selectedNodeData?.nodeRunId}
+                        onClick={() => createSreDiagnosisMutation.mutate()}
+                      >
+                        {t('runViewer.sreTemplateDiagnosis')}
+                      </Button>
+                      <Button
+                        icon={<FileSearchOutlined />}
+                        className="h-10 rounded-xl"
+                        disabled={!selectedNodeData?.nodeRunId}
                         onClick={() => {
+                          const diagnosisPayload = buildSreDiagnosisPayload();
+                          const params = new URLSearchParams();
+                          params.set('template_code', diagnosisPayload.template_code);
+                          params.set('pipeline_run_id', String(diagnosisPayload.pipeline_run_id));
+                          params.set('pipeline_node_run_id', String(diagnosisPayload.pipeline_node_run_id));
+                          params.set('title', diagnosisPayload.title);
+                          if (diagnosisPayload.ansible_execution_id) {
+                            params.set('ansible_execution_id', String(diagnosisPayload.ansible_execution_id));
+                          }
                           setDrawerVisible(false);
-                          useAppStore.getState().setAiDiagnosis({
-                            target_type: 'pipeline',
-                            target_id: runId!,
-                            target_name: payload?.pipeline_name
-                          });
+                          navigate(`/v1/sre/diagnosis?${params.toString()}`);
                         }}
                       >
-                        {t('runViewer.aiDiagnosis')}
+                        {t('runViewer.prefillSreDiagnosis')}
                       </Button>
-                    )}
+                    </div>
                   </div>
                 )}
             </Card>

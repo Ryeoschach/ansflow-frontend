@@ -1867,7 +1867,12 @@
     "approveAndContinue": "Approve and Continue",
     "viewAiDiagnosis": "View AI Diagnosis",
     "reanalyze": "Re-analyze",
-    "aiDiagnosis": "AI Diagnosis"
+    "aiDiagnosis": "AI Diagnosis",
+    "sreTemplateDiagnosis": "Run Template Diagnosis",
+    "prefillSreDiagnosis": "Prefill Diagnosis",
+    "sreDiagnosisTitle": "{{pipeline}} / {{node}} Failure Diagnosis",
+    "sreDiagnosisSubmitted": "SRE template diagnosis run created",
+    "sreDiagnosisFailed": "Failed to create SRE template diagnosis"
   },
   "configCenter": {
     "title": "Config Center",

@@ -1641,7 +1641,12 @@
     "approveAndContinue": "通过并继续",
     "viewAiDiagnosis": "查看 AI 诊断结论",
     "reanalyze": "重新分析",
-    "aiDiagnosis": "AI 智能诊断"
+    "aiDiagnosis": "AI 智能诊断",
+    "sreTemplateDiagnosis": "立即模板诊断",
+    "prefillSreDiagnosis": "预填诊断",
+    "sreDiagnosisTitle": "{{pipeline}} / {{node}} 失败诊断",
+    "sreDiagnosisSubmitted": "SRE 模板诊断任务已创建",
+    "sreDiagnosisFailed": "SRE 模板诊断创建失败"
   },
   "configCenter": {
     "title": "配置中心",

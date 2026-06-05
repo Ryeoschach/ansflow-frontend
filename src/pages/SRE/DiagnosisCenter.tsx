@@ -99,6 +99,8 @@ const DiagnosisCenter: React.FC = () => {
   const [previewResult, setPreviewResult] = useState<any>(null);
   const [serviceMatchCandidates, setServiceMatchCandidates] = useState<any[]>([]);
   const [serviceMatchWarnings, setServiceMatchWarnings] = useState<string[]>([]);
+  const [handledPrefillQuery, setHandledPrefillQuery] = useState<string | null>(null);
+  const [hasActivePrefillQuery, setHasActivePrefillQuery] = useState(false);
 
   const [diagnosisForm] = Form.useForm();
   const [serviceForm] = Form.useForm();
@@ -188,11 +190,54 @@ const DiagnosisCenter: React.FC = () => {
     setSearchParams({});
   }, [searchParams, setSearchParams, diagnosisForm, currentProject?.id, t, message]);
 
+  useEffect(() => {
+    const runId = searchParams.get('run_id');
+    if (!runId) return;
+    const run = (runs?.data || []).find(item => String(item.id) === String(runId));
+    if (!run) return;
+    setSelectedRun(run);
+    setSearchParams({});
+  }, [searchParams, setSearchParams, runs?.data]);
+
+  useEffect(() => {
+    const templateCode = searchParams.get('template_code');
+    if (!templateCode) return;
+    const queryKey = searchParams.toString();
+    if (handledPrefillQuery === queryKey) return;
+    const template = diagnosisTemplateList.find(item => item.code === templateCode && item.is_active);
+    if (!template) return;
+    setServiceMatchCandidates([]);
+    setServiceMatchWarnings([]);
+    diagnosisForm.setFieldsValue({
+      title: searchParams.get('title') || template.name,
+      project: currentProject?.id,
+      template: template.id,
+      pipeline_run_id: searchParams.get('pipeline_run_id') ? Number(searchParams.get('pipeline_run_id')) : undefined,
+      pipeline_node_run_id: searchParams.get('pipeline_node_run_id') ? Number(searchParams.get('pipeline_node_run_id')) : undefined,
+      ansible_execution_id: searchParams.get('ansible_execution_id') ? Number(searchParams.get('ansible_execution_id')) : undefined,
+      diagnosis_time: dayjs(),
+      window_minutes: 10,
+      trigger_type: 'manual',
+    });
+    setHandledPrefillQuery(queryKey);
+    setHasActivePrefillQuery(true);
+    setDiagnosisModalOpen(true);
+  }, [searchParams, handledPrefillQuery, diagnosisTemplateList, diagnosisForm, currentProject?.id]);
+
+  const closeDiagnosisModal = () => {
+    setDiagnosisModalOpen(false);
+    if (hasActivePrefillQuery) {
+      setSearchParams({});
+      setHasActivePrefillQuery(false);
+      setHandledPrefillQuery(null);
+    }
+  };
+
   const createDiagnosisMutation = useMutation({
     mutationFn: (values: any) => createDiagnosisRun(values),
     onSuccess: () => {
       message.success(t('diagnosis.messages.submitted'));
-      setDiagnosisModalOpen(false);
+      closeDiagnosisModal();
       diagnosisForm.resetFields();
       queryClient.invalidateQueries({ queryKey: ['sre-diagnosis-runs'] });
     },
@@ -685,7 +730,7 @@ const DiagnosisCenter: React.FC = () => {
       <Modal
         title={t('diagnosis.create')}
         open={diagnosisModalOpen}
-        onCancel={() => setDiagnosisModalOpen(false)}
+        onCancel={closeDiagnosisModal}
         onOk={() => diagnosisForm.submit()}
         confirmLoading={createDiagnosisMutation.isPending}
       >
