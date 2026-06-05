@@ -2210,6 +2210,28 @@
     "pipelineRunId": "Pipeline Run ID",
     "pipelineNodeRunId": "Pipeline Node Run ID",
     "ansibleExecutionId": "Ansible Execution ID",
+    "pipeline": "Pipeline",
+    "triggerType": "Trigger Type",
+    "nodeName": "Node Name",
+    "nodeType": "Node Type",
+    "lineNo": "Line",
+    "approvalComment": "Approval Comment",
+    "outputData": "Output Data",
+    "taskName": "Task Name",
+    "resultSummary": "Result Summary",
+    "host": "Host",
+    "resourceType": "Resource Type",
+    "targetId": "Target ID",
+    "auditTime": "Audit Time",
+    "ciCdContext": "CI/CD Context",
+    "ciCd": {
+      "pipelineRun": "Pipeline Run Summary",
+      "failedNodes": "Failed Nodes",
+      "nodeLogHighlights": "Node Log Highlights",
+      "ansibleExecution": "Ansible Execution Summary",
+      "ansibleTaskLogHighlights": "Ansible TaskLog Highlights",
+      "approvalRecords": "Approval Records"
+    },
     "scopes": {
       "global": "Global",
       "project": "Project"

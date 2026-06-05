@@ -2210,6 +2210,28 @@
     "pipelineRunId": "流水线运行 ID",
     "pipelineNodeRunId": "流水线节点运行 ID",
     "ansibleExecutionId": "Ansible 执行 ID",
+    "pipeline": "流水线",
+    "triggerType": "触发方式",
+    "nodeName": "节点名称",
+    "nodeType": "节点类型",
+    "lineNo": "行号",
+    "approvalComment": "审批备注",
+    "outputData": "输出变量",
+    "taskName": "任务名称",
+    "resultSummary": "结果摘要",
+    "host": "主机",
+    "resourceType": "资源类型",
+    "targetId": "目标 ID",
+    "auditTime": "审批时间",
+    "ciCdContext": "CI/CD 上下文",
+    "ciCd": {
+      "pipelineRun": "流水线运行摘要",
+      "failedNodes": "失败节点",
+      "nodeLogHighlights": "节点日志高亮",
+      "ansibleExecution": "Ansible 执行摘要",
+      "ansibleTaskLogHighlights": "Ansible TaskLog 高亮",
+      "approvalRecords": "审批记录"
+    },
     "scopes": {
       "global": "全局",
       "project": "项目"

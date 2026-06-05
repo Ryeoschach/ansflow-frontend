@@ -587,6 +587,128 @@ const DiagnosisCenter: React.FC = () => {
       {(refs || []).map(ref => <Tag key={ref} color="blue">{ref}</Tag>)}
     </Space>
   );
+  const formatTime = (value?: string) => value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '-';
+  const renderJsonSummary = (value: any) => {
+    if (!value || (typeof value === 'object' && Object.keys(value).length === 0)) return '-';
+    const text = typeof value === 'string' ? value : JSON.stringify(value);
+    return <Text code>{text.length > 120 ? `${text.slice(0, 120)}...` : text}</Text>;
+  };
+  const renderCiCdContext = (run: DiagnosisRun) => {
+    const context = run.context_snapshot?.ci_cd_context;
+    if (!context || Object.keys(context).length === 0) {
+      return null;
+    }
+    const pipelineRun = context.pipeline_run;
+    const failedNodes = context.failed_nodes || [];
+    const nodeLogHighlights = context.node_log_highlights || [];
+    const ansibleExecution = context.ansible_execution;
+    const taskLogHighlights = context.ansible_task_log_highlights || [];
+    const approvalRecords = context.approval_records || [];
+    const hasContent = pipelineRun || failedNodes.length || nodeLogHighlights.length || ansibleExecution || taskLogHighlights.length || approvalRecords.length;
+    if (!hasContent) {
+      return null;
+    }
+    const nodeStatusColor: Record<string, string> = {
+      success: 'success',
+      failed: 'error',
+      running: 'processing',
+      waiting: 'purple',
+      cancelled: 'default',
+      skipped: 'default',
+      pending: 'default',
+    };
+
+    return (
+      <Space direction="vertical" className="w-full" size="middle">
+        {pipelineRun && (
+          <Descriptions bordered size="small" column={2} title={t('diagnosis.ciCd.pipelineRun')}>
+            <Descriptions.Item label={t('diagnosis.pipelineRunId')}>#{pipelineRun.id}</Descriptions.Item>
+            <Descriptions.Item label={t('diagnosis.pipeline')}>{pipelineRun.pipeline_name || pipelineRun.pipeline_id || '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('diagnosis.status.label')}><Tag color={nodeStatusColor[pipelineRun.status] || 'default'}>{pipelineRun.status || '-'}</Tag></Descriptions.Item>
+            <Descriptions.Item label={t('diagnosis.triggerType')}>{pipelineRun.trigger_type || '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('common.startTime')}>{formatTime(pipelineRun.start_time || pipelineRun.create_time)}</Descriptions.Item>
+            <Descriptions.Item label={t('common.endTime')}>{formatTime(pipelineRun.end_time)}</Descriptions.Item>
+          </Descriptions>
+        )}
+
+        <Table
+          rowKey={(record: any) => String(record.id || record.node_id)}
+          size="small"
+          pagination={false}
+          title={() => t('diagnosis.ciCd.failedNodes')}
+          locale={{ emptyText: t('common.noData') }}
+          columns={[
+            { title: t('diagnosis.nodeName'), dataIndex: 'node_label', width: 160, render: (value: string, record: any) => value || record.node_id || '-' },
+            { title: t('diagnosis.nodeType'), dataIndex: 'node_type', width: 130, render: (value: string) => value ? <Tag>{value}</Tag> : '-' },
+            { title: t('diagnosis.status.label'), dataIndex: 'status', width: 100, render: (value: string) => <Tag color={nodeStatusColor[value] || 'default'}>{value || '-'}</Tag> },
+            { title: t('common.startTime'), dataIndex: 'start_time', width: 170, render: formatTime },
+            { title: t('common.endTime'), dataIndex: 'end_time', width: 170, render: formatTime },
+            { title: t('diagnosis.approvalComment'), dataIndex: 'approval_comment', render: (value: string) => value || '-' },
+            { title: t('diagnosis.outputData'), dataIndex: 'output_data', render: renderJsonSummary },
+          ] as any}
+          dataSource={failedNodes}
+        />
+
+        <Table
+          rowKey={(record: any, index) => `${record.node_run_id || record.node_id || ''}-${record.line_no || index}`}
+          size="small"
+          pagination={false}
+          title={() => t('diagnosis.ciCd.nodeLogHighlights')}
+          locale={{ emptyText: t('common.noData') }}
+          columns={[
+            { title: t('diagnosis.nodeName'), dataIndex: 'node_label', width: 160, render: (value: string, record: any) => value || record.node_id || '-' },
+            { title: t('diagnosis.lineNo'), dataIndex: 'line_no', width: 80 },
+            { title: t('diagnosis.matchedKeywords'), dataIndex: 'matched_keywords', width: 180, render: (items: string[]) => (items || []).map(item => <Tag key={item}>{item}</Tag>) },
+            { title: t('diagnosis.logMessage'), dataIndex: 'line', render: (value: string) => <Text>{value || '-'}</Text> },
+          ] as any}
+          dataSource={nodeLogHighlights}
+        />
+
+        {ansibleExecution && (
+          <Descriptions bordered size="small" column={2} title={t('diagnosis.ciCd.ansibleExecution')}>
+            <Descriptions.Item label={t('diagnosis.ansibleExecutionId')}>#{ansibleExecution.id}</Descriptions.Item>
+            <Descriptions.Item label={t('diagnosis.taskName')}>{ansibleExecution.task_name || ansibleExecution.task_id || '-'}</Descriptions.Item>
+            <Descriptions.Item label={t('diagnosis.status.label')}><Tag color={nodeStatusColor[ansibleExecution.status] || 'default'}>{ansibleExecution.status || '-'}</Tag></Descriptions.Item>
+            <Descriptions.Item label={t('common.startTime')}>{formatTime(ansibleExecution.start_time || ansibleExecution.create_time)}</Descriptions.Item>
+            <Descriptions.Item label={t('common.endTime')}>{formatTime(ansibleExecution.end_time)}</Descriptions.Item>
+            <Descriptions.Item label={t('diagnosis.resultSummary')}>{renderJsonSummary(ansibleExecution.result_summary)}</Descriptions.Item>
+          </Descriptions>
+        )}
+
+        <Table
+          rowKey={(record: any, index) => `${record.id || ''}-${record.host || ''}-${record.line_no || index}`}
+          size="small"
+          pagination={false}
+          title={() => t('diagnosis.ciCd.ansibleTaskLogHighlights')}
+          locale={{ emptyText: t('common.noData') }}
+          columns={[
+            { title: t('diagnosis.host'), dataIndex: 'host', width: 150, render: (value: string) => value || '-' },
+            { title: t('diagnosis.lineNo'), dataIndex: 'line_no', width: 80 },
+            { title: t('diagnosis.matchedKeywords'), dataIndex: 'matched_keywords', width: 180, render: (items: string[]) => (items || []).map(item => <Tag key={item}>{item}</Tag>) },
+            { title: t('diagnosis.logMessage'), dataIndex: 'line', render: (value: string) => <Text>{value || '-'}</Text> },
+          ] as any}
+          dataSource={taskLogHighlights}
+        />
+
+        <Table
+          rowKey={(record: any) => String(record.id)}
+          size="small"
+          pagination={false}
+          title={() => t('diagnosis.ciCd.approvalRecords')}
+          locale={{ emptyText: t('common.noData') }}
+          columns={[
+            { title: t('diagnosis.title'), dataIndex: 'title', render: (value: string) => value || '-' },
+            { title: t('diagnosis.status.label'), dataIndex: 'status', width: 110, render: (value: string) => <Tag>{value || '-'}</Tag> },
+            { title: t('diagnosis.resourceType'), dataIndex: 'resource_type', width: 150, render: (value: string) => value || '-' },
+            { title: t('diagnosis.targetId'), dataIndex: 'target_id', width: 100, render: (value: string) => value || '-' },
+            { title: t('common.createTime'), dataIndex: 'create_time', width: 170, render: formatTime },
+            { title: t('diagnosis.auditTime'), dataIndex: 'audit_time', width: 170, render: formatTime },
+          ] as any}
+          dataSource={approvalRecords}
+        />
+      </Space>
+    );
+  };
   const renderStructuredReport = (run: DiagnosisRun) => {
     const report = run.context_snapshot?.structured_report;
     if (!report || !report.summary) {
@@ -1105,6 +1227,11 @@ const DiagnosisCenter: React.FC = () => {
             <Card title={t('diagnosis.collectionSummary')}>
               {renderCollectionSummary(selectedRun)}
             </Card>
+            {renderCiCdContext(selectedRun) && (
+              <Card title={t('diagnosis.ciCdContext')}>
+                {renderCiCdContext(selectedRun)}
+              </Card>
+            )}
             <Card title={t('diagnosis.logHighlights')}>
               {renderLogHighlights(selectedRun)}
             </Card>
