@@ -95,6 +95,7 @@ const defaultDiagnosisTemplateContent = {
   log_keywords: ['error', 'failed', 'exception', 'timeout'],
   prompt_template: '{prefix}\n请基于以下 CI/CD 诊断上下文输出诊断结论、证据引用和处置建议：\n{diagnosis_context}',
   report_schema: { evidence_required: true },
+  log_datasource_ids: [],
 };
 
 const templateCollectionKeys = [
@@ -144,6 +145,7 @@ const buildDiagnosisTemplateContent = (values: any) => {
     target_type: values.target_type,
     context_collection: contextCollection,
     log_keywords: logKeywords.length ? logKeywords : defaultDiagnosisTemplateContent.log_keywords,
+    log_datasource_ids: values.log_datasource_ids || [],
     prompt_template: values.prompt_template,
     report_schema: reportSchema,
   };
@@ -416,6 +418,7 @@ const DiagnosisCenter: React.FC = () => {
       target_type: content.target_type,
       ...collectionValues,
       log_keywords_text: (content.log_keywords || []).join('\n'),
+      log_datasource_ids: content.log_datasource_ids || [],
       prompt_template: content.prompt_template,
       report_schema: JSON.stringify(content.report_schema || {}, null, 2),
       content: JSON.stringify(content || {}, null, 2),
@@ -429,6 +432,7 @@ const DiagnosisCenter: React.FC = () => {
         [`collect_${key}`]: defaultDiagnosisTemplateContent.context_collection[key as keyof typeof defaultDiagnosisTemplateContent.context_collection],
       }), {}),
       log_keywords_text: defaultDiagnosisTemplateContent.log_keywords.join('\n'),
+      log_datasource_ids: defaultDiagnosisTemplateContent.log_datasource_ids,
       prompt_template: defaultDiagnosisTemplateContent.prompt_template,
       report_schema: JSON.stringify(defaultDiagnosisTemplateContent.report_schema, null, 2),
       content: JSON.stringify(defaultDiagnosisTemplateContent, null, 2),
@@ -605,8 +609,8 @@ const DiagnosisCenter: React.FC = () => {
         key,
         name: t(`diagnosis.contextTypes.${key}`),
         status: item.status || 'skipped',
-        datasource: item.datasource?.name || '-',
-        provider: item.datasource?.provider || '-',
+        datasource: item.datasources?.length ? item.datasources.map((ds: any) => ds.name).join(', ') : (item.datasource?.name || '-'),
+        provider: item.datasources?.length ? item.datasources.map((ds: any) => ds.provider).join(', ') : (item.datasource?.provider || '-'),
         count: item.count ?? 0,
         error: item.error,
       };
@@ -616,6 +620,7 @@ const DiagnosisCenter: React.FC = () => {
       failed: 'error',
       skipped: 'default',
       pending: 'processing',
+      partial: 'warning',
     };
 
     return (
@@ -665,6 +670,52 @@ const DiagnosisCenter: React.FC = () => {
         ] as any}
         dataSource={highlights}
       />
+    );
+  };
+  const renderLogSourceContexts = (run: DiagnosisRun) => {
+    const logContexts = run.context_snapshot?.log_contexts || [];
+    if (!logContexts.length) {
+      return null;
+    }
+    return (
+      <Space direction="vertical" className="w-full" size="middle">
+        {logContexts.map((context: any, index: number) => {
+          const datasource = context.datasource || {};
+          const highlights = context.highlights || [];
+          return (
+            <Card
+              key={`${datasource.id || index}-${datasource.name || ''}`}
+              size="small"
+              title={`${t('diagnosis.logSourceContexts')} - ${datasource.name || t('diagnosis.datasourceName')} (${datasource.provider || '-'})`}
+            >
+              <Descriptions bordered size="small" column={2}>
+                <Descriptions.Item label={t('diagnosis.datasourceName')}>{datasource.name || '-'}</Descriptions.Item>
+                <Descriptions.Item label={t('diagnosis.provider')}>{datasource.provider || '-'}</Descriptions.Item>
+                <Descriptions.Item label={t('diagnosis.query')}>{context.query || '-'}</Descriptions.Item>
+                <Descriptions.Item label={t('diagnosis.collectedCount')}>{context.count || 0}</Descriptions.Item>
+                <Descriptions.Item label={t('diagnosis.timeRange')} span={2}>
+                  {formatTime(context.time_range?.start)} - {formatTime(context.time_range?.end)}
+                </Descriptions.Item>
+              </Descriptions>
+              <Table
+                rowKey={(record: any, rowIndex) => `${record.evidence_id || ''}-${record.timestamp || ''}-${rowIndex}`}
+                size="small"
+                pagination={false}
+                locale={{ emptyText: t('common.noData') }}
+                className="mt-3"
+                columns={[
+                  { title: t('diagnosis.ref'), dataIndex: 'evidence_id', width: 150, render: (value: string) => value ? <Tag color="blue">{value}</Tag> : '-' },
+                  { title: t('diagnosis.time'), dataIndex: 'timestamp', width: 170, render: (value: string) => value || '-' },
+                  { title: t('diagnosis.level'), dataIndex: 'level', width: 90, render: (value: string) => value ? <Tag color={String(value).toLowerCase().includes('error') || String(value).toLowerCase().includes('fatal') ? 'error' : 'warning'}>{value}</Tag> : '-' },
+                  { title: t('diagnosis.matchedKeywords'), dataIndex: 'matched_keywords', width: 180, render: (items: string[]) => (items || []).map(item => <Tag key={item}>{item}</Tag>) },
+                  { title: t('diagnosis.logMessage'), dataIndex: 'message', render: (value: string) => <Text>{value || '-'}</Text> },
+                ] as any}
+                dataSource={highlights}
+              />
+            </Card>
+          );
+        })}
+      </Space>
     );
   };
   const renderRefTags = (refs?: string[]) => (
@@ -1273,6 +1324,18 @@ const DiagnosisCenter: React.FC = () => {
               ))}
             </Space>
           </Form.Item>
+          <Form.Item name="log_datasource_ids" label={t('diagnosis.logDatasources')}>
+            <Select
+              mode="multiple"
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              options={logDatasources.map(item => ({
+                value: item.id,
+                label: `${item.name} (${item.provider || item.type})`,
+              }))}
+            />
+          </Form.Item>
           <Form.Item name="log_keywords_text" label={t('diagnosis.logKeywords')}>
             <TextArea rows={3} placeholder={'error\nfailed\ntimeout'} />
           </Form.Item>
@@ -1374,6 +1437,7 @@ const DiagnosisCenter: React.FC = () => {
                 {renderCiCdContext(selectedRun)}
               </Card>
             )}
+            {renderLogSourceContexts(selectedRun)}
             <Card title={t('diagnosis.logHighlights')}>
               {renderLogHighlights(selectedRun)}
             </Card>

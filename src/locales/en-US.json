@@ -2159,6 +2159,7 @@
     "window": "Time Window",
     "metricDatasource": "Metric Data Source",
     "logDatasource": "Log Data Source",
+    "logDatasources": "Log Data Sources",
     "datasourceName": "Data Source Name",
     "datasourceType": "Data Source Type",
     "kind": "Data Kind",
@@ -2201,6 +2202,9 @@
     "diagnosisTemplate": "Diagnosis Template",
     "templateSnapshot": "Template Snapshot",
     "templateContent": "Template Content JSON",
+    "logSourceContexts": "Log Source Context",
+    "query": "Query",
+    "timeRange": "Time Range",
     "contextCollection": "Context Collection",
     "logKeywords": "Log Keywords",
     "promptTemplate": "AI Prompt Template",
@@ -2309,7 +2313,8 @@
       "success": "Success",
       "failed": "Failed",
       "skipped": "Skipped",
-      "pending": "Pending"
+      "pending": "Pending",
+      "partial": "Partial"
     },
     "contextSnapshot": "Diagnosis Context"
   },
