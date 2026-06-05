@@ -95,6 +95,7 @@ const defaultDiagnosisTemplateContent = {
   log_keywords: ['error', 'failed', 'exception', 'timeout'],
   prompt_template: '{prefix}\n请基于以下 CI/CD 诊断上下文输出诊断结论、证据引用和处置建议：\n{diagnosis_context}',
   report_schema: { evidence_required: true },
+  metric_datasource_ids: [],
   log_datasource_ids: [],
 };
 
@@ -145,6 +146,7 @@ const buildDiagnosisTemplateContent = (values: any) => {
     target_type: values.target_type,
     context_collection: contextCollection,
     log_keywords: logKeywords.length ? logKeywords : defaultDiagnosisTemplateContent.log_keywords,
+    metric_datasource_ids: values.metric_datasource_ids || [],
     log_datasource_ids: values.log_datasource_ids || [],
     prompt_template: values.prompt_template,
     report_schema: reportSchema,
@@ -418,6 +420,7 @@ const DiagnosisCenter: React.FC = () => {
       target_type: content.target_type,
       ...collectionValues,
       log_keywords_text: (content.log_keywords || []).join('\n'),
+      metric_datasource_ids: content.metric_datasource_ids || [],
       log_datasource_ids: content.log_datasource_ids || [],
       prompt_template: content.prompt_template,
       report_schema: JSON.stringify(content.report_schema || {}, null, 2),
@@ -432,6 +435,7 @@ const DiagnosisCenter: React.FC = () => {
         [`collect_${key}`]: defaultDiagnosisTemplateContent.context_collection[key as keyof typeof defaultDiagnosisTemplateContent.context_collection],
       }), {}),
       log_keywords_text: defaultDiagnosisTemplateContent.log_keywords.join('\n'),
+      metric_datasource_ids: defaultDiagnosisTemplateContent.metric_datasource_ids,
       log_datasource_ids: defaultDiagnosisTemplateContent.log_datasource_ids,
       prompt_template: defaultDiagnosisTemplateContent.prompt_template,
       report_schema: JSON.stringify(defaultDiagnosisTemplateContent.report_schema, null, 2),
@@ -711,6 +715,50 @@ const DiagnosisCenter: React.FC = () => {
                   { title: t('diagnosis.logMessage'), dataIndex: 'message', render: (value: string) => <Text>{value || '-'}</Text> },
                 ] as any}
                 dataSource={highlights}
+              />
+            </Card>
+          );
+        })}
+      </Space>
+    );
+  };
+  const renderMetricSourceContexts = (run: DiagnosisRun) => {
+    const metricContexts = run.context_snapshot?.metric_contexts || [];
+    if (!metricContexts.length) {
+      return null;
+    }
+    return (
+      <Space direction="vertical" className="w-full" size="middle">
+        {metricContexts.map((context: any, index: number) => {
+          const datasource = context.datasource || {};
+          const metrics = context.metrics || [];
+          return (
+            <Card
+              key={`${datasource.id || index}-${datasource.name || ''}`}
+              size="small"
+              title={`${t('diagnosis.metricSourceContexts')} - ${datasource.name || t('diagnosis.datasourceName')} (${datasource.provider || '-'})`}
+            >
+              <Descriptions bordered size="small" column={2}>
+                <Descriptions.Item label={t('diagnosis.datasourceName')}>{datasource.name || '-'}</Descriptions.Item>
+                <Descriptions.Item label={t('diagnosis.provider')}>{datasource.provider || '-'}</Descriptions.Item>
+                <Descriptions.Item label={t('diagnosis.collectedCount')}>{context.count || 0}</Descriptions.Item>
+                <Descriptions.Item label={t('diagnosis.timeRange')}>
+                  {formatTime(context.time_range?.start)} - {formatTime(context.time_range?.end)}
+                </Descriptions.Item>
+              </Descriptions>
+              <Table
+                rowKey={(record: any, rowIndex) => `${record.evidence_id || ''}-${record.name || ''}-${rowIndex}`}
+                size="small"
+                pagination={false}
+                locale={{ emptyText: t('common.noData') }}
+                className="mt-3"
+                columns={[
+                  { title: t('diagnosis.ref'), dataIndex: 'evidence_id', width: 190, render: (value: string) => value ? <Tag color="blue">{value}</Tag> : '-' },
+                  { title: t('diagnosis.metricName'), dataIndex: 'name', width: 160, render: (value: string) => value || '-' },
+                  { title: t('diagnosis.query'), dataIndex: 'query', render: (value: string) => <Text>{value || '-'}</Text> },
+                  { title: t('diagnosis.resultCount'), dataIndex: 'result', width: 120, render: (items: any[]) => Array.isArray(items) ? items.length : 0 },
+                ] as any}
+                dataSource={metrics}
               />
             </Card>
           );
@@ -1324,6 +1372,18 @@ const DiagnosisCenter: React.FC = () => {
               ))}
             </Space>
           </Form.Item>
+          <Form.Item name="metric_datasource_ids" label={t('diagnosis.metricDatasources')}>
+            <Select
+              mode="multiple"
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              options={metricDatasources.map(item => ({
+                value: item.id,
+                label: `${item.name} (${item.provider || item.type})`,
+              }))}
+            />
+          </Form.Item>
           <Form.Item name="log_datasource_ids" label={t('diagnosis.logDatasources')}>
             <Select
               mode="multiple"
@@ -1437,6 +1497,7 @@ const DiagnosisCenter: React.FC = () => {
                 {renderCiCdContext(selectedRun)}
               </Card>
             )}
+            {renderMetricSourceContexts(selectedRun)}
             {renderLogSourceContexts(selectedRun)}
             <Card title={t('diagnosis.logHighlights')}>
               {renderLogHighlights(selectedRun)}
