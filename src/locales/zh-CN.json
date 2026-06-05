@@ -2201,6 +2201,12 @@
     "diagnosisTemplate": "诊断模板",
     "templateSnapshot": "模板快照",
     "templateContent": "模板内容 JSON",
+    "contextCollection": "上下文采集",
+    "logKeywords": "日志关键词",
+    "promptTemplate": "AI Prompt 模板",
+    "promptTemplateRequired": "Prompt 模板必须包含 {diagnosis_context}",
+    "reportSchema": "结构化报告要求 JSON",
+    "advancedJson": "高级 JSON",
     "templateCiCdTip": "选择 CI/CD 模板后，可指定流水线运行、失败节点或 Ansible 执行作为诊断目标。",
     "addTemplate": "新增诊断模板",
     "editTemplate": "编辑诊断模板",
@@ -2231,6 +2237,22 @@
       "ansibleExecution": "Ansible 执行摘要",
       "ansibleTaskLogHighlights": "Ansible TaskLog 高亮",
       "approvalRecords": "审批记录"
+    },
+    "targetTypes": {
+      "pipeline_run": "流水线运行",
+      "ansible_execution": "Ansible 执行",
+      "service_regression": "发布后服务异常"
+    },
+    "collectionOptions": {
+      "pipeline_run": "流水线",
+      "failed_nodes": "失败节点",
+      "node_logs": "节点日志",
+      "approval_records": "审批记录",
+      "related_alerts": "关联告警",
+      "service_logs": "服务日志",
+      "metrics": "指标",
+      "ansible_execution": "Ansible 执行",
+      "ansible_task_logs": "TaskLog"
     },
     "scopes": {
       "global": "全局",

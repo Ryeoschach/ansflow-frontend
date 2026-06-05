@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert, App, Button, Card, DatePicker, Descriptions, Drawer, Form, Input, InputNumber,
-  Modal, Popconfirm, Select, Space, Switch, Table, Tabs, Tag, Typography
+  Collapse, Modal, Popconfirm, Select, Space, Switch, Table, Tabs, Tag, Typography
 } from 'antd';
 import {
   ApiOutlined, CheckCircleOutlined, CloudServerOutlined, CodeOutlined, CopyOutlined,
@@ -77,6 +77,76 @@ const parseJsonArray = (value?: string) => {
     throw new Error('JSON must be an array');
   }
   return parsed;
+};
+
+const defaultDiagnosisTemplateContent = {
+  target_type: 'pipeline_run',
+  context_collection: {
+    pipeline_run: true,
+    failed_nodes: true,
+    node_logs: true,
+    approval_records: true,
+    related_alerts: true,
+    service_logs: false,
+    metrics: false,
+    ansible_execution: false,
+    ansible_task_logs: false,
+  },
+  log_keywords: ['error', 'failed', 'exception', 'timeout'],
+  prompt_template: '{prefix}\n请基于以下 CI/CD 诊断上下文输出诊断结论、证据引用和处置建议：\n{diagnosis_context}',
+  report_schema: { evidence_required: true },
+};
+
+const templateCollectionKeys = [
+  'pipeline_run',
+  'failed_nodes',
+  'node_logs',
+  'approval_records',
+  'related_alerts',
+  'service_logs',
+  'metrics',
+  'ansible_execution',
+  'ansible_task_logs',
+];
+
+const normalizeTemplateContent = (content?: Record<string, any>) => ({
+  ...defaultDiagnosisTemplateContent,
+  ...(content || {}),
+  context_collection: {
+    ...defaultDiagnosisTemplateContent.context_collection,
+    ...((content || {}).context_collection || {}),
+  },
+  log_keywords: Array.isArray((content || {}).log_keywords)
+    ? (content || {}).log_keywords
+    : defaultDiagnosisTemplateContent.log_keywords,
+  report_schema: {
+    ...defaultDiagnosisTemplateContent.report_schema,
+    ...((content || {}).report_schema || {}),
+  },
+});
+
+const splitKeywordText = (value?: string) => (value || '')
+  .split(/[\n,，]/)
+  .map(item => item.trim())
+  .filter(Boolean);
+
+const buildDiagnosisTemplateContent = (values: any) => {
+  const advancedContent = values.content ? parseJsonObject(values.content) : {};
+  const reportSchema = values.report_schema ? parseJsonObject(values.report_schema) : {};
+  const contextCollection = templateCollectionKeys.reduce((acc, key) => ({
+    ...acc,
+    [key]: !!values[`collect_${key}`],
+  }), {});
+  const logKeywords = splitKeywordText(values.log_keywords_text);
+
+  return {
+    ...advancedContent,
+    target_type: values.target_type,
+    context_collection: contextCollection,
+    log_keywords: logKeywords.length ? logKeywords : defaultDiagnosisTemplateContent.log_keywords,
+    prompt_template: values.prompt_template,
+    report_schema: reportSchema,
+  };
 };
 
 const DiagnosisCenter: React.FC = () => {
@@ -336,32 +406,47 @@ const DiagnosisCenter: React.FC = () => {
 
   const openDiagnosisTemplateModal = (record?: DiagnosisTemplate) => {
     setEditingDiagnosisTemplate(record || null);
+    const content = normalizeTemplateContent(record?.content);
+    const collectionValues = templateCollectionKeys.reduce((acc, key) => ({
+      ...acc,
+      [`collect_${key}`]: content.context_collection?.[key],
+    }), {});
     diagnosisTemplateForm.setFieldsValue(record ? {
       ...record,
-      content: JSON.stringify(record.content || {}, null, 2),
+      target_type: content.target_type,
+      ...collectionValues,
+      log_keywords_text: (content.log_keywords || []).join('\n'),
+      prompt_template: content.prompt_template,
+      report_schema: JSON.stringify(content.report_schema || {}, null, 2),
+      content: JSON.stringify(content || {}, null, 2),
     } : {
       scope: currentProject?.id ? 'project' : 'global',
       project: currentProject?.id,
       category: 'ci_cd',
-      content: JSON.stringify({
-        target_type: 'pipeline_run',
-        context_collection: {
-          pipeline_run: true,
-          failed_nodes: true,
-          node_logs: true,
-          approval_records: true,
-          related_alerts: true,
-          service_logs: false,
-          metrics: false,
-          ansible_execution: false,
-        },
-        log_keywords: ['error', 'failed', 'exception', 'timeout'],
-        prompt_template: '{prefix}\n请基于以下 CI/CD 诊断上下文输出诊断结论、证据引用和处置建议：\n{diagnosis_context}',
-        report_schema: { evidence_required: true },
-      }, null, 2),
+      target_type: defaultDiagnosisTemplateContent.target_type,
+      ...templateCollectionKeys.reduce((acc, key) => ({
+        ...acc,
+        [`collect_${key}`]: defaultDiagnosisTemplateContent.context_collection[key as keyof typeof defaultDiagnosisTemplateContent.context_collection],
+      }), {}),
+      log_keywords_text: defaultDiagnosisTemplateContent.log_keywords.join('\n'),
+      prompt_template: defaultDiagnosisTemplateContent.prompt_template,
+      report_schema: JSON.stringify(defaultDiagnosisTemplateContent.report_schema, null, 2),
+      content: JSON.stringify(defaultDiagnosisTemplateContent, null, 2),
       is_active: true,
     });
     setDiagnosisTemplateModalOpen(true);
+  };
+
+  const syncDiagnosisTemplateContent = (changedValues: any, allValues: any) => {
+    if (Object.prototype.hasOwnProperty.call(changedValues, 'content')) {
+      return;
+    }
+    try {
+      const content = buildDiagnosisTemplateContent(allValues);
+      diagnosisTemplateForm.setFieldValue('content', JSON.stringify(content, null, 2));
+    } catch {
+      // Keep the user's in-progress JSON text intact until it becomes valid again.
+    }
   };
 
   const applyDatasourceCapability = (provider?: string) => {
@@ -1131,12 +1216,18 @@ const DiagnosisCenter: React.FC = () => {
         confirmLoading={diagnosisTemplateMutation.isPending}
         width={820}
       >
-        <Form form={diagnosisTemplateForm} layout="vertical" onFinish={(values) => {
+        <Form form={diagnosisTemplateForm} layout="vertical" onValuesChange={syncDiagnosisTemplateContent} onFinish={(values) => {
           try {
+            const content = buildDiagnosisTemplateContent(values);
             diagnosisTemplateMutation.mutate({
-              ...values,
+              name: values.name,
+              code: values.code,
+              scope: values.scope,
               project: values.scope === 'project' ? values.project : null,
-              content: parseJsonObject(values.content),
+              category: values.category,
+              description: values.description,
+              is_active: values.is_active,
+              content,
             });
           } catch (err: any) {
             message.error(err.message);
@@ -1164,9 +1255,60 @@ const DiagnosisCenter: React.FC = () => {
             <Select options={[{ value: 'ci_cd', label: t('diagnosis.categories.ci_cd') }]} />
           </Form.Item>
           <Form.Item name="description" label={t('common.description')}><TextArea rows={2} /></Form.Item>
-          <Form.Item name="content" label={t('diagnosis.templateContent')} rules={[{ required: true }]}>
-            <TextArea rows={14} />
+          <Form.Item name="target_type" label={t('diagnosis.targetType')} rules={[{ required: true }]}>
+            <Select
+              options={[
+                { value: 'pipeline_run', label: t('diagnosis.targetTypes.pipeline_run') },
+                { value: 'ansible_execution', label: t('diagnosis.targetTypes.ansible_execution') },
+                { value: 'service_regression', label: t('diagnosis.targetTypes.service_regression') },
+              ]}
+            />
           </Form.Item>
+          <Form.Item label={t('diagnosis.contextCollection')}>
+            <Space wrap>
+              {templateCollectionKeys.map(key => (
+                <Form.Item key={key} name={`collect_${key}`} valuePropName="checked" noStyle>
+                  <Switch checkedChildren={t(`diagnosis.collectionOptions.${key}`)} unCheckedChildren={t(`diagnosis.collectionOptions.${key}`)} />
+                </Form.Item>
+              ))}
+            </Space>
+          </Form.Item>
+          <Form.Item name="log_keywords_text" label={t('diagnosis.logKeywords')}>
+            <TextArea rows={3} placeholder={'error\nfailed\ntimeout'} />
+          </Form.Item>
+          <Form.Item
+            name="prompt_template"
+            label={t('diagnosis.promptTemplate')}
+            rules={[
+              { required: true },
+              {
+                validator: (_, value) => (
+                  value?.includes('{diagnosis_context}')
+                    ? Promise.resolve()
+                    : Promise.reject(new Error(t('diagnosis.promptTemplateRequired')))
+                ),
+              },
+            ]}
+          >
+            <TextArea rows={6} />
+          </Form.Item>
+          <Form.Item name="report_schema" label={t('diagnosis.reportSchema')}>
+            <TextArea rows={4} />
+          </Form.Item>
+          <Collapse
+            ghost
+            items={[
+              {
+                key: 'advanced-json',
+                label: t('diagnosis.advancedJson'),
+                children: (
+                  <Form.Item name="content" label={t('diagnosis.templateContent')}>
+                    <TextArea rows={8} />
+                  </Form.Item>
+                ),
+              },
+            ]}
+          />
           <Form.Item name="is_active" valuePropName="checked"><Switch /> {t('common.enabled')}</Form.Item>
         </Form>
       </Modal>

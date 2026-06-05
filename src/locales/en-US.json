@@ -2201,6 +2201,12 @@
     "diagnosisTemplate": "Diagnosis Template",
     "templateSnapshot": "Template Snapshot",
     "templateContent": "Template Content JSON",
+    "contextCollection": "Context Collection",
+    "logKeywords": "Log Keywords",
+    "promptTemplate": "AI Prompt Template",
+    "promptTemplateRequired": "Prompt template must include {diagnosis_context}",
+    "reportSchema": "Structured Report Schema JSON",
+    "advancedJson": "Advanced JSON",
     "templateCiCdTip": "After selecting a CI/CD template, specify a pipeline run, failed node, or Ansible execution as the diagnosis target.",
     "addTemplate": "Add Diagnosis Template",
     "editTemplate": "Edit Diagnosis Template",
@@ -2231,6 +2237,22 @@
       "ansibleExecution": "Ansible Execution Summary",
       "ansibleTaskLogHighlights": "Ansible TaskLog Highlights",
       "approvalRecords": "Approval Records"
+    },
+    "targetTypes": {
+      "pipeline_run": "Pipeline Run",
+      "ansible_execution": "Ansible Execution",
+      "service_regression": "Post-release Service Regression"
+    },
+    "collectionOptions": {
+      "pipeline_run": "Pipeline",
+      "failed_nodes": "Failed Nodes",
+      "node_logs": "Node Logs",
+      "approval_records": "Approvals",
+      "related_alerts": "Related Alerts",
+      "service_logs": "Service Logs",
+      "metrics": "Metrics",
+      "ansible_execution": "Ansible Execution",
+      "ansible_task_logs": "TaskLog"
     },
     "scopes": {
       "global": "Global",
