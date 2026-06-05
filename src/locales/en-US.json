@@ -2145,7 +2145,8 @@
       "connectionOk": "Data source connected",
       "serviceMatched": "Matched service automatically: {{service}}",
       "serviceMatchFailed": "Service auto-match failed",
-      "previewFailed": "Preview query failed"
+      "previewFailed": "Preview query failed",
+      "evidenceNotFound": "Evidence not found: {{ref}}"
     },
     "create": "Create Diagnosis",
     "previewCollection": "Preview Collection Plan",
@@ -2297,6 +2298,7 @@
     "collectionSummary": "Context Collection Summary",
     "logHighlights": "Log Highlights",
     "evidenceIndex": "Evidence Index",
+    "aiEvidenceRefs": "Evidence Referenced by AI",
     "report": {
       "summary": "Summary",
       "impactScope": "Impact Scope",

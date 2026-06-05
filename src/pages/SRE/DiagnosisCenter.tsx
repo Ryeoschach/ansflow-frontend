@@ -159,6 +159,12 @@ const buildDiagnosisRunPayload = (values: any) => ({
   diagnosis_time: values.diagnosis_time?.toISOString ? values.diagnosis_time.toISOString() : values.diagnosis_time,
 });
 
+const evidenceRefPattern = /\b(?:LOG-\d+|METRIC-\d+|ALERT-\d+|PIPELINE-\d+|NODE-\d+|NODELOG-\d+|ANSIBLE-\d+|TASKLOG-\d+|APPROVAL-\d+|log:[\w.-]+:[\w.-]+|metric:[\w.-]+:[\w.-]+)\b/g;
+
+const extractEvidenceRefs = (text?: string | null) => Array.from(new Set((text?.match(evidenceRefPattern) || [])));
+
+const evidenceDomId = (ref: string) => `evidence-ref-${encodeURIComponent(ref).replace(/%/g, '_')}`;
+
 const DiagnosisCenter: React.FC = () => {
   const { t } = useTranslation();
   const { message } = App.useApp();
@@ -759,7 +765,7 @@ const DiagnosisCenter: React.FC = () => {
                 locale={{ emptyText: t('common.noData') }}
                 className="mt-3"
                 columns={[
-                  { title: t('diagnosis.ref'), dataIndex: 'evidence_id', width: 150, render: (value: string) => value ? <Tag color="blue">{value}</Tag> : '-' },
+                  { title: t('diagnosis.ref'), dataIndex: 'evidence_id', width: 150, render: (value: string) => value ? renderRefTags([value]) : '-' },
                   { title: t('diagnosis.time'), dataIndex: 'timestamp', width: 170, render: (value: string) => value || '-' },
                   { title: t('diagnosis.level'), dataIndex: 'level', width: 90, render: (value: string) => value ? <Tag color={String(value).toLowerCase().includes('error') || String(value).toLowerCase().includes('fatal') ? 'error' : 'warning'}>{value}</Tag> : '-' },
                   { title: t('diagnosis.matchedKeywords'), dataIndex: 'matched_keywords', width: 180, render: (items: string[]) => (items || []).map(item => <Tag key={item}>{item}</Tag>) },
@@ -804,7 +810,7 @@ const DiagnosisCenter: React.FC = () => {
                 locale={{ emptyText: t('common.noData') }}
                 className="mt-3"
                 columns={[
-                  { title: t('diagnosis.ref'), dataIndex: 'evidence_id', width: 190, render: (value: string) => value ? <Tag color="blue">{value}</Tag> : '-' },
+                  { title: t('diagnosis.ref'), dataIndex: 'evidence_id', width: 190, render: (value: string) => value ? renderRefTags([value]) : '-' },
                   { title: t('diagnosis.metricName'), dataIndex: 'name', width: 160, render: (value: string) => value || '-' },
                   { title: t('diagnosis.query'), dataIndex: 'query', render: (value: string) => <Text>{value || '-'}</Text> },
                   { title: t('diagnosis.resultCount'), dataIndex: 'result', width: 120, render: (items: any[]) => Array.isArray(items) ? items.length : 0 },
@@ -817,9 +823,22 @@ const DiagnosisCenter: React.FC = () => {
       </Space>
     );
   };
+  const scrollToEvidenceRef = (ref: string) => {
+    const element = document.getElementById(evidenceDomId(ref));
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.classList.add('ring-2', 'ring-blue-400');
+      window.setTimeout(() => element.classList.remove('ring-2', 'ring-blue-400'), 1600);
+    } else {
+      message.info(t('diagnosis.messages.evidenceNotFound', { ref }));
+    }
+  };
+
   const renderRefTags = (refs?: string[]) => (
     <Space wrap>
-      {(refs || []).map(ref => <Tag key={ref} color="blue">{ref}</Tag>)}
+      {(refs || []).map(ref => (
+        <Tag key={ref} color="blue" className="cursor-pointer" onClick={() => scrollToEvidenceRef(ref)}>{ref}</Tag>
+      ))}
     </Space>
   );
   const formatTime = (value?: string) => value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '-';
@@ -963,7 +982,7 @@ const DiagnosisCenter: React.FC = () => {
           pagination={false}
           title={() => t('diagnosis.report.evidence')}
           columns={[
-            { title: t('diagnosis.ref'), dataIndex: 'ref', width: 110, render: (value: string) => value ? <Tag color="blue">{value}</Tag> : '-' },
+            { title: t('diagnosis.ref'), dataIndex: 'ref', width: 150, render: (value: string) => value ? renderRefTags([value]) : '-' },
             { title: t('diagnosis.finding'), dataIndex: 'finding' },
           ] as any}
           dataSource={report.evidence || []}
@@ -1013,13 +1032,29 @@ const DiagnosisCenter: React.FC = () => {
         rowKey="ref"
         size="small"
         pagination={false}
+        onRow={(record: any) => ({ id: evidenceDomId(record.ref), className: 'transition-shadow' })}
         columns={[
-          { title: t('diagnosis.ref'), dataIndex: 'ref', width: 110, render: (value: string) => <Tag color="blue">{value}</Tag> },
+          { title: t('diagnosis.ref'), dataIndex: 'ref', width: 160, render: (value: string) => <Tag color="blue">{value}</Tag> },
           { title: t('diagnosis.type'), dataIndex: 'type', width: 140, render: (value: string) => <Tag>{value}</Tag> },
           { title: t('diagnosis.title'), dataIndex: 'title' },
           { title: t('diagnosis.summary'), dataIndex: 'summary' },
         ] as any}
         dataSource={evidence}
+      />
+    );
+  };
+  const renderAiEvidenceRefs = (run: DiagnosisRun) => {
+    const refs = extractEvidenceRefs(run.ai_result);
+    if (!refs.length) {
+      return null;
+    }
+    return (
+      <Alert
+        className="mb-3"
+        type="info"
+        showIcon
+        message={t('diagnosis.aiEvidenceRefs')}
+        description={renderRefTags(refs)}
       />
     );
   };
@@ -1603,7 +1638,12 @@ const DiagnosisCenter: React.FC = () => {
               {renderStructuredReport(selectedRun)}
             </Card>
             <Card title={t('diagnosis.aiResult')}>
-              {selectedRun.ai_result ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedRun.ai_result}</ReactMarkdown> : <Text type="secondary">{t('common.noData')}</Text>}
+              {selectedRun.ai_result ? (
+                <>
+                  {renderAiEvidenceRefs(selectedRun)}
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedRun.ai_result}</ReactMarkdown>
+                </>
+              ) : <Text type="secondary">{t('common.noData')}</Text>}
             </Card>
             <Card title={t('diagnosis.collectionSummary')}>
               {renderCollectionSummary(selectedRun)}

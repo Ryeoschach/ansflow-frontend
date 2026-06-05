@@ -2145,7 +2145,8 @@
       "connectionOk": "数据源连接成功",
       "serviceMatched": "已自动匹配服务：{{service}}",
       "serviceMatchFailed": "服务自动匹配失败",
-      "previewFailed": "预览查询失败"
+      "previewFailed": "预览查询失败",
+      "evidenceNotFound": "未找到证据：{{ref}}"
     },
     "create": "创建诊断",
     "previewCollection": "预览采集计划",
@@ -2297,6 +2298,7 @@
     "collectionSummary": "上下文采集摘要",
     "logHighlights": "日志重点片段",
     "evidenceIndex": "证据索引",
+    "aiEvidenceRefs": "AI 结论引用的证据",
     "report": {
       "summary": "现象摘要",
       "impactScope": "影响范围",
