@@ -2131,6 +2131,8 @@
       "services": "服务映射",
       "datasources": "观测数据源",
       "templates": "诊断模板",
+      "quality": "质量看板",
+      "replay": "故障回放",
       "rules": "规则模板"
     },
     "status": {
@@ -2146,7 +2148,10 @@
       "serviceMatched": "已自动匹配服务：{{service}}",
       "serviceMatchFailed": "服务自动匹配失败",
       "previewFailed": "预览查询失败",
-      "evidenceNotFound": "未找到证据：{{ref}}"
+      "evidenceNotFound": "未找到证据：{{ref}}",
+      "replayCreated": "已保存为脱敏回放用例",
+      "replaySubmitted": "回放任务已提交",
+      "rollbackSuccess": "模板已回滚并生成新版本"
     },
     "create": "创建诊断",
     "previewCollection": "预览采集计划",
@@ -2232,6 +2237,68 @@
     "pipelineRunId": "流水线运行 ID",
     "pipelineNodeRunId": "流水线节点运行 ID",
     "ansibleExecutionId": "Ansible 执行 ID",
+    "k8sCluster": "Kubernetes 集群",
+    "workloadKind": "工作负载类型",
+    "workloadName": "工作负载名称",
+    "jvmInstance": "JVM 实例",
+    "runtimeContext": "运行时上下文",
+    "nodes": "就绪节点",
+    "memory": "内存",
+    "restarts": "重启次数",
+    "reason": "原因",
+    "timeline": "故障时间线",
+    "correlation": "跨源相关性分析",
+    "sourceRun": "来源诊断",
+    "version": "版本",
+    "versions": "版本历史",
+    "lifecycle": "生命周期",
+    "createdBy": "创建人",
+    "rollback": "回滚",
+    "confirmRollback": "确认回滚到 v{{version}}？系统会生成一个新的当前版本。",
+    "lifecycleStatus": {
+      "draft": "草稿",
+      "published": "已发布",
+      "deprecated": "已废弃"
+    },
+    "quality": {
+      "title": "诊断质量",
+      "score": "质量分",
+      "confidence": "综合置信度",
+      "evidenceCoverage": "证据覆盖率",
+      "totalRuns": "诊断总数",
+      "averageScore": "平均质量分",
+      "feedbackCount": "反馈数量",
+      "actionAdoption": "建议采纳率",
+      "replayCases": "回放用例",
+      "replayEvaluated": "已评估回放",
+      "templatePerformance": "模板质量表现",
+      "successRate": "成功率"
+    },
+    "feedback": {
+      "title": "诊断反馈",
+      "accuracy": "准确性",
+      "evidence": "证据有效性",
+      "actionability": "建议可执行性",
+      "rootCauseCorrect": "根因是否正确",
+      "recommendationAdopted": "建议是否采纳",
+      "correctedRootCause": "人工修正根因",
+      "comment": "备注",
+      "yes": "是",
+      "no": "否"
+    },
+    "compare": {
+      "title": "诊断对比",
+      "selectRun": "选择一个历史诊断",
+      "qualityDelta": "质量分差值",
+      "confidenceDelta": "置信度差值",
+      "addedEvidence": "新增证据",
+      "removedEvidence": "减少证据"
+    },
+    "replay": {
+      "create": "保存为回放",
+      "run": "执行回放",
+      "latestResult": "最近结果"
+    },
     "pipeline": "流水线",
     "triggerType": "触发方式",
     "nodeName": "节点名称",
@@ -2259,6 +2326,10 @@
       "pipeline_run": "流水线运行",
       "ansible_execution": "Ansible 执行",
       "service_regression": "发布后服务异常"
+      ,"alert_service": "服务告警综合诊断"
+      ,"k8s_workload": "Kubernetes 工作负载"
+      ,"host_runtime": "主机运行异常"
+      ,"jvm_runtime": "JVM 应用异常"
     },
     "collectionOptions": {
       "pipeline_run": "流水线",
@@ -2270,13 +2341,21 @@
       "metrics": "指标",
       "ansible_execution": "Ansible 执行",
       "ansible_task_logs": "TaskLog"
+      ,"runtime_assets": "运行时资产"
+      ,"k8s_runtime": "Kubernetes 运行时"
+      ,"host_runtime": "主机运行时"
+      ,"jvm_runtime": "JVM 运行时"
     },
     "scopes": {
       "global": "全局",
       "project": "项目"
     },
     "categories": {
-      "ci_cd": "CI/CD 发布诊断"
+      "ci_cd": "CI/CD 发布诊断",
+      "service": "服务运行诊断",
+      "kubernetes": "Kubernetes 诊断",
+      "host": "主机运行诊断",
+      "jvm": "JVM 应用诊断"
     },
     "category": "分类",
     "renderRule": "生成规则",
@@ -2346,7 +2425,8 @@
       "logs": "日志",
       "log_highlights": "日志重点片段",
       "ansflow_events": "AnsFlow 事件",
-      "ci_cd_context": "CI/CD 上下文"
+      "ci_cd_context": "CI/CD 上下文",
+      "runtime_context": "运行时资产"
     },
     "collectionStatus": {
       "success": "成功",

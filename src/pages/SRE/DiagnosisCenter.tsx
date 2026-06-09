@@ -21,10 +21,15 @@ import {
   createObservabilityDataSource,
   createObservedService,
   deleteDiagnosisTemplate,
+  deleteDiagnosisReplayCase,
   deleteObservabilityDataSource,
   deleteObservedService,
   DiagnosisRun,
+  DiagnosisTemplateVersion,
   DiagnosisTemplate,
+  getDiagnosisQuality,
+  getDiagnosisReplayCases,
+  getDiagnosisTemplateVersions,
   getDiagnosisTemplates,
   getAlertRuleTemplates,
   getDiagnosisRun,
@@ -40,14 +45,20 @@ import {
   previewDiagnosisRun,
   renderAlertRuleTemplate,
   retryDiagnosisRun,
+  rollbackDiagnosisTemplate,
+  runDiagnosisReplayCase,
   testObservabilityDataSource,
   updateDiagnosisTemplate,
   updateObservabilityDataSource,
   updateObservedService,
 } from '@/api/sre';
+import { getHosts } from '@/api/hosts';
+import { getK8sClusters } from '@/api/k8s';
 import { getProjects } from '@/api/rbac';
 import useAppStore from '@/store/useAppStore';
 import DiagnosisRunDetailDrawer from './components/DiagnosisRunDetailDrawer';
+import DiagnosisQualityDashboard from './components/DiagnosisQualityDashboard';
+import DiagnosisReplayCases from './components/DiagnosisReplayCases';
 
 const { Text, Title } = Typography;
 const { TextArea } = Input;
@@ -92,6 +103,10 @@ const defaultDiagnosisTemplateContent = {
     metrics: false,
     ansible_execution: false,
     ansible_task_logs: false,
+    runtime_assets: false,
+    k8s_runtime: false,
+    host_runtime: false,
+    jvm_runtime: false,
   },
   log_keywords: ['error', 'failed', 'exception', 'timeout'],
   prompt_template: '{prefix}\n请基于以下 CI/CD 诊断上下文输出诊断结论、证据引用和处置建议：\n{diagnosis_context}',
@@ -110,6 +125,10 @@ const templateCollectionKeys = [
   'metrics',
   'ansible_execution',
   'ansible_task_logs',
+  'runtime_assets',
+  'k8s_runtime',
+  'host_runtime',
+  'jvm_runtime',
 ];
 
 const normalizeTemplateContent = (content?: Record<string, any>) => ({
@@ -159,7 +178,7 @@ const buildDiagnosisRunPayload = (values: any) => ({
   diagnosis_time: values.diagnosis_time?.toISOString ? values.diagnosis_time.toISOString() : values.diagnosis_time,
 });
 
-const evidenceRefPattern = /\b(?:LOG-\d+|METRIC-\d+|ALERT-\d+|PIPELINE-\d+|NODE-\d+|NODELOG-\d+|ANSIBLE-\d+|TASKLOG-\d+|APPROVAL-\d+|log:[\w.-]+:[\w.-]+|metric:[\w.-]+:[\w.-]+)\b/g;
+const evidenceRefPattern = /\b(?:LOG-\d+|METRIC-\d+|ALERT-\d+|RELATED-ALERT-\d+|PIPELINE-\d+|NODE-\d+|NODELOG-\d+|ANSIBLE-\d+|TASKLOG-\d+|APPROVAL-\d+|HOST-\d+|K8S-POD-\d+|K8S-EVENT-\d+|log:[\w.-]+:[\w.-]+|metric:[\w.-]+:[\w.-]+)\b/g;
 
 const extractEvidenceRefs = (text?: string | null) => Array.from(new Set((text?.match(evidenceRefPattern) || [])));
 
@@ -176,6 +195,9 @@ const DiagnosisCenter: React.FC = () => {
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
   const [datasourceModalOpen, setDatasourceModalOpen] = useState(false);
   const [diagnosisTemplateModalOpen, setDiagnosisTemplateModalOpen] = useState(false);
+  const [templateVersionsOpen, setTemplateVersionsOpen] = useState(false);
+  const [versionedTemplate, setVersionedTemplate] = useState<DiagnosisTemplate | null>(null);
+  const [templateVersions, setTemplateVersions] = useState<DiagnosisTemplateVersion[]>([]);
   const [editingService, setEditingService] = useState<ObservedService | null>(null);
   const [editingDatasource, setEditingDatasource] = useState<ObservabilityDataSource | null>(null);
   const [editingDiagnosisTemplate, setEditingDiagnosisTemplate] = useState<DiagnosisTemplate | null>(null);
@@ -203,6 +225,10 @@ const DiagnosisCenter: React.FC = () => {
   const watchedPipelineRunId = Form.useWatch('pipeline_run_id', diagnosisForm);
   const watchedPipelineNodeRunId = Form.useWatch('pipeline_node_run_id', diagnosisForm);
   const watchedAnsibleExecutionId = Form.useWatch('ansible_execution_id', diagnosisForm);
+  const watchedHostId = Form.useWatch('host_id', diagnosisForm);
+  const watchedClusterId = Form.useWatch('k8s_cluster_id', diagnosisForm);
+  const watchedNamespace = Form.useWatch('namespace', diagnosisForm);
+  const watchedWorkloadName = Form.useWatch('workload_name', diagnosisForm);
   const datasourceKind = Form.useWatch('kind', datasourceForm);
   const datasourceProvider = Form.useWatch('provider', datasourceForm);
 
@@ -249,10 +275,41 @@ const DiagnosisCenter: React.FC = () => {
     queryKey: ['sre-diagnosis-templates', currentProject?.id],
     queryFn: () => getDiagnosisTemplates({ page_size: 1000, project: currentProject?.id, include_inactive: true }),
   });
+  const { data: hosts } = useQuery({
+    queryKey: ['hosts-for-diagnosis', currentProject?.id],
+    queryFn: () => getHosts({ page_size: 1000, project: currentProject?.id }),
+    enabled: !!currentProject?.id,
+  });
+  const { data: k8sClusters } = useQuery({
+    queryKey: ['k8s-clusters-for-diagnosis', currentProject?.id],
+    queryFn: () => getK8sClusters({ page_size: 1000, project: currentProject?.id }),
+    enabled: !!currentProject?.id,
+  });
+  const { data: diagnosisQuality, isLoading: diagnosisQualityLoading } = useQuery({
+    queryKey: ['sre-diagnosis-quality', currentProject?.id],
+    queryFn: () => getDiagnosisQuality({ project: currentProject?.id }),
+    enabled: !!currentProject?.id,
+  });
+  const {
+    data: replayCases,
+    isLoading: replayCasesLoading,
+    refetch: refetchReplayCases,
+  } = useQuery({
+    queryKey: ['sre-diagnosis-replay-cases', currentProject?.id],
+    queryFn: () => getDiagnosisReplayCases({ page_size: 1000, project: currentProject?.id }),
+    enabled: !!currentProject?.id,
+    refetchInterval: query => (
+      (query.state.data?.data || []).some(item => item.latest_result?.status === 'pending' || item.latest_result?.status === 'running')
+        ? 3000
+        : false
+    ),
+  });
 
   const datasourceList = datasources?.data || [];
   const serviceList = services?.data || [];
   const diagnosisTemplateList = diagnosisTemplates?.data || [];
+  const hostList = hosts?.data || [];
+  const k8sClusterList = k8sClusters?.data || [];
   const selectedDiagnosisTemplate = diagnosisTemplateList.find(item => item.id === selectedDiagnosisTemplateId);
   const selectedTemplateTargetType = selectedDiagnosisTemplate?.content?.target_type;
   const metricDatasources = datasourceList.filter(item => item.kind === 'metric' || item.type === 'victoriametrics');
@@ -325,6 +382,12 @@ const DiagnosisCenter: React.FC = () => {
       pipeline_run_id: searchParams.get('pipeline_run_id') ? Number(searchParams.get('pipeline_run_id')) : undefined,
       pipeline_node_run_id: searchParams.get('pipeline_node_run_id') ? Number(searchParams.get('pipeline_node_run_id')) : undefined,
       ansible_execution_id: searchParams.get('ansible_execution_id') ? Number(searchParams.get('ansible_execution_id')) : undefined,
+      host_id: searchParams.get('host_id') ? Number(searchParams.get('host_id')) : undefined,
+      k8s_cluster_id: searchParams.get('k8s_cluster_id') ? Number(searchParams.get('k8s_cluster_id')) : undefined,
+      namespace: searchParams.get('namespace') || undefined,
+      workload_kind: searchParams.get('workload_kind') || undefined,
+      workload_name: searchParams.get('workload_name') || undefined,
+      jvm_instance: searchParams.get('jvm_instance') || undefined,
       diagnosis_time: dayjs(),
       window_minutes: 10,
       trigger_type: 'manual',
@@ -387,6 +450,10 @@ const DiagnosisCenter: React.FC = () => {
     watchedPipelineRunId,
     watchedPipelineNodeRunId,
     watchedAnsibleExecutionId,
+    watchedHostId,
+    watchedClusterId,
+    watchedNamespace,
+    watchedWorkloadName,
   ]);
 
   const serviceMutation = useMutation({
@@ -529,6 +596,14 @@ const DiagnosisCenter: React.FC = () => {
     }
   };
 
+  const openTemplateVersions = (template: DiagnosisTemplate) => {
+    setVersionedTemplate(template);
+    getDiagnosisTemplateVersions(template.id).then((items) => {
+      setTemplateVersions(items);
+      setTemplateVersionsOpen(true);
+    });
+  };
+
   const applyDatasourceCapability = (provider?: string) => {
     const capability = provider ? datasourceCapabilities?.[provider as keyof typeof datasourceCapabilities] : undefined;
     if (!capability) return;
@@ -549,6 +624,7 @@ const DiagnosisCenter: React.FC = () => {
     { title: t('diagnosis.service'), dataIndex: 'service_name', render: (text: string) => text || '-' },
     { title: t('diagnosis.time'), dataIndex: 'diagnosis_time', render: (value: string) => dayjs(value).format('YYYY-MM-DD HH:mm:ss') },
     { title: t('diagnosis.window'), dataIndex: 'window_minutes', render: (value: number) => `±${value}m` },
+    { title: t('diagnosis.quality.score'), dataIndex: 'quality_score', width: 90, render: (value: number) => value ? Number(value).toFixed(1) : '-' },
     { title: t('diagnosis.status.label'), dataIndex: 'status', render: (value: string) => <Tag color={statusMap[value]?.color}>{statusMap[value]?.text || value}</Tag> },
     {
       title: t('common.action'),
@@ -651,6 +727,8 @@ const DiagnosisCenter: React.FC = () => {
     { title: t('diagnosis.templateName'), dataIndex: 'name' },
     { title: t('diagnosis.code'), dataIndex: 'code' },
     { title: t('diagnosis.scope'), dataIndex: 'scope', render: (value: string, record: DiagnosisTemplate) => <Tag color={value === 'global' ? 'blue' : 'purple'}>{record.project_name || t(`diagnosis.scopes.${value}`)}</Tag> },
+    { title: t('diagnosis.version'), dataIndex: 'version', width: 80, render: (value: number) => `v${value || 1}` },
+    { title: t('diagnosis.lifecycle'), dataIndex: 'lifecycle_status', render: (value: string) => <Tag>{t(`diagnosis.lifecycleStatus.${value}`)}</Tag> },
     { title: t('diagnosis.targetType'), dataIndex: ['content', 'target_type'], render: (value: string) => value || '-' },
     { title: t('common.status'), dataIndex: 'is_active', render: (value: boolean) => <Tag color={value ? 'success' : 'default'}>{value ? t('common.enabled') : t('common.disabled')}</Tag> },
     { title: t('diagnosis.builtin'), dataIndex: 'is_builtin', render: (value: boolean) => value ? <Tag color="gold">{t('diagnosis.builtin')}</Tag> : '-' },
@@ -659,6 +737,7 @@ const DiagnosisCenter: React.FC = () => {
       render: (_: any, record: DiagnosisTemplate) => (
         <Space>
           <Button size="small" icon={<EditOutlined />} disabled={record.is_builtin} onClick={() => openDiagnosisTemplateModal(record)}>{t('common.edit')}</Button>
+          <Button size="small" onClick={() => openTemplateVersions(record)}>{t('diagnosis.versions')}</Button>
           <Button
             size="small"
             icon={<CopyOutlined />}
@@ -687,7 +766,7 @@ const DiagnosisCenter: React.FC = () => {
     const summary = run.context_snapshot?.collection_summary || {};
     const warnings = run.context_snapshot?.warnings || [];
     const promptContextSummary = summary.prompt_context;
-    const rows = ['metrics', 'logs', 'log_highlights', 'ansflow_events', 'ci_cd_context'].map(key => {
+    const rows = ['metrics', 'logs', 'log_highlights', 'ansflow_events', 'ci_cd_context', 'runtime_context'].map(key => {
       const item = summary[key] || {};
       return {
         key,
@@ -1346,6 +1425,30 @@ const DiagnosisCenter: React.FC = () => {
               ),
             },
             {
+              key: 'quality',
+              label: <Space><ExperimentOutlined />{t('diagnosis.tabs.quality')}</Space>,
+              children: <DiagnosisQualityDashboard data={diagnosisQuality} loading={diagnosisQualityLoading} />,
+            },
+            {
+              key: 'replay',
+              label: <Space><ReloadOutlined />{t('diagnosis.tabs.replay')}</Space>,
+              children: (
+                <DiagnosisReplayCases
+                  cases={replayCases?.data || []}
+                  loading={replayCasesLoading}
+                  onRefresh={() => { refetchReplayCases(); }}
+                  onRun={(id) => runDiagnosisReplayCase(id).then((result) => {
+                    queryClient.invalidateQueries({ queryKey: ['sre-diagnosis-replay-cases'] });
+                    return result;
+                  })}
+                  onDelete={(id) => deleteDiagnosisReplayCase(id).then((result) => {
+                    queryClient.invalidateQueries({ queryKey: ['sre-diagnosis-replay-cases'] });
+                    return result;
+                  })}
+                />
+              ),
+            },
+            {
               key: 'rules',
               label: <Space><CodeOutlined />{t('diagnosis.tabs.rules')}</Space>,
               children: <Table rowKey="id" columns={templateColumns as any} dataSource={templates || []} />,
@@ -1403,6 +1506,40 @@ const DiagnosisCenter: React.FC = () => {
                 </Form.Item>
               )}
             </Space>
+          )}
+          {selectedTemplateTargetType === 'k8s_workload' && (
+            <>
+              <Form.Item name="k8s_cluster_id" label={t('diagnosis.k8sCluster')} rules={[{ required: true }]}>
+                <Select
+                  showSearch
+                  optionFilterProp="label"
+                  options={k8sClusterList.map((item: any) => ({ value: item.id, label: item.name }))}
+                />
+              </Form.Item>
+              <Space className="w-full" align="start">
+                <Form.Item name="namespace" label={t('diagnosis.namespace')} rules={[{ required: true }]} className="flex-1"><Input /></Form.Item>
+                <Form.Item name="workload_kind" label={t('diagnosis.workloadKind')} className="flex-1">
+                  <Select options={['Deployment', 'StatefulSet', 'DaemonSet', 'Pod'].map(value => ({ value, label: value }))} />
+                </Form.Item>
+                <Form.Item name="workload_name" label={t('diagnosis.workloadName')} className="flex-1"><Input /></Form.Item>
+              </Space>
+            </>
+          )}
+          {selectedTemplateTargetType === 'host_runtime' && (
+            <Form.Item name="host_id" label={t('diagnosis.host')} rules={[{ required: !watchedDiagnosisService }]}>
+              <Select
+                allowClear
+                showSearch
+                optionFilterProp="label"
+                options={hostList.map((item: any) => ({
+                  value: item.id,
+                  label: `${item.hostname} (${item.private_ip || item.ip_address || '-'})`,
+                }))}
+              />
+            </Form.Item>
+          )}
+          {selectedTemplateTargetType === 'jvm_runtime' && (
+            <Form.Item name="jvm_instance" label={t('diagnosis.jvmInstance')}><Input /></Form.Item>
           )}
           <Form.Item name="service" label={t('diagnosis.service')}>
             <Select options={serviceList.map(item => ({ value: item.id, label: `${item.name} (${item.code})` }))} />
@@ -1679,7 +1816,7 @@ const DiagnosisCenter: React.FC = () => {
             </Form.Item>
           </Space>
           <Form.Item name="category" label={t('diagnosis.category')} rules={[{ required: true }]}>
-            <Select options={[{ value: 'ci_cd', label: t('diagnosis.categories.ci_cd') }]} />
+            <Select options={['ci_cd', 'service', 'kubernetes', 'host', 'jvm'].map(value => ({ value, label: t(`diagnosis.categories.${value}`) }))} />
           </Form.Item>
           <Form.Item name="description" label={t('common.description')}><TextArea rows={2} /></Form.Item>
           <Form.Item name="target_type" label={t('diagnosis.targetType')} rules={[{ required: true }]}>
@@ -1688,6 +1825,10 @@ const DiagnosisCenter: React.FC = () => {
                 { value: 'pipeline_run', label: t('diagnosis.targetTypes.pipeline_run') },
                 { value: 'ansible_execution', label: t('diagnosis.targetTypes.ansible_execution') },
                 { value: 'service_regression', label: t('diagnosis.targetTypes.service_regression') },
+                { value: 'alert_service', label: t('diagnosis.targetTypes.alert_service') },
+                { value: 'k8s_workload', label: t('diagnosis.targetTypes.k8s_workload') },
+                { value: 'host_runtime', label: t('diagnosis.targetTypes.host_runtime') },
+                { value: 'jvm_runtime', label: t('diagnosis.targetTypes.jvm_runtime') },
               ]}
             />
           </Form.Item>
@@ -1795,6 +1936,48 @@ const DiagnosisCenter: React.FC = () => {
         )}
       </Modal>
 
+      <Modal
+        title={`${versionedTemplate?.name || ''} - ${t('diagnosis.versions')}`}
+        open={templateVersionsOpen}
+        onCancel={() => setTemplateVersionsOpen(false)}
+        footer={null}
+        width={760}
+      >
+        <Table
+          rowKey="id"
+          size="small"
+          pagination={false}
+          dataSource={templateVersions}
+          columns={[
+            { title: t('diagnosis.version'), dataIndex: 'version', render: (value: number) => `v${value}` },
+            { title: t('common.description'), dataIndex: 'change_summary', render: (value: string) => value || '-' },
+            { title: t('diagnosis.createdBy'), dataIndex: 'created_by_username', render: (value: string) => value || '-' },
+            { title: t('diagnosis.time'), dataIndex: 'create_time', render: (value: string) => dayjs(value).format('YYYY-MM-DD HH:mm:ss') },
+            {
+              title: t('common.action'),
+              render: (_: unknown, record: DiagnosisTemplateVersion) => (
+                <Popconfirm
+                  title={t('diagnosis.confirmRollback', { version: record.version })}
+                  disabled={!versionedTemplate || versionedTemplate.is_builtin || record.version === versionedTemplate.version}
+                  onConfirm={() => versionedTemplate && rollbackDiagnosisTemplate(versionedTemplate.id, record.version).then(() => {
+                    message.success(t('diagnosis.messages.rollbackSuccess'));
+                    queryClient.invalidateQueries({ queryKey: ['sre-diagnosis-templates'] });
+                    setTemplateVersionsOpen(false);
+                  })}
+                >
+                  <Button
+                    size="small"
+                    disabled={!versionedTemplate || versionedTemplate.is_builtin || record.version === versionedTemplate.version}
+                  >
+                    {t('diagnosis.rollback')}
+                  </Button>
+                </Popconfirm>
+              ),
+            },
+          ]}
+        />
+      </Modal>
+
       <DiagnosisRunDetailDrawer
         run={selectedRun}
         onClose={() => setSelectedRunId(null)}
@@ -1809,6 +1992,7 @@ const DiagnosisCenter: React.FC = () => {
         logClusters={selectedRun ? renderLogClusters(selectedRun) : null}
         logHighlights={selectedRun ? renderLogHighlights(selectedRun) : null}
         evidenceIndex={selectedRun ? renderEvidenceIndex(selectedRun) : null}
+        compareRuns={runs?.data || []}
       />
     </div>
   );

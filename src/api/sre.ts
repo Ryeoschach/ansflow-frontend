@@ -137,6 +137,9 @@ export interface DiagnosisRun {
   celery_task_id?: string | null;
   attempt_count?: number;
   heartbeat_at?: string | null;
+  evidence_coverage?: number;
+  confidence_score?: number;
+  quality_score?: number;
   started_at?: string | null;
   finished_at?: string | null;
   create_time: string;
@@ -151,12 +154,79 @@ export interface DiagnosisTemplate {
   code: string;
   name: string;
   description?: string | null;
-  category: 'ci_cd';
+  category: 'ci_cd' | 'service' | 'kubernetes' | 'host' | 'jvm';
   content: Record<string, any>;
   is_builtin: boolean;
   is_active: boolean;
+  version: number;
+  lifecycle_status: 'draft' | 'published' | 'deprecated';
   create_time: string;
   update_time: string;
+}
+
+export interface DiagnosisTemplateVersion {
+  id: number;
+  template: number;
+  version: number;
+  name: string;
+  description?: string | null;
+  category: DiagnosisTemplate['category'];
+  content: Record<string, any>;
+  change_summary?: string | null;
+  created_by_username?: string;
+  create_time: string;
+}
+
+export interface DiagnosisFeedback {
+  id: number;
+  run: number;
+  user: number;
+  user_username?: string;
+  accuracy_rating: number;
+  evidence_rating: number;
+  actionability_rating: number;
+  root_cause_correct?: boolean | null;
+  recommendation_adopted?: boolean | null;
+  corrected_root_cause?: string | null;
+  comment?: string | null;
+}
+
+export interface DiagnosisReplayResult {
+  id: number;
+  case: number;
+  template_version?: number | null;
+  status: 'pending' | 'running' | 'passed' | 'failed';
+  score: number;
+  passed: boolean;
+  evaluation?: Record<string, any>;
+  error_message?: string | null;
+  create_time: string;
+}
+
+export interface DiagnosisReplayCase {
+  id: number;
+  project: number;
+  project_name?: string;
+  name: string;
+  description?: string | null;
+  template?: number | null;
+  template_name?: string;
+  source_run?: number | null;
+  source_run_title?: string;
+  fixture_context?: Record<string, any>;
+  expected?: Record<string, any>;
+  is_active: boolean;
+  latest_result?: DiagnosisReplayResult | null;
+  create_time: string;
+}
+
+export interface DiagnosisQualitySummary {
+  generated_at: string;
+  runs: Record<string, number | null>;
+  feedback: Record<string, number | null>;
+  replay: Record<string, number | null>;
+  trend?: Array<Record<string, any>>;
+  templates?: Array<Record<string, any>>;
 }
 
 export interface AlertRuleTemplate {
@@ -283,6 +353,18 @@ export const previewDiagnosisRun = (data: Partial<DiagnosisRun> & Record<string,
 export const retryDiagnosisRun = (id: number): Promise<any> =>
   request.post(`/sre/diagnosis-runs/${id}/retry/`);
 
+export const getDiagnosisFeedback = (id: number): Promise<DiagnosisFeedback | null> =>
+  request.get(`/sre/diagnosis-runs/${id}/feedback/`) as any;
+
+export const saveDiagnosisFeedback = (id: number, data: Partial<DiagnosisFeedback>): Promise<DiagnosisFeedback> =>
+  request.post(`/sre/diagnosis-runs/${id}/feedback/`, data) as any;
+
+export const compareDiagnosisRuns = (id: number, other_run_id: number): Promise<any> =>
+  request.post(`/sre/diagnosis-runs/${id}/compare/`, { other_run_id }) as any;
+
+export const createReplayCaseFromRun = (id: number, data?: Record<string, any>): Promise<DiagnosisReplayCase> =>
+  request.post(`/sre/diagnosis-runs/${id}/create-replay-case/`, data || {}) as any;
+
 export const getDiagnosisTemplates = (params?: any): Promise<PaginatedResponse<DiagnosisTemplate>> =>
   request.get('/sre/diagnosis-templates/', { params }) as any;
 
@@ -297,6 +379,27 @@ export const deleteDiagnosisTemplate = (id: number): Promise<any> =>
 
 export const copyDiagnosisTemplate = (id: number, data: Partial<DiagnosisTemplate>): Promise<DiagnosisTemplate> =>
   request.post(`/sre/diagnosis-templates/${id}/copy/`, data) as any;
+
+export const getDiagnosisTemplateVersions = (id: number): Promise<DiagnosisTemplateVersion[]> =>
+  request.get(`/sre/diagnosis-templates/${id}/versions/`) as any;
+
+export const rollbackDiagnosisTemplate = (id: number, version: number): Promise<DiagnosisTemplate> =>
+  request.post(`/sre/diagnosis-templates/${id}/rollback/`, { version }) as any;
+
+export const getDiagnosisReplayCases = (params?: any): Promise<PaginatedResponse<DiagnosisReplayCase>> =>
+  request.get('/sre/diagnosis-replay-cases/', { params }) as any;
+
+export const createDiagnosisReplayCase = (data: Partial<DiagnosisReplayCase>): Promise<DiagnosisReplayCase> =>
+  request.post('/sre/diagnosis-replay-cases/', data) as any;
+
+export const runDiagnosisReplayCase = (id: number): Promise<DiagnosisReplayResult> =>
+  request.post(`/sre/diagnosis-replay-cases/${id}/run/`) as any;
+
+export const deleteDiagnosisReplayCase = (id: number): Promise<any> =>
+  request.delete(`/sre/diagnosis-replay-cases/${id}/`);
+
+export const getDiagnosisQuality = (params?: any): Promise<DiagnosisQualitySummary> =>
+  request.get('/sre/diagnosis-quality/', { params }) as any;
 
 export const getAlertRuleTemplates = (): Promise<AlertRuleTemplate[]> =>
   request.get('/sre/alert-rule-templates/') as any;

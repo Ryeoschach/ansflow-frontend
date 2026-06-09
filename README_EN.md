@@ -12,7 +12,7 @@ English | [中文说明](./README.md)
 AnsFlow Frontend is the React application for the AnsFlow operations platform. It provides the workspace UI for pipelines, hosts, credentials, Kubernetes/GitOps, SRE alerts, AI assistants, approvals, reports, and system settings.
 
 - Product site and full documentation: [https://ansflow.cyfee.com](https://ansflow.cyfee.com)
-- SRE Diagnosis Center provides observability datasource configuration, service mapping, log/metric query preview, template-based diagnosis, multi-source context views, and evidence index views.
+- SRE Diagnosis Center provides versioned templates, runtime targets, multi-source context, incident timelines, evidence correlation, feedback, historical comparison, replay, and a quality dashboard.
 
 ### GitHub Repositories
 - Portal Web: [Ryeoschach/ansflow-web](https://github.com/Ryeoschach/ansflow-web)
@@ -49,7 +49,7 @@ Use "Preview Logs" and "Preview Metrics" in the Service Mapping tab to verify da
 
 The Diagnosis Templates tab supports listing, creating, editing, copying, enabling, and disabling templates. The template form configures target type, context collection switches, multiple log sources, multiple metric sources, log keywords, AI prompt template, and structured report requirements.
 
-Diagnosis details show CI/CD context, log source context, metric source context, structured AI report, Markdown conclusion, collection summary, evidence index, and raw context JSON. The collection summary also shows the AI prompt context budget, before/after character counts, and trimming statistics by category. Failed pipeline nodes can start SRE template diagnosis directly or navigate to a prefilled diagnosis modal.
+Diagnosis details show quality metrics, incident timeline, correlation candidates, runtime and CI/CD context, source-level logs and metrics, AI reports, and evidence. Users can submit feedback, compare historical runs, and save a redacted replay case. Dedicated Quality and Replay tabs track template effectiveness over time. Failed pipeline nodes can still start a diagnosis directly or open a prefilled modal.
 
 ## License
 

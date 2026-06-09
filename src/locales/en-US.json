@@ -2131,6 +2131,8 @@
       "services": "Service Mapping",
       "datasources": "Observability Data Sources",
       "templates": "Diagnosis Templates",
+      "quality": "Quality Dashboard",
+      "replay": "Fault Replay",
       "rules": "Rule Templates"
     },
     "status": {
@@ -2146,7 +2148,10 @@
       "serviceMatched": "Matched service automatically: {{service}}",
       "serviceMatchFailed": "Service auto-match failed",
       "previewFailed": "Preview query failed",
-      "evidenceNotFound": "Evidence not found: {{ref}}"
+      "evidenceNotFound": "Evidence not found: {{ref}}",
+      "replayCreated": "Saved as a redacted replay case",
+      "replaySubmitted": "Replay submitted",
+      "rollbackSuccess": "Template rolled back as a new version"
     },
     "create": "Create Diagnosis",
     "previewCollection": "Preview Collection Plan",
@@ -2232,6 +2237,68 @@
     "pipelineRunId": "Pipeline Run ID",
     "pipelineNodeRunId": "Pipeline Node Run ID",
     "ansibleExecutionId": "Ansible Execution ID",
+    "k8sCluster": "Kubernetes Cluster",
+    "workloadKind": "Workload Kind",
+    "workloadName": "Workload Name",
+    "jvmInstance": "JVM Instance",
+    "runtimeContext": "Runtime Context",
+    "nodes": "Ready Nodes",
+    "memory": "Memory",
+    "restarts": "Restarts",
+    "reason": "Reason",
+    "timeline": "Incident Timeline",
+    "correlation": "Cross-source Correlation",
+    "sourceRun": "Source Run",
+    "version": "Version",
+    "versions": "Version History",
+    "lifecycle": "Lifecycle",
+    "createdBy": "Created By",
+    "rollback": "Rollback",
+    "confirmRollback": "Roll back to v{{version}}? A new current version will be created.",
+    "lifecycleStatus": {
+      "draft": "Draft",
+      "published": "Published",
+      "deprecated": "Deprecated"
+    },
+    "quality": {
+      "title": "Diagnosis Quality",
+      "score": "Quality",
+      "confidence": "Confidence",
+      "evidenceCoverage": "Evidence Coverage",
+      "totalRuns": "Total Runs",
+      "averageScore": "Average Quality",
+      "feedbackCount": "Feedback",
+      "actionAdoption": "Action Adoption",
+      "replayCases": "Replay Cases",
+      "replayEvaluated": "Evaluated Replays",
+      "templatePerformance": "Template Performance",
+      "successRate": "Success Rate"
+    },
+    "feedback": {
+      "title": "Diagnosis Feedback",
+      "accuracy": "Accuracy",
+      "evidence": "Evidence Quality",
+      "actionability": "Actionability",
+      "rootCauseCorrect": "Root Cause Correct",
+      "recommendationAdopted": "Recommendation Adopted",
+      "correctedRootCause": "Corrected Root Cause",
+      "comment": "Comment",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "compare": {
+      "title": "Compare Diagnoses",
+      "selectRun": "Select a historical diagnosis",
+      "qualityDelta": "Quality Delta",
+      "confidenceDelta": "Confidence Delta",
+      "addedEvidence": "Added Evidence",
+      "removedEvidence": "Removed Evidence"
+    },
+    "replay": {
+      "create": "Save as Replay",
+      "run": "Run Replay",
+      "latestResult": "Latest Result"
+    },
     "pipeline": "Pipeline",
     "triggerType": "Trigger Type",
     "nodeName": "Node Name",
@@ -2259,6 +2326,10 @@
       "pipeline_run": "Pipeline Run",
       "ansible_execution": "Ansible Execution",
       "service_regression": "Post-release Service Regression"
+      ,"alert_service": "Service Alert Diagnosis"
+      ,"k8s_workload": "Kubernetes Workload"
+      ,"host_runtime": "Host Runtime Failure"
+      ,"jvm_runtime": "JVM Runtime Failure"
     },
     "collectionOptions": {
       "pipeline_run": "Pipeline",
@@ -2270,13 +2341,21 @@
       "metrics": "Metrics",
       "ansible_execution": "Ansible Execution",
       "ansible_task_logs": "TaskLog"
+      ,"runtime_assets": "Runtime Assets"
+      ,"k8s_runtime": "Kubernetes Runtime"
+      ,"host_runtime": "Host Runtime"
+      ,"jvm_runtime": "JVM Runtime"
     },
     "scopes": {
       "global": "Global",
       "project": "Project"
     },
     "categories": {
-      "ci_cd": "CI/CD Release Diagnosis"
+      "ci_cd": "CI/CD Release Diagnosis",
+      "service": "Service Runtime Diagnosis",
+      "kubernetes": "Kubernetes Diagnosis",
+      "host": "Host Runtime Diagnosis",
+      "jvm": "JVM Application Diagnosis"
     },
     "category": "Category",
     "renderRule": "Render Rule",
@@ -2346,7 +2425,8 @@
       "logs": "Logs",
       "log_highlights": "Log Highlights",
       "ansflow_events": "AnsFlow Events",
-      "ci_cd_context": "CI/CD Context"
+      "ci_cd_context": "CI/CD Context",
+      "runtime_context": "Runtime Assets"
     },
     "collectionStatus": {
       "success": "Success",
