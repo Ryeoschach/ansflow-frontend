@@ -664,6 +664,7 @@ const DiagnosisCenter: React.FC = () => {
   const renderCollectionSummary = (run: DiagnosisRun) => {
     const summary = run.context_snapshot?.collection_summary || {};
     const warnings = run.context_snapshot?.warnings || [];
+    const promptContextSummary = summary.prompt_context;
     const rows = ['metrics', 'logs', 'log_highlights', 'ansflow_events', 'ci_cd_context'].map(key => {
       const item = summary[key] || {};
       return {
@@ -700,6 +701,42 @@ const DiagnosisCenter: React.FC = () => {
           ] as any}
           dataSource={rows}
         />
+        {promptContextSummary && (
+          <Alert
+            type={promptContextSummary.truncated ? 'warning' : 'info'}
+            showIcon
+            message={promptContextSummary.compressed
+              ? t('diagnosis.promptContextCompressed')
+              : t('diagnosis.promptContextPrepared')}
+            description={(
+              <Space direction="vertical" className="w-full">
+                <Descriptions size="small" column={{ xs: 1, sm: 2, md: 4 }}>
+                  <Descriptions.Item label={t('diagnosis.promptBudget')}>
+                    {promptContextSummary.budget_chars ?? '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('diagnosis.originalChars')}>
+                    {promptContextSummary.original_chars ?? '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('diagnosis.finalChars')}>
+                    {promptContextSummary.final_chars ?? '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t('diagnosis.removedItems')}>
+                    {promptContextSummary.removed_count ?? 0}
+                  </Descriptions.Item>
+                </Descriptions>
+                {Object.keys(promptContextSummary.removed || {}).length > 0 && (
+                  <Space size={[4, 4]} wrap>
+                    {Object.entries(promptContextSummary.removed).map(([key, value]) => (
+                      <Tag key={key}>
+                        {t(`diagnosis.promptRemovalTypes.${key}`, { defaultValue: key })}: {String(value)}
+                      </Tag>
+                    ))}
+                  </Space>
+                )}
+              </Space>
+            )}
+          />
+        )}
         {warnings.length > 0 && (
           <Alert
             type="warning"

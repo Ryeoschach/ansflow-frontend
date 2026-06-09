@@ -49,7 +49,7 @@ Use "Preview Logs" and "Preview Metrics" in the Service Mapping tab to verify da
 
 The Diagnosis Templates tab supports listing, creating, editing, copying, enabling, and disabling templates. The template form configures target type, context collection switches, multiple log sources, multiple metric sources, log keywords, AI prompt template, and structured report requirements.
 
-Diagnosis details show CI/CD context, log source context, metric source context, structured AI report, Markdown conclusion, collection summary, evidence index, and raw context JSON. Failed pipeline nodes can start SRE template diagnosis directly or navigate to a prefilled diagnosis modal.
+Diagnosis details show CI/CD context, log source context, metric source context, structured AI report, Markdown conclusion, collection summary, evidence index, and raw context JSON. The collection summary also shows the AI prompt context budget, before/after character counts, and trimming statistics by category. Failed pipeline nodes can start SRE template diagnosis directly or navigate to a prefilled diagnosis modal.
 
 ## License
 
