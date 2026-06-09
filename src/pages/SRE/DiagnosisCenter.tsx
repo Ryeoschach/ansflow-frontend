@@ -12,8 +12,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 import {
   AlertRuleTemplate,
@@ -29,6 +27,7 @@ import {
   DiagnosisTemplate,
   getDiagnosisTemplates,
   getAlertRuleTemplates,
+  getDiagnosisRun,
   getDiagnosisRuns,
   getObservabilityDataSourceCapabilities,
   getObservabilityDataSources,
@@ -48,6 +47,7 @@ import {
 } from '@/api/sre';
 import { getProjects } from '@/api/rbac';
 import useAppStore from '@/store/useAppStore';
+import DiagnosisRunDetailDrawer from './components/DiagnosisRunDetailDrawer';
 
 const { Text, Title } = Typography;
 const { TextArea } = Input;
@@ -179,7 +179,7 @@ const DiagnosisCenter: React.FC = () => {
   const [editingService, setEditingService] = useState<ObservedService | null>(null);
   const [editingDatasource, setEditingDatasource] = useState<ObservabilityDataSource | null>(null);
   const [editingDiagnosisTemplate, setEditingDiagnosisTemplate] = useState<DiagnosisTemplate | null>(null);
-  const [selectedRun, setSelectedRun] = useState<DiagnosisRun | null>(null);
+  const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<AlertRuleTemplate | null>(null);
   const [renderedRule, setRenderedRule] = useState<any>(null);
   const [previewResult, setPreviewResult] = useState<any>(null);
@@ -209,7 +209,21 @@ const DiagnosisCenter: React.FC = () => {
   const { data: runs, isLoading: runsLoading } = useQuery({
     queryKey: ['sre-diagnosis-runs'],
     queryFn: () => getDiagnosisRuns({ page_size: 50 }),
-    refetchInterval: 5000,
+    refetchInterval: query => (
+      (query.state.data?.data || []).some(item => item.status === 'pending' || item.status === 'running')
+        ? 5000
+        : false
+    ),
+  });
+  const { data: selectedRun } = useQuery({
+    queryKey: ['sre-diagnosis-run', selectedRunId],
+    queryFn: () => getDiagnosisRun(selectedRunId as number),
+    enabled: selectedRunId !== null,
+    refetchInterval: query => (
+      query.state.data?.status === 'pending' || query.state.data?.status === 'running'
+        ? 3000
+        : false
+    ),
   });
   const { data: services, isLoading: servicesLoading } = useQuery({
     queryKey: ['sre-observed-services'],
@@ -288,11 +302,12 @@ const DiagnosisCenter: React.FC = () => {
   useEffect(() => {
     const runId = searchParams.get('run_id');
     if (!runId) return;
-    const run = (runs?.data || []).find(item => String(item.id) === String(runId));
-    if (!run) return;
-    setSelectedRun(run);
+    const parsedRunId = Number(runId);
+    if (Number.isInteger(parsedRunId) && parsedRunId > 0) {
+      setSelectedRunId(parsedRunId);
+    }
     setSearchParams({});
-  }, [searchParams, setSearchParams, runs?.data]);
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     const templateCode = searchParams.get('template_code');
@@ -529,7 +544,7 @@ const DiagnosisCenter: React.FC = () => {
   };
 
   const runColumns = [
-    { title: t('diagnosis.title'), dataIndex: 'title', render: (text: string, record: DiagnosisRun) => <Button type="link" onClick={() => setSelectedRun(record)}>{text}</Button> },
+    { title: t('diagnosis.title'), dataIndex: 'title', render: (text: string, record: DiagnosisRun) => <Button type="link" onClick={() => setSelectedRunId(record.id)}>{text}</Button> },
     { title: t('diagnosis.diagnosisTemplate'), dataIndex: 'template_name', render: (text: string) => text || '-' },
     { title: t('diagnosis.service'), dataIndex: 'service_name', render: (text: string) => text || '-' },
     { title: t('diagnosis.time'), dataIndex: 'diagnosis_time', render: (value: string) => dayjs(value).format('YYYY-MM-DD HH:mm:ss') },
@@ -539,8 +554,15 @@ const DiagnosisCenter: React.FC = () => {
       title: t('common.action'),
       render: (_: any, record: DiagnosisRun) => (
         <Space>
-          <Button size="small" icon={<FileSearchOutlined />} onClick={() => setSelectedRun(record)}>{t('common.detail')}</Button>
-          <Button size="small" icon={<ReloadOutlined />} onClick={() => retryDiagnosisRun(record.id).then(() => queryClient.invalidateQueries({ queryKey: ['sre-diagnosis-runs'] }))}>{t('diagnosis.retry')}</Button>
+          <Button size="small" icon={<FileSearchOutlined />} onClick={() => setSelectedRunId(record.id)}>{t('common.detail')}</Button>
+          <Button
+            size="small"
+            icon={<ReloadOutlined />}
+            disabled={record.status === 'pending' || record.status === 'running'}
+            onClick={() => retryDiagnosisRun(record.id).then(() => queryClient.invalidateQueries({ queryKey: ['sre-diagnosis-runs'] }))}
+          >
+            {t('diagnosis.retry')}
+          </Button>
         </Space>
       ),
     },
@@ -863,6 +885,29 @@ const DiagnosisCenter: React.FC = () => {
       />
     );
   };
+  const renderLogClusters = (run: DiagnosisRun) => {
+    const clusters = run.context_snapshot?.log_clusters || [];
+    if (!clusters.length) {
+      return null;
+    }
+    return (
+      <Card title={t('diagnosis.logClusters')}>
+        <Table
+          rowKey="fingerprint"
+          size="small"
+          pagination={false}
+          locale={{ emptyText: t('common.noData') }}
+          columns={[
+            { title: t('diagnosis.occurrences'), dataIndex: 'count', width: 100 },
+            { title: t('diagnosis.level'), dataIndex: 'levels', width: 150, render: (items: string[]) => (items || []).map(item => <Tag key={item}>{item}</Tag>) },
+            { title: t('diagnosis.datasourceName'), dataIndex: 'sources', width: 180, render: (items: string[]) => (items || []).join(', ') || '-' },
+            { title: t('diagnosis.logMessage'), dataIndex: 'sample', render: (value: string) => <Text>{value || '-'}</Text> },
+          ] as any}
+          dataSource={clusters}
+        />
+      </Card>
+    );
+  };
   const renderLogSourceContexts = (run: DiagnosisRun) => {
     const logContexts = run.context_snapshot?.log_contexts || [];
     if (!logContexts.length) {
@@ -943,7 +988,9 @@ const DiagnosisCenter: React.FC = () => {
                   { title: t('diagnosis.ref'), dataIndex: 'evidence_id', width: 190, render: (value: string) => value ? renderRefTags([value]) : '-' },
                   { title: t('diagnosis.metricName'), dataIndex: 'name', width: 160, render: (value: string) => value || '-' },
                   { title: t('diagnosis.query'), dataIndex: 'query', render: (value: string) => <Text>{value || '-'}</Text> },
-                  { title: t('diagnosis.resultCount'), dataIndex: 'result', width: 120, render: (items: any[]) => Array.isArray(items) ? items.length : 0 },
+                  { title: t('diagnosis.sampleCount'), dataIndex: ['summary', 'sample_count'], width: 100, render: (value: number) => value || 0 },
+                  { title: t('diagnosis.latestValue'), dataIndex: ['summary', 'latest'], width: 120, render: (value: number) => value ?? '-' },
+                  { title: t('diagnosis.changePercent'), dataIndex: ['summary', 'change_percent'], width: 110, render: (value: number) => value === null || value === undefined ? '-' : `${value}%` },
                 ] as any}
                 dataSource={metrics}
               />
@@ -1748,58 +1795,21 @@ const DiagnosisCenter: React.FC = () => {
         )}
       </Modal>
 
-      <Drawer
-        title={selectedRun?.title}
-        open={!!selectedRun}
-        width={860}
-        onClose={() => setSelectedRun(null)}
-      >
-        {selectedRun && (
-          <Space direction="vertical" className="w-full">
-            <Descriptions bordered size="small" column={1}>
-              <Descriptions.Item label={t('diagnosis.status.label')}><Tag color={statusMap[selectedRun.status]?.color}>{statusMap[selectedRun.status]?.text}</Tag></Descriptions.Item>
-              <Descriptions.Item label={t('diagnosis.diagnosisTemplate')}>{selectedRun.template_name || selectedRun.context_snapshot?.template?.name || '-'}</Descriptions.Item>
-              <Descriptions.Item label={t('diagnosis.templateSnapshot')}>{selectedRun.context_snapshot?.template?.code || selectedRun.query_params?.template_snapshot?.code || '-'}</Descriptions.Item>
-              <Descriptions.Item label={t('diagnosis.service')}>{selectedRun.service_name || '-'}</Descriptions.Item>
-              <Descriptions.Item label={t('diagnosis.time')}>{dayjs(selectedRun.diagnosis_time).format('YYYY-MM-DD HH:mm:ss')}</Descriptions.Item>
-              <Descriptions.Item label={t('diagnosis.error')}>{selectedRun.error_message || '-'}</Descriptions.Item>
-            </Descriptions>
-            <Card title={t('diagnosis.structuredReport')}>
-              {renderStructuredReport(selectedRun)}
-            </Card>
-            <Card title={t('diagnosis.aiResult')}>
-              {selectedRun.ai_result ? (
-                <>
-                  {renderAiEvidenceRefs(selectedRun)}
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedRun.ai_result}</ReactMarkdown>
-                </>
-              ) : <Text type="secondary">{t('common.noData')}</Text>}
-            </Card>
-            <Card title={t('diagnosis.collectionPlanComparison')}>
-              {renderCollectionPlanComparison(selectedRun)}
-            </Card>
-            <Card title={t('diagnosis.collectionSummary')}>
-              {renderCollectionSummary(selectedRun)}
-            </Card>
-            {renderCiCdContext(selectedRun) && (
-              <Card title={t('diagnosis.ciCdContext')}>
-                {renderCiCdContext(selectedRun)}
-              </Card>
-            )}
-            {renderMetricSourceContexts(selectedRun)}
-            {renderLogSourceContexts(selectedRun)}
-            <Card title={t('diagnosis.logHighlights')}>
-              {renderLogHighlights(selectedRun)}
-            </Card>
-            <Card title={t('diagnosis.evidenceIndex')}>
-              {renderEvidenceIndex(selectedRun)}
-            </Card>
-            <Card title={t('diagnosis.contextSnapshot')}>
-              <TextArea rows={12} readOnly value={JSON.stringify(selectedRun.context_snapshot || {}, null, 2)} />
-            </Card>
-          </Space>
-        )}
-      </Drawer>
+      <DiagnosisRunDetailDrawer
+        run={selectedRun}
+        onClose={() => setSelectedRunId(null)}
+        statusMap={statusMap}
+        structuredReport={selectedRun ? renderStructuredReport(selectedRun) : null}
+        aiEvidenceRefs={selectedRun ? renderAiEvidenceRefs(selectedRun) : null}
+        collectionPlanComparison={selectedRun ? renderCollectionPlanComparison(selectedRun) : null}
+        collectionSummary={selectedRun ? renderCollectionSummary(selectedRun) : null}
+        ciCdContext={selectedRun ? renderCiCdContext(selectedRun) : null}
+        metricSourceContexts={selectedRun ? renderMetricSourceContexts(selectedRun) : null}
+        logSourceContexts={selectedRun ? renderLogSourceContexts(selectedRun) : null}
+        logClusters={selectedRun ? renderLogClusters(selectedRun) : null}
+        logHighlights={selectedRun ? renderLogHighlights(selectedRun) : null}
+        evidenceIndex={selectedRun ? renderEvidenceIndex(selectedRun) : null}
+      />
     </div>
   );
 };

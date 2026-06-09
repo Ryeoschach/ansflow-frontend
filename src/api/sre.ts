@@ -129,11 +129,16 @@ export interface DiagnosisRun {
   status: 'pending' | 'running' | 'success' | 'failed';
   diagnosis_time: string;
   window_minutes: number;
-  query_params: Record<string, any>;
-  context_snapshot: Record<string, any>;
+  query_params?: Record<string, any>;
+  context_snapshot?: Record<string, any>;
   ai_result?: string | null;
   error_message?: string | null;
   created_by_username?: string;
+  celery_task_id?: string | null;
+  attempt_count?: number;
+  heartbeat_at?: string | null;
+  started_at?: string | null;
+  finished_at?: string | null;
   create_time: string;
   update_time: string;
 }
@@ -265,6 +270,9 @@ export const previewObservedServiceMetrics = (id: number, data?: Record<string, 
 
 export const getDiagnosisRuns = (params?: any): Promise<PaginatedResponse<DiagnosisRun>> =>
   request.get('/sre/diagnosis-runs/', { params }) as any;
+
+export const getDiagnosisRun = (id: number): Promise<DiagnosisRun> =>
+  request.get(`/sre/diagnosis-runs/${id}/`) as any;
 
 export const createDiagnosisRun = (data: Partial<DiagnosisRun>): Promise<DiagnosisRun> =>
   request.post('/sre/diagnosis-runs/', data) as any;
