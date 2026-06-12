@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
+import useAppStore from '../../../store/useAppStore';
+import { buildWebSocketUrl } from '../../../utils/websocket';
 
 interface K8sStreamingLogsProps {
   clusterId: number;
@@ -21,9 +23,10 @@ const K8sStreamingLogs: React.FC<K8sStreamingLogsProps> = ({
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const { token, currentProject } = useAppStore();
 
   useEffect(() => {
-    if (!terminalRef.current) return;
+    if (!terminalRef.current || !token) return;
 
     const term = new Terminal({
       disableStdin: true,
@@ -43,9 +46,17 @@ const K8sStreamingLogs: React.FC<K8sStreamingLogsProps> = ({
 
     xtermRef.current = term;
 
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const host = window.location.host === 'localhost:5173' ? 'localhost:8000' : window.location.host;
-    const wsUrl = `${protocol}://${host}/ws/k8s/${clusterId}/logs/${namespace}/${podName}/?tail_lines=${tailLines}${container ? `&container=${container}` : ''}`;
+    const wsUrl = buildWebSocketUrl(
+      `/ws/k8s/${clusterId}/logs/${namespace}/${podName}/`,
+      {
+        token,
+        project_id: currentProject?.id,
+        tail_lines: tailLines,
+        container,
+      },
+      host,
+    );
     
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
@@ -72,7 +83,7 @@ const K8sStreamingLogs: React.FC<K8sStreamingLogsProps> = ({
       ws.close();
       term.dispose();
     };
-  }, [clusterId, namespace, podName, container, tailLines]);
+  }, [clusterId, namespace, podName, container, tailLines, token, currentProject?.id]);
 
   return (
     <div 

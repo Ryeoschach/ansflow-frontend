@@ -34,6 +34,7 @@ import useWebSocket from 'react-use-websocket';
 import { useTranslation } from 'react-i18next';
 import useLogStore from '../../store/useLogStore';
 import useAppStore from '../../store/useAppStore';
+import { buildWebSocketUrl } from '../../utils/websocket';
 
 import AnsibleNode from './nodes/AnsibleNode';
 import K8sNode from './nodes/K8sNode';
@@ -115,7 +116,7 @@ const ViewerCore = () => {
   const queryClient = useQueryClient();
   const { message, modal } = App.useApp();
   const logRef = useRef<HTMLPreElement>(null);
-  const { token: authToken, hasPermission } = useAppStore();
+  const { token: authToken, currentProject, hasPermission } = useAppStore();
 
   // Zustand 持久化：日志查看偏好
   const { autoScroll, setAutoScroll, logFontSize, setLogFontSize } = useLogStore();
@@ -129,9 +130,12 @@ const ViewerCore = () => {
   /**
    * @section WebSocket 实时链路
    */
-  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-  // 生产环境通常使用当前 Host 的子协议
-  const wsUrl = `${protocol}://${window.location.host}/ws/pipeline/${runId}/`;
+  const wsUrl = authToken && runId
+    ? buildWebSocketUrl(`/ws/pipeline/${runId}/`, {
+        token: authToken,
+        project_id: currentProject?.id,
+      })
+    : null;
 
   const { lastJsonMessage, readyState } = useWebSocket(wsUrl, {
     shouldReconnect: () => true,

@@ -39,6 +39,7 @@ import { getPipelines, getPipelineRunDetail } from '@/api/pipeline';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import useWebSocket from 'react-use-websocket';
+import { buildWebSocketUrl } from '../../utils/websocket';
 
 const { Text, Title } = Typography;
 const { Search } = Input;
@@ -50,7 +51,7 @@ const AlertCenter: React.FC = () => {
     const queryClient = useQueryClient();
     const { message, modal } = App.useApp();
     const setAiDiagnosis = useAppStore(state => state.setAiDiagnosis);
-    const { hasPermission, currentProject } = useAppStore();
+    const { token: authToken, hasPermission, currentProject } = useAppStore();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('alerts');
 
@@ -95,7 +96,12 @@ const AlertCenter: React.FC = () => {
         refetchInterval: 3000,
     });
 
-    const wsUrl = (selectedAlert?.latest_run_id && detailVisible) ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/pipeline/${selectedAlert.latest_run_id}/` : null;
+    const wsUrl = selectedAlert?.latest_run_id && detailVisible && authToken
+        ? buildWebSocketUrl(`/ws/pipeline/${selectedAlert.latest_run_id}/`, {
+            token: authToken,
+            project_id: currentProject?.id,
+        })
+        : null;
     const { lastJsonMessage } = useWebSocket(wsUrl, {
         shouldReconnect: () => true,
     });

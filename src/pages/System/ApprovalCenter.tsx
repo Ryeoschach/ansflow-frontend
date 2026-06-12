@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Table, Typography, Tag, Space, Button, theme, Select, Drawer, Descriptions, Badge, Modal, Input, App, Tooltip, Tabs, Timeline, Form, Switch, Popconfirm, Avatar, Alert, Divider } from 'antd';
+import { Card, Table, Typography, Tag, Space, Button, theme, Select, Drawer, Descriptions, Badge, Modal, Input, InputNumber, App, Tooltip, Tabs, Timeline, Form, Switch, Popconfirm, Avatar, Alert, Divider } from 'antd';
 const { Text } = Typography;
 import { CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, EyeOutlined, PlusOutlined, DeleteOutlined, EditOutlined, SafetyCertificateOutlined, UserOutlined, ClockCircleOutlined, SendOutlined, ThunderboltOutlined, ArrowRightOutlined, RobotOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -455,6 +455,10 @@ const ApprovalCenter: React.FC = () => {
                                             <Button type="primary" icon={<PlusOutlined />} onClick={() => {
                                                 setEditingPolicy(null);
                                                 policyForm.resetFields();
+                                                policyForm.setFieldsValue({
+                                                    approval_timeout_minutes: 60,
+                                                    is_active: true,
+                                                });
                                                 setIsPolicyModalOpen(true);
                                             }}>{t('approval.addPolicy')}</Button>
                                         )}
@@ -515,6 +519,15 @@ const ApprovalCenter: React.FC = () => {
                     </Form.Item>
                     <Form.Item name="environment" label={t('approval.environment')}>
                         <Input placeholder={t('approval.placeholderEnvironment')} />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="approval_timeout_minutes"
+                        label={t('approval.approvalTimeout')}
+                        extra={t('approval.approvalTimeoutTip')}
+                        rules={[{ required: true }]}
+                    >
+                        <InputNumber min={1} max={10080} precision={0} style={{ width: '100%' }} />
                     </Form.Item>
                     
                     <Form.Item 
@@ -581,6 +594,11 @@ const ApprovalCenter: React.FC = () => {
                             <Descriptions.Item label={t('approval.resourceIdentifier')}>{currentTicket.resource_type}</Descriptions.Item>
                             <Descriptions.Item label={t('approval.columnStatus')}>
                                 <Badge status={STATUS_MAP(t)[currentTicket.status as keyof ReturnType<typeof STATUS_MAP>]?.status as any} text={currentTicket.status_display || STATUS_MAP(t)[currentTicket.status as keyof ReturnType<typeof STATUS_MAP>]?.text} />
+                            </Descriptions.Item>
+                            <Descriptions.Item label={t('approval.policyLabel')}>{currentTicket.policy_name || '-'}</Descriptions.Item>
+                            <Descriptions.Item label={t('approval.projectLabel')}>{currentTicket.project_name || '-'}</Descriptions.Item>
+                            <Descriptions.Item label={t('approval.expiresAt')} span={2}>
+                                {currentTicket.expires_at ? dayjs(currentTicket.expires_at).format('YYYY-MM-DD HH:mm:ss') : '-'}
                             </Descriptions.Item>
                         </Descriptions>
 
@@ -661,6 +679,37 @@ const ApprovalCenter: React.FC = () => {
                                 </pre>
                             </div>
                         </div>
+
+                        {(currentTicket.execution_status_code !== null || (
+                            currentTicket.execution_response
+                            && Object.keys(currentTicket.execution_response).length > 0
+                        )) && (
+                            <div>
+                                <Typography.Title level={5}>
+                                    <CheckCircleOutlined /> {t('approval.executionReceipt')}
+                                </Typography.Title>
+                                <Descriptions column={1} bordered size="small" style={{ marginBottom: 12 }}>
+                                    <Descriptions.Item label={t('approval.executionStatusCode')}>
+                                        {currentTicket.execution_status_code ?? '-'}
+                                    </Descriptions.Item>
+                                </Descriptions>
+                                <div style={{
+                                    background: token.colorFillTertiary,
+                                    color: token.colorText,
+                                    padding: '16px',
+                                    borderRadius: '8px',
+                                    overflow: 'auto',
+                                    maxHeight: '320px',
+                                    fontSize: '13px',
+                                    fontFamily: 'monospace',
+                                    border: `1px solid ${token.colorBorderSecondary}`
+                                }}>
+                                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+                                        {JSON.stringify(currentTicket.execution_response, null, 2)}
+                                    </pre>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </Drawer>

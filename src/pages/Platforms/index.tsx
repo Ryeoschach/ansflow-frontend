@@ -47,13 +47,10 @@ const PlatformManagement: React.FC = () => {
     const verifyMutation = useMutation({
         mutationFn: verifyPlatform,
         onSuccess: (res: any) => {
-            const status = res.connectivity_status;
-            if (status === 1) {
-                message.success(t('platform.platformConnected'));
-            } else {
-                message.error(`${t('platform.platformConnectError')}: ${res.error_message || 'Unknown error'}`);
-            }
-            queryClient.invalidateQueries({ queryKey: ['platforms'] });
+            message.success(res.message || t('platform.assetSyncStarted'));
+            window.setTimeout(() => {
+                queryClient.invalidateQueries({ queryKey: ['platforms'] });
+            }, 1500);
         },
         onError: (err: any) => {
             message.error(`${t('platform.verifyFailed')}: ${err.message}`);

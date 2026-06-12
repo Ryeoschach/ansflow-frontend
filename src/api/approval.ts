@@ -20,6 +20,11 @@ export interface ApprovalTicket {
     url_path: string;
     method: string;
     remark: string | null;
+    policy_name: string | null;
+    project_name: string | null;
+    expires_at: string | null;
+    execution_status_code: number | null;
+    execution_response: any;
     create_time: string;
     audit_time: string | null;
 }
@@ -47,6 +52,7 @@ export interface ApprovalPolicy {
     approver_roles: number[];
     approver_roles_detail?: any[];
     match_rules?: any;
+    approval_timeout_minutes: number;
     is_active: boolean;
     create_time: string;
 }

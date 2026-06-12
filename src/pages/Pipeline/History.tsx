@@ -18,6 +18,7 @@ import dayjs from 'dayjs';
 import useWebSocket from 'react-use-websocket';
 import useAppStore from '../../store/useAppStore';
 import { useTranslation } from 'react-i18next';
+import { buildWebSocketUrl } from '../../utils/websocket';
 
 const { Text } = Typography;
 
@@ -31,7 +32,7 @@ export default function PipelineHistory() {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { message, modal } = App.useApp();
-  const { token, hasPermission } = useAppStore();
+  const { token, currentProject, hasPermission } = useAppStore();
   
   const pipelineId = searchParams.get('pipeline_id');
   const [searchText, setSearchText] = useState('');
@@ -54,8 +55,12 @@ export default function PipelineHistory() {
     setPage(1);
   }, [searchText, pipelineId]);
 
-  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-  const wsUrl = `${protocol}://${window.location.host}/ws/pipeline/all/`;
+  const wsUrl = token && currentProject
+    ? buildWebSocketUrl('/ws/pipeline/all/', {
+        token,
+        project_id: currentProject.id,
+      })
+    : null;
   
   const { lastJsonMessage } = useWebSocket(wsUrl, {
     shouldReconnect: () => true,

@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
+import useAppStore from '../../../store/useAppStore';
+import { buildWebSocketUrl } from '../../../utils/websocket';
 
 interface K8sTerminalProps {
   clusterId: number;
@@ -22,9 +24,10 @@ const K8sTerminal: React.FC<K8sTerminalProps> = ({
   const xtermRef = useRef<Terminal | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
+  const { token, currentProject } = useAppStore();
 
   useEffect(() => {
-    if (!terminalRef.current) return;
+    if (!terminalRef.current || !token) return;
 
     // 1. 初始化 XTerm
     const term = new Terminal({
@@ -45,9 +48,16 @@ const K8sTerminal: React.FC<K8sTerminalProps> = ({
     fitAddonRef.current = fitAddon;
 
     // 2. 建立 WebSocket
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const host = window.location.host === 'localhost:5173' ? 'localhost:8000' : window.location.host;
-    const wsUrl = `${protocol}://${host}/ws/k8s/${clusterId}/terminal/${namespace}/${podName}/${container ? `?container=${container}` : ''}`;
+    const wsUrl = buildWebSocketUrl(
+      `/ws/k8s/${clusterId}/terminal/${namespace}/${podName}/`,
+      {
+        token,
+        project_id: currentProject?.id,
+        container,
+      },
+      host,
+    );
     
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
@@ -98,7 +108,7 @@ const K8sTerminal: React.FC<K8sTerminalProps> = ({
       ws.close();
       term.dispose();
     };
-  }, [clusterId, namespace, podName, container]);
+  }, [clusterId, namespace, podName, container, token, currentProject?.id]);
 
   return (
     <div 
